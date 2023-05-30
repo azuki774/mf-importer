@@ -1,0 +1,7 @@
+version: '3'
+services:
+  mf-importer:
+    image: mf-importer
+    container_name: mf-importer
+    volumes:
+    - ./:/data/
