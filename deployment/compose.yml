@@ -5,3 +5,14 @@ services:
     container_name: mf-importer
     volumes:
     - ./:/data/
+    depends_on:
+      - mf-importer-db
+
+  mf-importer-db:
+    image: mongo:6.0
+    container_name: mf-importer-db
+    ports:
+      - "27017:27017"
+    environment:
+    - MONGO_INITDB_ROOT_USERNAME=root
+    - MONGO_INITDB_ROOT_PASSWORD=pass
