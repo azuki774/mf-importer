@@ -1,3 +1,4 @@
+import sys
 import portfolio
 import logging
 from pythonjsonlogger import jsonlogger
@@ -14,8 +15,21 @@ logger.addHandler(h)
 
 
 def main():
+    """
+    htmlページをパースして、DBに情報を格納する。
+    引数に対象のページ名を入れる。
+    main.py <cf|portofolio>
+    """
+
+    args = sys.argv
     logger.info("start")
-    portfolio.get("/data/portfolio")
+
+    if len(args) <= 1:
+        logger.error("required args")
+
+    if args[1] == "portfolio":
+        portfolio.get("/data/portfolio")
+
     logger.info("end")
 
 

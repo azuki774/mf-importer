@@ -3,6 +3,7 @@ services:
   mf-importer:
     image: mf-importer
     container_name: mf-importer
+    command: ["portfolio"]
     volumes:
     - ./:/data/
     depends_on:
