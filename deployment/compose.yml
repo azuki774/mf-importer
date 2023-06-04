@@ -1,11 +1,20 @@
 version: '3'
 services:
-  mf-importer:
+  mf-importer-portofolio:
     image: mf-importer
-    container_name: mf-importer
-    command: ["portfolio"]
+    container_name: mf-importer-portofolio
+    command: [ "portofolio" ]
     volumes:
-    - ./:/data/
+      - ./:/data/
+    depends_on:
+      - mf-importer-db
+
+  mf-importer-lastmonth:
+    image: mf-importer
+    container_name: mf-importer-lastmonth
+    command: [ "cf", "--lastmonth", "True" ]
+    volumes:
+      - ./:/data/
     depends_on:
       - mf-importer-db
 
@@ -15,5 +24,5 @@ services:
     ports:
       - "27017:27017"
     environment:
-    - MONGO_INITDB_ROOT_USERNAME=root
-    - MONGO_INITDB_ROOT_PASSWORD=pass
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=pass

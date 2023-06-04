@@ -1,7 +1,9 @@
 import sys
-import portfolio
+from argparse import ArgumentParser
 import logging
 from pythonjsonlogger import jsonlogger
+import portfolio
+import cf
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,14 +23,34 @@ def main():
     main.py <cf|portofolio>
     """
 
-    args = sys.argv
     logger.info("start")
+    argparser = ArgumentParser()
+    argparser.add_argument(
+        "component",
+        type=str,
+        help="also fetch lastmonth data",
+    )
+    argparser.add_argument(
+        "--lastmonth",
+        type=bool,
+        default=False,
+        help="also fetch lastmonth data",
+    )
+    argp = argparser.parse_args()
 
-    if len(args) <= 1:
-        logger.error("required args")
+    # if len(args) <= 1:
+    #     logger.error("required args")
+    #     return
 
-    if args[1] == "portfolio":
+    if argp.component == "portfolio":
         portfolio.get("/data/portfolio")
+
+    if argp.component == "cf":
+        # --last-month があれば cf_lastmonth も
+        cf.get("/data/cf")
+        if argp.lastmonth:
+            logger.info("lastmonth option detected")
+            cf.get("/data/cf_lastmonth")
 
     logger.info("end")
 
