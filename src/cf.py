@@ -111,6 +111,8 @@ def get(filePath):
 
     for i in range(date_num):
         ins_data = {}
+        ins_data["regist_id"] = i + 1
+        ins_data["regist_date"] = yyyymmdd
         ins_data["date"] = date_queue.get()
         ins_data["name"] = name_queue.get()
         ins_data["price"] = price_queue.get()
