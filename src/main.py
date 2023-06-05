@@ -1,4 +1,4 @@
-import sys
+import datetime
 from argparse import ArgumentParser
 import logging
 from pythonjsonlogger import jsonlogger
@@ -15,12 +15,15 @@ json_fmt = jsonlogger.JsonFormatter(
 h.setFormatter(json_fmt)
 logger.addHandler(h)
 
+DATA_BASE_DIR = "/data/"
+
 
 def main():
     """
     htmlページをパースして、DBに情報を格納する。
     引数に対象のページ名を入れる。
     main.py <cf|portofolio>
+    読み込みディレクトリは、/data/yyyymmdd/<file名>
     """
 
     logger.info("start")
@@ -38,19 +41,18 @@ def main():
     )
     argp = argparser.parse_args()
 
-    # if len(args) <= 1:
-    #     logger.error("required args")
-    #     return
+    today = datetime.date.today()  # 出力：datetime.date(2020, 3, 22)
+    yyyymmdd = "{0:%Y%m%d}".format(today)  # 20200322
 
     if argp.component == "portfolio":
-        portfolio.get("/data/portfolio")
+        portfolio.get(DATA_BASE_DIR + yyyymmdd + "/portfolio")
 
     if argp.component == "cf":
         # --last-month があれば cf_lastmonth も
-        cf.get("/data/cf")
+        cf.get(DATA_BASE_DIR + yyyymmdd + "/cf")
         if argp.lastmonth:
             logger.info("lastmonth option detected")
-            cf.get("/data/cf_lastmonth")
+            cf.get(DATA_BASE_DIR + yyyymmdd + "/cf_lastmonth")
 
     logger.info("end")
 
