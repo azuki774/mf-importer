@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import datetime
 
 import logging
+import os
 from pythonjsonlogger import jsonlogger
 import pymongo
 
@@ -23,7 +24,7 @@ def _dbClient():
         "mf-importer-db",
         27017,
         username="root",
-        password="pass",
+        password=os.getenv("db_pass"),
     )
     return client
 
@@ -139,6 +140,6 @@ def get(filePath):
     db = client.mfimporter
     collection_depo = db.detail
     collection_depo.insert_many(inserted_data)
-    logger.info("inserted detail successfully")
+    logger.info("inserted detail successfully: {0} records".format(len(inserted_data)))
 
     return 0

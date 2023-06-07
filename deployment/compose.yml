@@ -8,6 +8,8 @@ services:
       - ./:/data/
     depends_on:
       - mf-importer-db
+    environment:
+      - db_pass=pass
 
   mf-importer-lastmonth:
     image: mf-importer
@@ -17,6 +19,8 @@ services:
       - ./:/data/
     depends_on:
       - mf-importer-db
+    environment:
+      - db_pass=pass
 
   mf-importer-db:
     image: mongo:6.0

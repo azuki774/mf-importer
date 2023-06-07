@@ -49,10 +49,14 @@ def main():
 
     if argp.component == "cf":
         # --last-month があれば cf_lastmonth も
-        cf.get(DATA_BASE_DIR + yyyymmdd + "/cf")
+        ret = cf.get(DATA_BASE_DIR + yyyymmdd + "/cf")
+        if ret != 0:
+            return ret  # error end
         if argp.lastmonth:
             logger.info("lastmonth option detected")
-            cf.get(DATA_BASE_DIR + yyyymmdd + "/cf_lastmonth")
+            ret = cf.get(DATA_BASE_DIR + yyyymmdd + "/cf_lastmonth")
+            if ret != 0:
+                return ret  # error end
 
     logger.info("end")
 
