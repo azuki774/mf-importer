@@ -4,7 +4,6 @@ import datetime
 import logging
 from pythonjsonlogger import jsonlogger
 import pymongo
-import queue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,15 +33,15 @@ def get(filePath):
     with open(filePath) as f:
         html = f.read()
         today = datetime.date.today()  # 出力：datetime.date(2020, 3, 22)
-        yyyymmdd = "{0:%Y-%m-%d}".format(today)  # 2020-03-22
+        yyyymmdd = "{0:%Y%m%d}".format(today)  # 20200322
         soup = BeautifulSoup(html, "html.parser")
 
-    date_queue = queue.Queue()
-    name_queue = queue.Queue()
-    price_queue = queue.Queue()
-    note_queue = queue.Queue()  # 保有金融機関
-    v_l_ctg_queue = queue.Queue()  # 大分類
-    v_m_ctg_queue = queue.Queue()  # 中分類
+    date_list = []
+    name_list = []
+    price_list = []
+    note_list = []  # 保有金融機関
+    v_l_ctg_list = []  # 大分類
+    v_m_ctg_list = []  # 中分類
 
     tablea = soup.find_all(
         "td",
@@ -53,7 +52,7 @@ def get(filePath):
             if len(e1) >= 1:
                 e2 = e1.findAll("span")
                 for e3 in e2:
-                    date_queue.put(e3.get_text().replace("\n", ""))
+                    date_list.append(e3.get_text().replace("\n", ""))
                     date_num = date_num + 1
 
     tableb = soup.find_all(
@@ -65,7 +64,7 @@ def get(filePath):
             if len(e1) >= 1:
                 e2 = e1.findAll("span")
                 for e3 in e2:
-                    name_queue.put(e3.get_text().replace("\n", ""))
+                    name_list.append(e3.get_text().replace("\n", ""))
 
     tablec = soup.find_all(
         "span",
@@ -74,7 +73,7 @@ def get(filePath):
     if len(tablec) >= 1:
         for e1 in tablec:
             if len(e1) >= 1:
-                price_queue.put(e1.get_text().replace("\n", ""))
+                price_list.append(e1.get_text().replace("\n", ""))
 
     tabled = soup.find_all(
         "td",
@@ -83,7 +82,7 @@ def get(filePath):
     if len(tabled) >= 1:
         for e1 in tabled:
             if len(e1) >= 1:
-                note_queue.put(e1.get_text().replace("\n", ""))
+                note_list.append(e1.get_text().replace("\n", ""))
 
     tablee = soup.find_all(
         "div",
@@ -92,7 +91,7 @@ def get(filePath):
     if len(tablee) >= 1:
         for e1 in tablee:
             if len(e1) >= 1:
-                v_l_ctg_queue.put(e1.get_text().replace("\n", ""))
+                v_l_ctg_list.append(e1.get_text().replace("\n", ""))
 
     tablef = soup.find_all(
         "div",
@@ -101,32 +100,40 @@ def get(filePath):
     if len(tablef) >= 1:
         for e1 in tablef:
             if len(e1) >= 1:
-                v_m_ctg_queue.put(e1.get_text().replace("\n", ""))
+                v_m_ctg_list.append(e1.get_text().replace("\n", ""))
 
     logger.info("parsed html file")
     inserted_data = []
-
-    v_l_ctg_queue.get()  # 未分類がなぜか最初につくので空読みする
-    v_m_ctg_queue.get()  # 未分類がなぜか最初につくので空読みする
 
     for i in range(date_num):
         ins_data = {}
         ins_data["regist_id"] = i + 1
         ins_data["regist_date"] = yyyymmdd
-        ins_data["date"] = date_queue.get()
-        ins_data["name"] = name_queue.get()
-        ins_data["price"] = price_queue.get()
+        ins_data["date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
+        ins_data["name"] = name_list.pop()
+        ins_data["price"] = price_list.pop()
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:
-            ins_data["fin_ins"] = note_queue.get()
-            ins_data["l_category"] = v_l_ctg_queue.get()
-            ins_data["m_category"] = v_m_ctg_queue.get()
+            ins_data["fin_ins"] = note_list.pop()
+            ins_data["l_category"] = v_l_ctg_list.pop()
+            ins_data["m_category"] = v_m_ctg_list.pop()
         inserted_data.append(ins_data)
+
+    v_l_ctg_list.pop()  # 未分類がなぜか最初につくので、最後に pop にする
+    v_m_ctg_list.pop()  # 未分類がなぜか最初につくので、最後に pop にする
 
     if len(inserted_data) == 0:
         logger.info("No data in this file: {0}".format(filePath))
-        return
+        return 0
+
+    if len(v_l_ctg_list) != 0:
+        logger.error("failed to parse")
+        return 1
+
+    if len(v_m_ctg_list) != 0:
+        logger.error("failed to parse")
+        return 1
 
     client = _dbClient()
     db = client.mfimporter
@@ -134,4 +141,4 @@ def get(filePath):
     collection_depo.insert_many(inserted_data)
     logger.info("inserted detail successfully")
 
-    return inserted_data
+    return 0
