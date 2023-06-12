@@ -1,0 +1,19 @@
+package logger
+
+import (
+	"testing"
+)
+
+func TestNewLogger(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{
+			name: "create logger",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
