@@ -17,3 +17,9 @@ start:
 
 debug:
 	docker compose -f deployment/compose.yml up
+
+test:
+	gofmt -l .
+	go vet ./...
+	staticcheck ./...
+	go test -v ./...
