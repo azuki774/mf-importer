@@ -3,3 +3,4 @@ deployment/*/cf
 deployment/*/cf_lastmonth
 memo
 .vscode
+build/bin/mf-importer-maw
