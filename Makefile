@@ -20,3 +20,9 @@ debug:
 
 pytest:
 	pytest -v
+
+test:
+	gofmt -l .
+	go vet ./...
+	staticcheck ./...
+	go test -v ./...
