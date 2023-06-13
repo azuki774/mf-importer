@@ -1,6 +1,7 @@
 package mawinter
 
 import (
+	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
 	"time"
 
@@ -16,4 +17,11 @@ type Mawinter struct {
 	MawClient   MawinterClient
 	ExtractRule model.ExtractRule // 抽出するルール
 	ProcessDate time.Time         // 処理するファイルの登録日を指定
+}
+
+func NewMawinter() Mawinter {
+	var mawinter Mawinter
+	l := logger.NewLogger()
+	mawinter.Logger = l
+	return mawinter
 }

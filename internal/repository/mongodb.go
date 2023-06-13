@@ -11,13 +11,13 @@ type MongoDBClient struct {
 	client *mongo.Client
 }
 
-func NewMongoDB(ctx context.Context, uri string) (MongoDBClient, error) {
+func NewMongoDB(ctx context.Context, uri string) (*MongoDBClient, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		return MongoDBClient{}, err
+		return nil, err
 	}
 
-	m := MongoDBClient{
+	m := &MongoDBClient{
 		client: client,
 	}
 
