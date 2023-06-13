@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type ExtractCondition int
 
 type ExtractRule struct {
@@ -25,4 +27,31 @@ func NewExtractRule() *ExtractRule {
 		FromMCategoryIn: make(map[string]int, 0),
 	}
 	return e
+}
+
+func (e *ExtractRule) AddRule(erc ExtractRuleCSV) (err error) {
+	const fieldName = "name"
+	const fieldMCategory = "m_category"
+
+	if erc.FieldName == fieldName {
+		if erc.ExtractCondition {
+			// 完全一致
+			e.FromName[erc.Name] = erc.CategoryID
+		} else {
+			// 部分一致
+			e.FromNameIn[erc.Name] = erc.CategoryID
+		}
+	} else if erc.FieldName == fieldMCategory {
+		if erc.ExtractCondition {
+			// 完全一致
+			e.FromMCategory[erc.Name] = erc.CategoryID
+		} else {
+			// 部分一致
+			e.FromMCategoryIn[erc.Name] = erc.CategoryID
+		}
+	} else {
+		return fmt.Errorf("unknown field name in extract CSV")
+	}
+
+	return nil
 }
