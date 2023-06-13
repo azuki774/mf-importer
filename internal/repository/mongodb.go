@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"mf-importer/internal/model"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -22,4 +24,29 @@ func NewMongoDB(ctx context.Context, uri string) (*MongoDBClient, error) {
 	}
 
 	return m, nil
+}
+
+func (c *MongoDBClient) Disconnect(ctx context.Context) error {
+	return c.client.Disconnect(ctx)
+}
+
+func (c *MongoDBClient) GetCFRecords(ctx context.Context, registDate string) (cfRecords []model.CFRecords, err error) {
+	// 検索フィルター
+	filter := bson.D{{"regist_date", registDate}}
+
+	coll := c.client.Database("mfimporter").Collection("detail")
+	cursor, err := coll.Find(ctx, filter)
+	if err != nil {
+		return []model.CFRecords{}, err
+	}
+
+	if err := cursor.All(ctx, &cfRecords); err != nil {
+		return []model.CFRecords{}, err
+	}
+
+	// TODO: 既に登録済の date(yyyymm), regist_id の組をDBから取得する
+
+	// TODO: 既に登録済のものは取り除く
+
+	return cfRecords, nil
 }

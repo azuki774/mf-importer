@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ExtractCondition int
 
@@ -17,6 +20,27 @@ type ExtractRuleCSV struct {
 	Name             string
 	ExtractCondition bool // 完全一致かどうか
 	CategoryID       int  // 変換先の category_id
+}
+
+type CFRecords struct {
+	ID         int       `bson:"_id"`
+	RegistID   int       `bson:"regist_id"`
+	RegistDate string    `bson:"regist_date"`
+	Date       time.Time `bson:"date"`
+	Name       string    `bson:"name"`
+	Price      string    `bson:"price"`
+	FinIns     string    `bson:"fin_ins"`
+	LCategory  string    `bson:"l_category"`
+	MCategory  string    `bson:"m_category"`
+	// _id: ObjectId("64858d14543b902bfaf7b43a"),
+	// regist_id: 80,
+	// regist_date: '20230611',
+	// date: '05/28(日)',
+	// name: 'まいばすけっと',
+	// price: '-1,494',
+	// fin_ins: 'JCBカード',
+	// l_category: '食費',
+	// m_category: '食料品'
 }
 
 func NewExtractRule() *ExtractRule {
