@@ -1,5 +1,5 @@
-deployment/*/portfolio
-deployment/*/cf
-deployment/*/cf_lastmonth
+deployment/*/*
 memo
 .vscode
+.pytest_cache
+src/__pycache__/*

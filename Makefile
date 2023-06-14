@@ -9,3 +9,6 @@ start:
 
 debug:
 	docker compose -f deployment/compose.yml up
+
+pytest:
+	pytest -v

@@ -34,7 +34,7 @@ def get(filePath):
     with open(filePath) as f:
         html = f.read()
         today = datetime.date.today()  # 出力：datetime.date(2020, 3, 22)
-        yyyymmdd = "{0:%Y%m%d}".format(today)  # 20200322
+        proc_yyyymmdd = "{0:%Y%m%d}".format(today)  # 処理日のYYYYMMDD 20200322
         soup = BeautifulSoup(html, "html.parser")
 
     date_list = []
@@ -108,11 +108,19 @@ def get(filePath):
 
     for i in range(date_num):
         ins_data = {}
-        ins_data["regist_id"] = i + 1
-        ins_data["regist_date"] = yyyymmdd
+        ins_data["regist_date"] = proc_yyyymmdd
+
         ins_data["date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
         ins_data["name"] = name_list.pop()
         ins_data["price"] = price_list.pop()
+
+        ins_data["yyyymm_id"] = i + 1  # 利用月ごとのID
+        ins_data["yyyymmdd"] = _get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["date"]
+        )
+        ins_data["yyyymm"] = _get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["date"]
+        )[:6]
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:
@@ -139,7 +147,44 @@ def get(filePath):
     client = _dbClient()
     db = client.mfimporter
     collection_depo = db.detail
-    collection_depo.insert_many(inserted_data)
-    logger.info("inserted detail successfully: {0} records".format(len(inserted_data)))
 
+    loaded_num = 0
+    insert_num = 0
+    for data in inserted_data:
+        find = collection_depo.find_one(
+            filter={"yyyymmdd": data["yyyymmdd"], "yyyymm_id": data["yyyymm_id"]}
+        )
+        if find == None:
+            # 未登録なら 登録
+            collection_depo.insert_one(data)
+            insert_num += 1
+
+        loaded_num += 1
+
+    logger.info("inserted new detail successfully: {0} records".format(insert_num))
+    logger.info(
+        "skipped already inserted records: {0} records".format(loaded_num - insert_num)
+    )
     return 0
+
+
+def _get_yyyymmdd_from_procdate(proc_yyyymmdd, date):
+    """
+    proc_yyyymmdd をベースにして、date フィールドから yyyymmdd を取得する
+    date フィールドは '05/09(火)' のような表記のため
+
+    proc_yyyymmdd = 20230519 , 05/15（ ）なら 20230515
+    proc_yyyymmdd = 20230101 , 12/15（ ）なら 20221215
+    """
+
+    proc_yyyymmdd_yyyy = proc_yyyymmdd[:4]
+    proc_yyyymmdd_mm = proc_yyyymmdd[4:6]
+    date_mm = date[:2]
+    date_dd = date[3:5]
+
+    if proc_yyyymmdd_mm == "01" and date_mm == "12":
+        # 年が変わるパターンだけ例外
+        return str(int(proc_yyyymmdd_yyyy) - 1) + date_mm + date_dd
+
+    # 通常パターン
+    return proc_yyyymmdd_yyyy + date_mm + date_dd

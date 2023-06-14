@@ -1,0 +1,4 @@
+beautifulsoup4==4.12.2
+python-json-logger==2.0.7
+pymongo==4.3.3
+pytest==7.3.2
