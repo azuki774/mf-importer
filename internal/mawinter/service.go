@@ -13,7 +13,7 @@ type CSVFileOperator interface {
 	LoadExtractCSV(path string) (es []model.ExtractRuleCSV, err error)
 }
 type MongoDBClient interface {
-	GetCFRecords(ctx context.Context, registDate string) (cfRecords []model.CFRecords, err error)
+	GetCFRecords(ctx context.Context) (cfRecords []model.CFRecords, err error)
 }
 type MawinterClient interface {
 	Regist(ctx context.Context, r model.CreateRecord) (err error)

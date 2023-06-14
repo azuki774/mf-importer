@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"mf-importer/internal/logger"
+	"mf-importer/internal/repository"
+	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // registCmd represents the regist command
@@ -16,8 +21,9 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("start called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("regist called")
+		return registMain()
 	},
 }
 
@@ -33,4 +39,22 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func registMain() error {
+	l := logger.NewLogger()
+	ctx := context.Background()
+	l.Info("using DB uri", zap.String("db_uri", os.Getenv("db_uri")))
+	db, err := repository.NewMongoDB(ctx, os.Getenv("db_uri"))
+	if err != nil {
+		l.Error("failed to connect DB", zap.Error(err))
+		return err
+	}
+	defer db.Disconnect(ctx)
+
+	// For test
+	_, err = db.GetCFRecords(ctx)
+	println(err.Error())
+	l.Info("registMain end")
+	return nil
 }

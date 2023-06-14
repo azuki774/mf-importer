@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"mf-importer/internal/model"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,7 +16,12 @@ type MongoDBClient struct {
 }
 
 func NewMongoDB(ctx context.Context, uri string) (*MongoDBClient, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	credential := options.Credential{
+		Username: "root",
+		Password: os.Getenv("db_pass"),
+	}
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetAuth(credential))
 	if err != nil {
 		return nil, err
 	}
@@ -30,10 +37,10 @@ func (c *MongoDBClient) Disconnect(ctx context.Context) error {
 	return c.client.Disconnect(ctx)
 }
 
-func (c *MongoDBClient) GetCFRecords(ctx context.Context, registDate string) (cfRecords []model.CFRecords, err error) {
-	// 検索フィルター
-	filter := bson.D{{"regist_date", registDate}}
-
+func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRecords, err error) {
+	// 未登録の record を取得するための filter
+	// filter := bson.D{{"maw_regist", bson.D{{"$ne", true}}}}
+	filter := bson.D{}
 	coll := c.client.Database("mfimporter").Collection("detail")
 	cursor, err := coll.Find(ctx, filter)
 	if err != nil {
@@ -44,9 +51,7 @@ func (c *MongoDBClient) GetCFRecords(ctx context.Context, registDate string) (cf
 		return []model.CFRecords{}, err
 	}
 
-	// TODO: 既に登録済の date(yyyymm), regist_id の組をDBから取得する
-
-	// TODO: 既に登録済のものは取り除く
-
+	fmt.Println(cfRecords) // For test
+	// cfRecords の中から 実際に登録すべきレコードを抽出
 	return cfRecords, nil
 }
