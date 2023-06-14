@@ -115,8 +115,12 @@ def get(filePath):
         ins_data["price"] = price_list.pop()
 
         ins_data["yyyymm_id"] = i + 1  # 利用月ごとのID
-        ins_data["yyyymm"] = 0  # TODO
-        ins_data["yyyymmdd"] = 0  # TODO
+        ins_data["yyyymmdd"] = _get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["date"]
+        )
+        ins_data["yyyymm"] = _get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["date"]
+        )[:6]
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:
