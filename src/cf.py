@@ -147,9 +147,24 @@ def get(filePath):
     client = _dbClient()
     db = client.mfimporter
     collection_depo = db.detail
-    collection_depo.insert_many(inserted_data)
-    logger.info("inserted detail successfully: {0} records".format(len(inserted_data)))
 
+    loaded_num = 0
+    insert_num = 0
+    for data in inserted_data:
+        find = collection_depo.find_one(
+            filter={"yyyymmdd": data["yyyymmdd"], "yyyymm_id": data["yyyymm_id"]}
+        )
+        if find == None:
+            # 未登録なら 登録
+            collection_depo.insert_one(data)
+            insert_num += 1
+
+        loaded_num += 1
+
+    logger.info("inserted new detail successfully: {0} records".format(insert_num))
+    logger.info(
+        "skipped already inserted records: {0} records".format(loaded_num - insert_num)
+    )
     return 0
 
 
