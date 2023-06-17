@@ -4,6 +4,7 @@ import (
 	"context"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
+	"mf-importer/internal/repository"
 	"time"
 
 	"go.uber.org/zap"
@@ -28,10 +29,12 @@ type Mawinter struct {
 	ProcessDate time.Time         // 処理するファイルの登録日を指定
 }
 
-func NewMawinter() Mawinter {
+func NewMawinter(db *repository.MongoDBClient) Mawinter {
 	var mawinter Mawinter
 	l := logger.NewLogger()
 	mawinter.Logger = l
+	mawinter.DBClient = db
+	mawinter.CSVFileOp = &mockCSVFileOperator{} // FOR TEST
 	return mawinter
 }
 
@@ -62,8 +65,12 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("extract rule CSV load complete")
 
 	m.Logger.Info("fetch records from DB")
-
-	m.Logger.Info("fetch records from DB complete")
+	cfRecs, err := m.DBClient.GetCFRecords(ctx)
+	if err != nil {
+		m.Logger.Error("failed to fetch records from DB", zap.Error(err))
+		return err
+	}
+	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted records", len(cfRecs)))
 
 	m.Logger.Info("extract data and convert to mawinter model")
 	var rs []model.CreateRecord

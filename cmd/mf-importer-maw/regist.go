@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mf-importer/internal/logger"
+	"mf-importer/internal/mawinter"
 	"mf-importer/internal/repository"
 	"os"
 
@@ -52,8 +53,11 @@ func registMain() error {
 	}
 	defer db.Disconnect(ctx)
 
-	// For test
-	_, err = db.GetCFRecords(ctx)
+	mw := mawinter.NewMawinter(db)
+	err = mw.Regist(ctx)
+	if err != nil {
+		return err
+	}
 
 	l.Info("registMain end")
 	return nil
