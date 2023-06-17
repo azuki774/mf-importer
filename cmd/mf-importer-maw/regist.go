@@ -54,7 +54,7 @@ func registMain() error {
 
 	// For test
 	_, err = db.GetCFRecords(ctx)
-	println(err.Error())
+
 	l.Info("registMain end")
 	return nil
 }

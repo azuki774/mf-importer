@@ -39,8 +39,8 @@ func (c *MongoDBClient) Disconnect(ctx context.Context) error {
 
 func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRecords, err error) {
 	// 未登録の record を取得するための filter
-	// filter := bson.D{{"maw_regist", bson.D{{"$ne", true}}}}
-	filter := bson.D{}
+	filter := bson.D{{"maw_status", bson.D{{"$ne", "true"}}}}
+	// filter := bson.D{}
 	coll := c.client.Database("mfimporter").Collection("detail")
 	cursor, err := coll.Find(ctx, filter)
 	if err != nil {

@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -28,12 +27,12 @@ type CFRecords struct {
 	ID        primitive.ObjectID `bson:"_id"`
 	RegistID  int                `bson:"regist_id"`
 	YYYYMMDD  string             `bson:"yyyymmdd"`
-	Date      time.Time          `bson:"date"`
+	Date      string             `bson:"date"` // "06/01（火）"
 	Name      string             `bson:"name"`
 	Price     string             `bson:"price"`
 	LCategory string             `bson:"l_category"`
 	MCategory string             `bson:"m_category"`
-	MawRegist bool               `bson:"maw_regist"`
+	MawStatus string             `bson:"maw_status"`
 	// {
 	// 	_id: ObjectId("6489bbe3163254689370aa32"),
 	// 	regist_date: '20230614',
