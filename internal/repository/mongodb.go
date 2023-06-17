@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"mf-importer/internal/model"
 	"os"
 
@@ -51,7 +50,5 @@ func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFR
 		return []model.CFRecords{}, err
 	}
 
-	fmt.Println(cfRecords) // For test
-	// cfRecords の中から 実際に登録すべきレコードを抽出
 	return cfRecords, nil
 }

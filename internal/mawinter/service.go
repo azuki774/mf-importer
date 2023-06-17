@@ -4,7 +4,6 @@ import (
 	"context"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
-	"mf-importer/internal/repository"
 	"time"
 
 	"go.uber.org/zap"
@@ -20,6 +19,8 @@ type MawinterClient interface {
 	Regist(ctx context.Context, r model.CreateRecord) (err error)
 }
 
+const csvFilePath = "/extract_rule.csv"
+
 type Mawinter struct {
 	Logger      *zap.Logger
 	DBClient    MongoDBClient
@@ -29,12 +30,12 @@ type Mawinter struct {
 	ProcessDate time.Time         // 処理するファイルの登録日を指定
 }
 
-func NewMawinter(db *repository.MongoDBClient) Mawinter {
+func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
 	var mawinter Mawinter
 	l := logger.NewLogger()
 	mawinter.Logger = l
 	mawinter.DBClient = db
-	mawinter.CSVFileOp = &mockCSVFileOperator{} // FOR TEST
+	mawinter.CSVFileOp = csv
 	return mawinter
 }
 
@@ -42,13 +43,13 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("Regist start")
 
 	m.Logger.Info("extract rule CSV load")
-	rule := model.NewExtractRule()
-	es, err := m.CSVFileOp.LoadExtractCSV("")
+	es, err := m.CSVFileOp.LoadExtractCSV(csvFilePath)
 	if err != nil {
 		m.Logger.Error("failed to load extract CSV", zap.Error(err))
 		return err
 	}
 
+	rule := model.NewExtractRule()
 	for _, e := range es {
 		err = rule.AddRule(e)
 		if err != nil {

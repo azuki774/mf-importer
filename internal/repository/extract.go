@@ -10,7 +10,9 @@ import (
 
 const LabelFieldName = "フィールド名"
 
-func LoadExtractCSV(path string) (es []model.ExtractRuleCSV, err error) {
+type CSVFileOperator struct{}
+
+func (c *CSVFileOperator) LoadExtractCSV(path string) (es []model.ExtractRuleCSV, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return []model.ExtractRuleCSV{}, err

@@ -53,7 +53,8 @@ func registMain() error {
 	}
 	defer db.Disconnect(ctx)
 
-	mw := mawinter.NewMawinter(db)
+	csv := &repository.CSVFileOperator{}
+	mw := mawinter.NewMawinter(db, csv)
 	err = mw.Regist(ctx)
 	if err != nil {
 		return err
