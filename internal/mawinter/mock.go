@@ -51,7 +51,7 @@ func (m *mockCSVFileOperator) LoadExtractCSV(path string) (es []model.ExtractRul
 func (m *mockDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error) {
 	return []model.CFRecord{
 		{
-			ID:        primitive.ObjectID([]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+			ID:        primitive.ObjectID([12]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
 			RegistID:  1,
 			YYYYMMDD:  "20230101",
 			Date:      "01/01（火）",
@@ -61,7 +61,7 @@ func (m *mockDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRe
 			MCategory: "中分類",
 		},
 		{
-			ID:        primitive.ObjectID([]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+			ID:        primitive.ObjectID([12]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
 			RegistID:  2,
 			YYYYMMDD:  "20230102",
 			Date:      "01/02（水）",
