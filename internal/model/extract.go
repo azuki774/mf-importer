@@ -47,6 +47,7 @@ type CFRecord struct {
 	// 	l_category: '通信費',
 	// 	m_category: '情報サービス'
 	// },
+	CategoryID int // mawinter-server 挿入用
 }
 
 func NewExtractRule() *ExtractRule {

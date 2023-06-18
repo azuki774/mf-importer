@@ -7,6 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var forTestExtractRule model.ExtractRule = model.ExtractRule{
+	FromName:        map[string]int{"かんぜんいっち": 100},
+	FromNameIn:      map[string]int{"ぶぶんめい": 200},
+	FromMCategory:   map[string]int{"かんぜんいっち": 300},
+	FromMCategoryIn: map[string]int{"ぶぶんめい": 400},
+}
+
 type mockMawinterClient struct{}
 type mockDBClient struct {
 }

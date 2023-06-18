@@ -4,6 +4,7 @@ import (
 	"context"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -28,6 +29,7 @@ type Mawinter struct {
 	CSVFileOp   CSVFileOperator
 	ExtractRule model.ExtractRule // 抽出するルール
 	ProcessDate time.Time         // 処理するファイルの登録日を指定
+	Dryrun      bool              // DBの状態を変更しない、mawinter サーバに送信しない
 }
 
 func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
@@ -39,9 +41,37 @@ func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
 	return mawinter
 }
 
-func (m *Mawinter) isExtractCondition(c model.CFRecord) (ok bool) {
-	// TODO
-	return false
+// getCategoryIDwithExtractCond: 抽出条件に合う場合はカテゴリIDを出力する、そうでない場合は ok = false
+func (m *Mawinter) getCategoryIDwithExtractCond(c model.CFRecord) (catID int, ok bool) {
+	// FromName        map[string]int // Name -> CategoryID（完全一致）
+	catID, ok = m.ExtractRule.FromName[c.Name]
+	if ok {
+		return catID, true
+	}
+
+	// FromNameIn      map[string]int // Name -> CategoryID（部分一致）
+	for ruleName, catID := range m.ExtractRule.FromNameIn {
+		// 1ルールずつ条件にあうか見ていく
+		if strings.Contains(c.Name, ruleName) {
+			return catID, true
+		}
+	}
+
+	// FromMCategory   map[string]int // MCategory -> CategoryID（完全一致）
+	catID, ok = m.ExtractRule.FromMCategory[c.MCategory]
+	if ok {
+		return catID, true
+	}
+
+	// FromMCategoryIn map[string]int // MCategory -> CategoryID（部分一致）
+	for ruleName, catID := range m.ExtractRule.FromMCategoryIn {
+		// 1ルールずつ条件にあうか見ていく
+		if strings.Contains(c.MCategory, ruleName) {
+			return catID, true
+		}
+	}
+
+	return 0, false
 }
 
 func (m *Mawinter) Regist(ctx context.Context) (err error) {
@@ -80,12 +110,9 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 	m.Logger.Info("extract data and convert to mawinter model")
 	var cs []model.CFRecord // cfRecs から抽出条件にあうものを入れる
-	for _, c := range cs {
-		if m.isExtractCondition(c) { // 抽出条件判定
-			cs = append(cs, c)
-		}
-	}
+	// for _, c := range cs {
 
+	// }
 	m.Logger.Info("extract data and convert to mawinter model complete")
 
 	m.Logger.Info("post to mawinter")
