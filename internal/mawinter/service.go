@@ -13,10 +13,10 @@ type CSVFileOperator interface {
 	LoadExtractCSV(path string) (es []model.ExtractRuleCSV, err error)
 }
 type MongoDBClient interface {
-	GetCFRecords(ctx context.Context) (cfRecords []model.CFRecords, err error)
+	GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error)
 }
 type MawinterClient interface {
-	Regist(ctx context.Context, r model.CreateRecord) (err error)
+	Regist(ctx context.Context, c model.CFRecord) (err error)
 }
 
 const csvFilePath = "/extract_rule.csv"
@@ -37,6 +37,11 @@ func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
 	mawinter.DBClient = db
 	mawinter.CSVFileOp = csv
 	return mawinter
+}
+
+func (m *Mawinter) isExtractCondition(c model.CFRecord) (ok bool) {
+	// TODO
+	return false
 }
 
 func (m *Mawinter) Regist(ctx context.Context) (err error) {
@@ -74,13 +79,18 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted records", len(cfRecs)))
 
 	m.Logger.Info("extract data and convert to mawinter model")
-	var rs []model.CreateRecord
+	var cs []model.CFRecord // cfRecs から抽出条件にあうものを入れる
+	for _, c := range cs {
+		if m.isExtractCondition(c) { // 抽出条件判定
+			cs = append(cs, c)
+		}
+	}
 
 	m.Logger.Info("extract data and convert to mawinter model complete")
 
 	m.Logger.Info("post to mawinter")
-	for _, r := range rs {
-		err := m.MawClient.Regist(ctx, r)
+	for _, c := range cs {
+		err := m.MawClient.Regist(ctx, c)
 		if err != nil {
 			m.Logger.Error("failed to insert", zap.Error(err))
 			return err

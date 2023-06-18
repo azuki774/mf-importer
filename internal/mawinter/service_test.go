@@ -32,6 +32,7 @@ func TestMawinter_Regist(t *testing.T) {
 			name: "ok",
 			fields: fields{
 				Logger:      logger.NewLogger(),
+				DBClient:    &mockDBClient{},
 				MawClient:   &mockMawinterClient{},
 				CSVFileOp:   &mockCSVFileOperator{},
 				ProcessDate: time.Now(),

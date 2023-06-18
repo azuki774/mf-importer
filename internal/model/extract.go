@@ -23,7 +23,7 @@ type ExtractRuleCSV struct {
 	CategoryID       int  // 変換先の category_id
 }
 
-type CFRecords struct {
+type CFRecord struct {
 	ID        primitive.ObjectID `bson:"_id"`
 	RegistID  int                `bson:"regist_id"`
 	YYYYMMDD  string             `bson:"yyyymmdd"`
