@@ -53,13 +53,22 @@ func (m *mockDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRe
 		{
 			ID:        primitive.ObjectID([]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
 			RegistID:  1,
-			YYYYMMDD:  "202301",
+			YYYYMMDD:  "20230101",
 			Date:      "01/01（火）",
 			Name:      "ふぃーるど１",
 			Price:     "-1,234",
 			LCategory: "大分類",
 			MCategory: "中分類",
-			// MawStatus string             `bson:"maw_status"`
+		},
+		{
+			ID:        primitive.ObjectID([]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+			RegistID:  2,
+			YYYYMMDD:  "20230102",
+			Date:      "01/02（水）",
+			Name:      "ふぃーるど５",
+			Price:     "-1,234",
+			LCategory: "大分類",
+			MCategory: "中分類",
 		},
 	}, nil
 }
