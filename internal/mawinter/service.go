@@ -84,9 +84,9 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		return err
 	}
 
-	rule := model.NewExtractRule()
+	m.ExtractRule = *model.NewExtractRule()
 	for _, e := range es {
-		err = rule.AddRule(e)
+		err = m.ExtractRule.AddRule(e)
 		if err != nil {
 			m.Logger.Error("failed to add rule", zap.Error(err))
 			return err
@@ -106,14 +106,21 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		m.Logger.Error("failed to fetch records from DB", zap.Error(err))
 		return err
 	}
-	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted records", len(cfRecs)))
+	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted_records", len(cfRecs)))
 
 	m.Logger.Info("extract data and convert to mawinter model")
 	var cs []model.CFRecord // cfRecs から抽出条件にあうものを入れる
-	// for _, c := range cs {
+	for _, c := range cfRecs {
+		catID, ok := m.getCategoryIDwithExtractCond(c)
+		if !ok {
+			continue
+		}
 
-	// }
-	m.Logger.Info("extract data and convert to mawinter model complete")
+		// 抽出条件にあうものは categoryID をセットして追加
+		c.CategoryID = catID
+		cs = append(cs, c)
+	}
+	m.Logger.Info("extract data and convert to mawinter model complete", zap.Int("extracted_records", len(cs)))
 
 	m.Logger.Info("post to mawinter")
 	for _, c := range cs {
