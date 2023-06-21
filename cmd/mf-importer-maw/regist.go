@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var dryRun bool
+
 // registCmd represents the regist command
 var registCmd = &cobra.Command{
 	Use:   "regist",
@@ -35,11 +37,11 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// registCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	registCmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "dry run mode")
 }
 
 func registMain() error {
@@ -55,6 +57,11 @@ func registMain() error {
 
 	csv := &repository.CSVFileOperator{}
 	mw := mawinter.NewMawinter(db, csv)
+	if !dryRun {
+		l.Info("not yet implemented")
+		return nil
+	}
+
 	err = mw.Regist(ctx)
 	if err != nil {
 		return err
