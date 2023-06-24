@@ -110,7 +110,7 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		m.Logger.Error("failed to fetch records from DB", zap.Error(err))
 		return err
 	}
-	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted_records", len(cfCheckedRecs)))
+	m.Logger.Info("fetch records from DB complete", zap.Int("unchecked_records", len(cfCheckedRecs)))
 
 	m.Logger.Info("extract data and convert to mawinter model")
 	var cfRegistedRecs []model.CFRecord // cfCheckedRecs から抽出条件にあうものを入れる
@@ -139,6 +139,7 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 			m.Logger.Error("failed to insert", zap.Error(err))
 			return err
 		}
+		m.Logger.Info("post records", zap.String("yyyymmdd", c.YYYYMMDD), zap.String("price", c.Price), zap.String("memo", c.Name))
 	}
 	m.Logger.Info("post to mawinter complete")
 

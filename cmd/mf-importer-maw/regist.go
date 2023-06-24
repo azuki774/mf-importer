@@ -59,10 +59,6 @@ func registMain() error {
 	csv := &repository.CSVFileOperator{}
 	maw := repository.NewMawinterClient(os.Getenv("api_uri"))
 	mw := mawinter.NewMawinter(db, csv, maw, dryRun)
-	if !dryRun {
-		l.Info("not yet implemented")
-		return nil
-	}
 
 	err = mw.Regist(ctx)
 	if err != nil {
