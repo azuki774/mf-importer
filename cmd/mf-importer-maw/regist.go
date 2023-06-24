@@ -67,6 +67,5 @@ func registMain() error {
 		return err
 	}
 
-	l.Info("registMain end")
 	return nil
 }

@@ -120,7 +120,7 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		// 抽出条件にあうものは categoryID をセットして追加
 		c.CategoryID = catID
 		cs = append(cs, c)
-		m.Logger.Info("extract data", zap.String("name", c.Name), zap.String("yyyymmdd", c.YYYYMMDD), zap.String("M_Category", c.MCategory), zap.String("price", c.Price))
+		m.Logger.Info("extract data", zap.String("name", c.Name), zap.String("yyyymmdd", c.YYYYMMDD), zap.String("m_category", c.MCategory), zap.String("price", c.Price))
 	}
 	m.Logger.Info("extract data and convert to mawinter model complete", zap.Int("extracted_records", len(cs)))
 
@@ -143,6 +143,6 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 	m.Logger.Info("record post mawinter history complete")
 
-	m.Logger.Info("Regist end")
+	m.Logger.Info("Regist end", zap.Int("add_checked_record", len(cfCheckedRecs)), zap.Int("add_registed_record", len(cfRegistedRecs)))
 	return nil
 }
