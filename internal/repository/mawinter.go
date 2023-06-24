@@ -13,6 +13,10 @@ type MawinterClient struct {
 	PostURL string // mawinter-server API のエンドポイント
 }
 
+func NewMawinterClient(posturl string) *MawinterClient {
+	return &MawinterClient{PostURL: posturl}
+}
+
 func (m *MawinterClient) Regist(ctx context.Context, c model.CFRecord) (err error) {
 	rec, err := model.NewCreateRecord(c)
 	if err != nil {
