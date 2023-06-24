@@ -9,8 +9,9 @@ bin:
 	-X main.build=$(git describe --tags)" \
 	-o build/bin/ ./...
 
-build:
+build: bin
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
+	docker build -t $(CONTAINER_NAME_MAW) -f build/Dockerfile-maw .
 
 start:
 	docker compose -f deployment/compose.yml up -d

@@ -32,12 +32,13 @@ type Mawinter struct {
 	Dryrun      bool              // DBの状態を変更しない、mawinter サーバに送信しない
 }
 
-func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
+func NewMawinter(db MongoDBClient, csv CSVFileOperator, dryRun bool) Mawinter {
 	var mawinter Mawinter
 	l := logger.NewLogger()
 	mawinter.Logger = l
 	mawinter.DBClient = db
 	mawinter.CSVFileOp = csv
+	mawinter.Dryrun = dryRun
 	return mawinter
 }
 
@@ -119,8 +120,14 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		// 抽出条件にあうものは categoryID をセットして追加
 		c.CategoryID = catID
 		cs = append(cs, c)
+		m.Logger.Info("extract data", zap.String("name", c.Name), zap.String("yyyymmdd", c.YYYYMMDD), zap.String("M_Category", c.MCategory), zap.String("price", c.Price))
 	}
 	m.Logger.Info("extract data and convert to mawinter model complete", zap.Int("extracted_records", len(cs)))
+
+	if m.Dryrun {
+		m.Logger.Info("Regist dry-run end")
+		return nil
+	}
 
 	m.Logger.Info("post to mawinter")
 	for _, c := range cs {
