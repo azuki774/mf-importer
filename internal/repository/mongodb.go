@@ -38,7 +38,7 @@ func (c *MongoDBClient) Disconnect(ctx context.Context) error {
 
 func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error) {
 	// 未登録の record を取得するための filter
-	filter := bson.D{{"maw_status", bson.D{{"$ne", true}}}}
+	filter := bson.D{{"maw_status_checked", bson.D{{"$ne", true}}}}
 	// filter := bson.D{}
 	coll := c.client.Database("mfimporter").Collection("detail")
 	cursor, err := coll.Find(ctx, filter)
@@ -54,11 +54,27 @@ func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFR
 }
 
 func (c *MongoDBClient) CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
-	// TODO
+	for _, cf := range cfRecords {
+		coll := c.client.Database("mfimporter").Collection("detail")
+		filter := bson.D{{"_id", cf.ID}}
+		update := bson.D{{"$set", bson.D{{"maw_status_checked", true}}}}
+		_, err = coll.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func (c *MongoDBClient) RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
-	// TODO
+	for _, cf := range cfRecords {
+		coll := c.client.Database("mfimporter").Collection("detail")
+		filter := bson.D{{"_id", cf.ID}}
+		update := bson.D{{"$set", bson.D{{"maw_status_registed", true}}}}
+		_, err = coll.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
