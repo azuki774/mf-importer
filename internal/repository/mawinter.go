@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"mf-importer/internal/model"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type MawinterClient struct {
+	Logger  *zap.Logger
 	PostURL string // mawinter-server API のエンドポイント
 }
 
@@ -50,5 +53,6 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.CFRecord) (err erro
 		return fmt.Errorf("unexpected code: %d", res.StatusCode)
 	}
 
+	m.Logger.Info("post records", zap.String("date", rec.Date), zap.Int64("category_id", rec.CategoryID), zap.Int64("price", rec.Price), zap.String("memo", rec.Memo))
 	return nil
 }

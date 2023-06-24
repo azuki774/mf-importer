@@ -139,7 +139,6 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 			m.Logger.Error("failed to insert", zap.Error(err))
 			return err
 		}
-		m.Logger.Info("post records", zap.String("yyyymmdd", c.YYYYMMDD), zap.String("price", c.Price), zap.String("memo", c.Name))
 	}
 	m.Logger.Info("post to mawinter complete")
 
