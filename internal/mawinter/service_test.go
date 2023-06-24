@@ -18,6 +18,7 @@ func TestMawinter_Regist(t *testing.T) {
 		CSVFileOp   CSVFileOperator
 		ExtractRule model.ExtractRule
 		ProcessDate time.Time
+		Dryrun      bool
 	}
 	type args struct {
 		ctx context.Context
@@ -40,6 +41,19 @@ func TestMawinter_Regist(t *testing.T) {
 			args:    args{ctx: context.Background()},
 			wantErr: false,
 		},
+		{
+			name: "ok (dryrun)",
+			fields: fields{
+				Logger:      logger.NewLogger(),
+				DBClient:    &mockDBClient{},
+				MawClient:   &mockMawinterClient{},
+				CSVFileOp:   &mockCSVFileOperator{},
+				ProcessDate: time.Now(),
+				Dryrun:      true,
+			},
+			args:    args{ctx: context.Background()},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,6 +64,7 @@ func TestMawinter_Regist(t *testing.T) {
 				CSVFileOp:   tt.fields.CSVFileOp,
 				ExtractRule: tt.fields.ExtractRule,
 				ProcessDate: tt.fields.ProcessDate,
+				Dryrun:      tt.fields.Dryrun,
 			}
 			if err := m.Regist(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("Mawinter.Regist() error = %v, wantErr %v", err, tt.wantErr)

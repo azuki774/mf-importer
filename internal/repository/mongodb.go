@@ -52,3 +52,13 @@ func (c *MongoDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFR
 
 	return cfRecords, nil
 }
+
+func (c *MongoDBClient) CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+	// TODO
+	return nil
+}
+
+func (c *MongoDBClient) RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+	// TODO
+	return nil
+}

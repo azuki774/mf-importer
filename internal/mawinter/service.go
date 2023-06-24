@@ -15,6 +15,8 @@ type CSVFileOperator interface {
 }
 type MongoDBClient interface {
 	GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error)
+	CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error)    // これらのレコードを mawinter check済とする
+	RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) // これらのレコードを mawinter regist済とする
 }
 type MawinterClient interface {
 	Regist(ctx context.Context, c model.CFRecord) (err error)
@@ -140,6 +142,17 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("post to mawinter complete")
 
 	m.Logger.Info("record post mawinter history")
+	err = m.DBClient.CheckCFRecords(ctx, cfRecs) // checked
+	if err != nil {
+		m.Logger.Error("failed to insert checked histories", zap.Error(err))
+		return err
+	}
+
+	err = m.DBClient.RegistedCFRecords(ctx, cs) // registed
+	if err != nil {
+		m.Logger.Error("failed to insert registed histories", zap.Error(err))
+		return err
+	}
 
 	m.Logger.Info("record post mawinter history complete")
 
