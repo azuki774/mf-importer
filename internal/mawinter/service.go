@@ -32,12 +32,13 @@ type Mawinter struct {
 	Dryrun      bool              // DBの状態を変更しない、mawinter サーバに送信しない
 }
 
-func NewMawinter(db MongoDBClient, csv CSVFileOperator) Mawinter {
+func NewMawinter(db MongoDBClient, csv CSVFileOperator, dryRun bool) Mawinter {
 	var mawinter Mawinter
 	l := logger.NewLogger()
 	mawinter.Logger = l
 	mawinter.DBClient = db
 	mawinter.CSVFileOp = csv
+	mawinter.Dryrun = dryRun
 	return mawinter
 }
 

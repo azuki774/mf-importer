@@ -56,7 +56,7 @@ func registMain() error {
 	defer db.Disconnect(ctx)
 
 	csv := &repository.CSVFileOperator{}
-	mw := mawinter.NewMawinter(db, csv)
+	mw := mawinter.NewMawinter(db, csv, dryRun)
 	if !dryRun {
 		l.Info("not yet implemented")
 		return nil
