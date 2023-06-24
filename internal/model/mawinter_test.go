@@ -77,6 +77,19 @@ func TestNewCreateRecord(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "ng",
+			args: args{
+				c: CFRecord{
+					YYYYMMDD:   "20230521",
+					Price:      "eeeeee-1,451",
+					CategoryID: 100,
+					Name:       "なまえA",
+				},
+			},
+			wantR:   CreateRecord{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

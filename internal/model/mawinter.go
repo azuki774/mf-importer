@@ -30,7 +30,7 @@ func NewCreateRecord(c CFRecord) (r CreateRecord, err error) {
 	// CategoryID: 100
 	price, err := convPriceForm(c.Price)
 	if err != nil {
-		return CreateRecord{}, nil
+		return CreateRecord{}, err
 	}
 
 	r = CreateRecord{
