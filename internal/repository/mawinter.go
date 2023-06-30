@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
 	"net/http"
 
@@ -17,7 +18,8 @@ type MawinterClient struct {
 }
 
 func NewMawinterClient(posturl string) *MawinterClient {
-	return &MawinterClient{PostURL: posturl}
+	l := logger.NewLogger()
+	return &MawinterClient{Logger: l, PostURL: posturl}
 }
 
 func (m *MawinterClient) Regist(ctx context.Context, c model.CFRecord) (err error) {
