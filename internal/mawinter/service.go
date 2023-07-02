@@ -15,6 +15,8 @@ type CSVFileOperator interface {
 }
 type MongoDBClient interface {
 	GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error)
+	CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error)    // これらのレコードを mawinter check済とする
+	RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) // これらのレコードを mawinter regist済とする
 }
 type MawinterClient interface {
 	Regist(ctx context.Context, c model.CFRecord) (err error)
@@ -32,12 +34,13 @@ type Mawinter struct {
 	Dryrun      bool              // DBの状態を変更しない、mawinter サーバに送信しない
 }
 
-func NewMawinter(db MongoDBClient, csv CSVFileOperator, dryRun bool) Mawinter {
+func NewMawinter(db MongoDBClient, csv CSVFileOperator, maw MawinterClient, dryRun bool) Mawinter {
 	var mawinter Mawinter
 	l := logger.NewLogger()
 	mawinter.Logger = l
 	mawinter.DBClient = db
 	mawinter.CSVFileOp = csv
+	mawinter.MawClient = maw
 	mawinter.Dryrun = dryRun
 	return mawinter
 }
@@ -102,16 +105,16 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("extract rule CSV load complete")
 
 	m.Logger.Info("fetch records from DB")
-	cfRecs, err := m.DBClient.GetCFRecords(ctx)
+	cfCheckedRecs, err := m.DBClient.GetCFRecords(ctx)
 	if err != nil {
 		m.Logger.Error("failed to fetch records from DB", zap.Error(err))
 		return err
 	}
-	m.Logger.Info("fetch records from DB complete", zap.Int("unregisted_records", len(cfRecs)))
+	m.Logger.Info("fetch records from DB complete", zap.Int("unchecked_records", len(cfCheckedRecs)))
 
 	m.Logger.Info("extract data and convert to mawinter model")
-	var cs []model.CFRecord // cfRecs から抽出条件にあうものを入れる
-	for _, c := range cfRecs {
+	var cfRegistedRecs []model.CFRecord // cfCheckedRecs から抽出条件にあうものを入れる
+	for _, c := range cfCheckedRecs {
 		catID, ok := m.getCategoryIDwithExtractCond(c)
 		if !ok {
 			continue
@@ -119,10 +122,10 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 		// 抽出条件にあうものは categoryID をセットして追加
 		c.CategoryID = catID
-		cs = append(cs, c)
-		m.Logger.Info("extract data", zap.String("name", c.Name), zap.String("yyyymmdd", c.YYYYMMDD), zap.String("M_Category", c.MCategory), zap.String("price", c.Price))
+		cfRegistedRecs = append(cfRegistedRecs, c)
+		m.Logger.Info("extract data", zap.String("name", c.Name), zap.String("yyyymmdd", c.YYYYMMDD), zap.String("m_category", c.MCategory), zap.String("price", c.Price))
 	}
-	m.Logger.Info("extract data and convert to mawinter model complete", zap.Int("extracted_records", len(cs)))
+	m.Logger.Info("extract data and convert to mawinter model complete", zap.Int("extracted_records", len(cfRegistedRecs)))
 
 	if m.Dryrun {
 		m.Logger.Info("Regist dry-run end")
@@ -130,7 +133,7 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	}
 
 	m.Logger.Info("post to mawinter")
-	for _, c := range cs {
+	for _, c := range cfRegistedRecs {
 		err := m.MawClient.Regist(ctx, c)
 		if err != nil {
 			m.Logger.Error("failed to insert", zap.Error(err))
@@ -140,9 +143,20 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("post to mawinter complete")
 
 	m.Logger.Info("record post mawinter history")
+	err = m.DBClient.CheckCFRecords(ctx, cfCheckedRecs) // checked
+	if err != nil {
+		m.Logger.Error("failed to insert checked histories", zap.Error(err))
+		return err
+	}
+
+	err = m.DBClient.RegistedCFRecords(ctx, cfRegistedRecs) // registed
+	if err != nil {
+		m.Logger.Error("failed to insert registed histories", zap.Error(err))
+		return err
+	}
 
 	m.Logger.Info("record post mawinter history complete")
 
-	m.Logger.Info("Regist end")
+	m.Logger.Info("Regist end", zap.Int("add_checked_record", len(cfCheckedRecs)), zap.Int("add_registed_record", len(cfRegistedRecs)))
 	return nil
 }

@@ -3,6 +3,7 @@ module mf-importer
 go 1.20
 
 require (
+	github.com/jarcoal/httpmock v1.3.0
 	github.com/spf13/cobra v1.7.0
 	go.mongodb.org/mongo-driver v1.11.7
 	go.uber.org/zap v1.24.0

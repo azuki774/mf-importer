@@ -48,6 +48,7 @@ func registMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
 	l.Info("using DB uri", zap.String("db_uri", os.Getenv("db_uri")))
+	l.Info("using mawinter API post endpoint", zap.String("api_uri", os.Getenv("api_uri")))
 	db, err := repository.NewMongoDB(ctx, os.Getenv("db_uri"))
 	if err != nil {
 		l.Error("failed to connect DB", zap.Error(err))
@@ -56,17 +57,13 @@ func registMain() error {
 	defer db.Disconnect(ctx)
 
 	csv := &repository.CSVFileOperator{}
-	mw := mawinter.NewMawinter(db, csv, dryRun)
-	if !dryRun {
-		l.Info("not yet implemented")
-		return nil
-	}
+	maw := repository.NewMawinterClient(os.Getenv("api_uri"))
+	mw := mawinter.NewMawinter(db, csv, maw, dryRun)
 
 	err = mw.Regist(ctx)
 	if err != nil {
 		return err
 	}
 
-	l.Info("registMain end")
 	return nil
 }

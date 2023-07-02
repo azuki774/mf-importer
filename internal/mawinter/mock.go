@@ -79,3 +79,11 @@ func (m *mockDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRe
 		},
 	}, nil
 }
+
+func (m *mockDBClient) CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+	return nil
+}
+
+func (m *mockDBClient) RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+	return nil
+}
