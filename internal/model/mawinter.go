@@ -9,7 +9,7 @@ const mfImportFromStr = "mf-importer"
 
 type CreateRecord struct {
 	CategoryID int64  `json:"category_id"`
-	Date       string `json:"date"` // YYYYMMDD
+	Date       string `json:"datetime"` // YYYYMMDD
 	Price      int64  `json:"price"`
 	From       string `json:"from"`
 	Type       string `json:"type"`
