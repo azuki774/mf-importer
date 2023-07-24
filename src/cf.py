@@ -152,7 +152,12 @@ def get(filePath):
     insert_num = 0
     for data in inserted_data:
         find = collection_depo.find_one(
-            filter={"yyyymmdd": data["yyyymmdd"], "yyyymm_id": data["yyyymm_id"]}
+            # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断する）
+            filter={
+                "yyyymmdd": data["yyyymmdd"],
+                "name": data["name"],
+                "price": data["price"],
+            }
         )
         if find == None:
             # 未登録なら 登録
