@@ -16,7 +16,11 @@ json_fmt = jsonlogger.JsonFormatter(
 h.setFormatter(json_fmt)
 logger.addHandler(h)
 
-FURIKAE_NAME = ["(カ) ジエ-シ-ビ-"]  # （振替）対象となり、フィールドの名称が異なるもの
+FURIKAE_NAME = [
+    "(カ) ジエ-シ-ビ-",
+    "ミツイスミトモカ-ド (カ",
+    "SBI証券投信積立サービス",
+]  # （振替）対象となり、フィールドの名称が異なるもの
 
 
 def _dbClient():
