@@ -1,0 +1,4 @@
+local:
+    dialect: mysql
+    dir: db/
+    datasource: root:password@tcp(127.0.0.1)/mawinter?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true
