@@ -120,7 +120,7 @@ def get(filePath):
         )
         ins_data["name"] = name_list.pop()
         ins_data["raw_price"] = price_list.pop()
-        # TODO: "price"
+        ins_data["price"] = format.get_price_frow_raw(ins_data["raw_price"])
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:

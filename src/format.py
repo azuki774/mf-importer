@@ -18,3 +18,13 @@ def get_yyyymmdd_from_procdate(proc_yyyymmdd, date):
 
     # 通常パターン
     return proc_yyyymmdd_yyyy + date_mm + date_dd
+
+
+def get_price_frow_raw(raw_price):
+    """
+    '-1,250'みたいなやつを1250にする
+    """
+
+    price = raw_price.replace("-", "")
+    price = price.replace(",", "")
+    return int(price)
