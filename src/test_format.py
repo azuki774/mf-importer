@@ -1,4 +1,4 @@
-import cf
+import format
 
 
 def test_get_yyyymmdd_from_procdate():
@@ -16,6 +16,6 @@ def test_get_yyyymmdd_from_procdate():
     ]
 
     for t in tt:
-        assert t["want"] == cf._get_yyyymmdd_from_procdate(
+        assert t["want"] == format.get_yyyymmdd_from_procdate(
             t["proc_yyyymmdd"], t["date"]
         )

@@ -5,6 +5,7 @@ import logging
 import os
 from pythonjsonlogger import jsonlogger
 import pymongo
+import format
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -112,25 +113,22 @@ def get(filePath):
 
     for i in range(date_num):
         ins_data = {}
-        ins_data["regist_date"] = proc_yyyymmdd
-
-        ins_data["date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
-        ins_data["name"] = name_list.pop()
-        ins_data["price"] = price_list.pop()
-
         ins_data["yyyymm_id"] = i + 1  # 利用月ごとのID
-        ins_data["yyyymmdd"] = _get_yyyymmdd_from_procdate(
-            proc_yyyymmdd, ins_data["date"]
+        ins_data["raw_date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
+        ins_data["date"] = format.get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["raw_date"]
         )
-        ins_data["yyyymm"] = _get_yyyymmdd_from_procdate(
-            proc_yyyymmdd, ins_data["date"]
-        )[:6]
+        ins_data["name"] = name_list.pop()
+        ins_data["raw_price"] = price_list.pop()
+        # TODO: "price"
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:
             ins_data["fin_ins"] = note_list.pop()
             ins_data["l_category"] = v_l_ctg_list.pop()
             ins_data["m_category"] = v_m_ctg_list.pop()
+
+        ins_data["regist_date"] = proc_yyyymmdd
         inserted_data.append(ins_data)
 
     v_l_ctg_list.pop()  # 未分類がなぜか最初につくので、最後に pop にする
@@ -148,19 +146,24 @@ def get(filePath):
         logger.error("failed to parse")
         return 1
 
+    _insert(inserted_data)
+    return 0
+
+
+def _insert(insert_data):
     client = _dbClient()
     db = client.mfimporter
     collection_depo = db.detail
 
     loaded_num = 0
     insert_num = 0
-    for data in inserted_data:
+    for data in insert_data:
         find = collection_depo.find_one(
             # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断する）
             filter={
-                "yyyymmdd": data["yyyymmdd"],
+                "raw_date": data["raw_date"],
                 "name": data["name"],
-                "price": data["price"],
+                "raw_price": data["raw_price"],
             }
         )
         if find == None:
@@ -175,25 +178,3 @@ def get(filePath):
         "skipped already inserted records: {0} records".format(loaded_num - insert_num)
     )
     return 0
-
-
-def _get_yyyymmdd_from_procdate(proc_yyyymmdd, date):
-    """
-    proc_yyyymmdd をベースにして、date フィールドから yyyymmdd を取得する
-    date フィールドは '05/09(火)' のような表記のため
-
-    proc_yyyymmdd = 20230519 , 05/15（ ）なら 20230515
-    proc_yyyymmdd = 20230101 , 12/15（ ）なら 20221215
-    """
-
-    proc_yyyymmdd_yyyy = proc_yyyymmdd[:4]
-    proc_yyyymmdd_mm = proc_yyyymmdd[4:6]
-    date_mm = date[:2]
-    date_dd = date[3:5]
-
-    if proc_yyyymmdd_mm == "01" and date_mm == "12":
-        # 年が変わるパターンだけ例外
-        return str(int(proc_yyyymmdd_yyyy) - 1) + date_mm + date_dd
-
-    # 通常パターン
-    return proc_yyyymmdd_yyyy + date_mm + date_dd
