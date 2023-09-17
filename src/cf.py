@@ -164,7 +164,7 @@ def _insert(insert_data):
         for data in insert_data:
             loaded_num += 1
             # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断するため）
-            pre_serarch_query = (
+            pre_search_query = (
                 "SELECT count(1) FROM detail "
                 "WHERE raw_date = %s "
                 "AND   name = %s "
@@ -172,7 +172,7 @@ def _insert(insert_data):
             )
 
             cur.execute(
-                pre_serarch_query, (data["raw_date"], data["name"], data["raw_price"])
+                pre_search_query, (data["raw_date"], data["name"], data["raw_price"])
             )
             rows = cur.fetchall()
             num = rows[0][0]  # count(1) の結果の数字を取得
