@@ -24,11 +24,13 @@ debug:
 pytest:
 	dbpass="password" pytest -v
 
-test: pytest
+gotest: 
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...
 	go test -v ./...
+
+test: pytest gotest
 
 migration:
 	cd migration; \
