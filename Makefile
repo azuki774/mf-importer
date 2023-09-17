@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 
@@ -20,7 +22,7 @@ debug:
 	docker compose -f deployment/compose.yml up
 
 pytest:
-	pytest -v
+	dbpass="password" pytest -v
 
 test:
 	gofmt -l .
@@ -30,5 +32,5 @@ test:
 
 migration:
 	cd migration; \
-	sql-migrate up -env=local; \
+	${SQL_MIGRATE_BIN} up -env=local; \
 	cd ../

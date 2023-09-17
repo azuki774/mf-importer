@@ -26,7 +26,10 @@ FURIKAE_NAME = [
 
 def _dbClient():
     cnx = mysql.connector.connect(
-        user="root", database="mfimporter", password=os.getenv("pass")
+        user="root",
+        host=os.environ.get("dbhost", "127.0.0.1"),
+        database="mfimporter",
+        password=os.getenv("dbpass"),
     )
     cnx.autocommit = False
     return cnx
