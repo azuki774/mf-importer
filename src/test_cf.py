@@ -18,11 +18,12 @@ def test_insert():
 
     cnx.commit()
     cnx.close()
+
     tt = [
         {  # Case 1: id = 1,2は登録済で 3を新規登録
             "insert_data": [
                 {
-                    "yyyymm_id": "1",
+                    "yyyymm_id": 1,
                     "raw_date": "01/01(火)",
                     "date": "2010-01-01",
                     "name": "テスト",
@@ -34,7 +35,7 @@ def test_insert():
                     "regist_date": "2010-01-04",
                 },
                 {
-                    "yyyymm_id": "2",
+                    "yyyymm_id": 2,
                     "raw_date": "01/02(水)",
                     "date": "2010-01-02",
                     "name": "テスト",
@@ -46,10 +47,10 @@ def test_insert():
                     "regist_date": "2010-01-04",
                 },
                 {
-                    "yyyymm_id": "3",
+                    "yyyymm_id": 3,
                     "raw_date": "01/02(水)",
                     "date": "2010-01-02",
-                    "name": "テスト2",
+                    "name": "テストINSERT",
                     "raw_price": "-123,456",
                     "price": 123456,
                     "fin_ins": "",
@@ -62,5 +63,21 @@ def test_insert():
         }
     ]
 
-    for t in tt:
-        assert t["want"] == cf._insert(t["insert_data"])
+    try:
+        for t in tt:
+            assert t["want"] == cf._insert(t["insert_data"])
+    finally:
+        # delete testdata
+        os.environ["pass"] = "password"
+        cnx = cf._dbClient()
+        cur = cnx.cursor(buffered=True)
+
+        queries = [
+            "DELETE FROM detail WHERE id = 100 OR id = 101;",
+            "DELETE FROM detail WHERE name = 'テストINSERT'",
+        ]
+        for q in queries:
+            cur.execute(q)
+
+        cnx.commit()
+        cnx.close()

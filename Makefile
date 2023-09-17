@@ -24,7 +24,7 @@ debug:
 pytest:
 	dbpass="password" pytest -v
 
-test:
+test: pytest
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...

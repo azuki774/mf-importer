@@ -6,6 +6,7 @@ import os
 from pythonjsonlogger import jsonlogger
 import mysql.connector
 import format
+import traceback
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -114,7 +115,7 @@ def get(filePath):
 
     for i in range(date_num):
         ins_data = {}
-        ins_data["yyyymm_id"] = i + 1  # 利用月ごとのID
+        ins_data["yyyymm_id"] = int(i + 1)  # 利用月ごとのID
         ins_data["raw_date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
         ins_data["date"] = format.get_yyyymmdd_from_procdate(
             proc_yyyymmdd, ins_data["raw_date"]
@@ -173,17 +174,51 @@ def _insert(insert_data):
                 "AND   name = %s "
                 "AND   raw_price = %s "
             )
-
             cur.execute(
                 pre_search_query, (data["raw_date"], data["name"], data["raw_price"])
             )
             rows = cur.fetchall()
             num = rows[0][0]  # count(1) の結果の数字を取得
+            print(num)
             if num == 0:
                 # 未登録なら 登録
+                insert_query = """
+                    INSERT INTO detail(
+                        yyyymm_id, 
+                        date,
+                        name,
+                        price, 
+                        fin_ins, 
+                        l_category, 
+                        m_category, 
+                        regist_date, 
+                        raw_date, 
+                        raw_price
+                    ) 
+                    VALUES 
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """
+                print(data)
+                cur.execute(
+                    insert_query,
+                    (
+                        data["yyyymm_id"],
+                        data["date"],
+                        data["name"],
+                        data["price"],
+                        data["fin_ins"],
+                        data["l_category"],
+                        data["m_category"],
+                        data["regist_date"],
+                        data["raw_date"],
+                        data["raw_price"],
+                    ),
+                ),
+
                 insert_num += 1
         cnx.commit()
     except Exception as e:
+        traceback.print_exc()
         logger.info("failed to insert records: {0}".format(str(e)))
         cnx.rollback()
     finally:
