@@ -28,8 +28,9 @@ func TestMawinterClient_Regist(t *testing.T) {
 		PostURL string
 	}
 	type args struct {
-		ctx context.Context
-		c   model.CFRecord
+		ctx   context.Context
+		c     model.Detail
+		catID int
 	}
 	tests := []struct {
 		name    string
@@ -45,12 +46,12 @@ func TestMawinterClient_Regist(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				c: model.CFRecord{
-					YYYYMMDD:   "20230521",
-					Price:      "-1,451",
-					CategoryID: 100,
-					Name:       "なまえA",
+				c: model.Detail{
+					Date:  "2023-01-01",
+					Price: 1451,
+					Name:  "なまえA",
 				},
+				catID: 100,
 			},
 			wantErr: false,
 		},
@@ -62,29 +63,12 @@ func TestMawinterClient_Regist(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				c: model.CFRecord{
-					YYYYMMDD:   "20230521",
-					Price:      "-1,451",
-					CategoryID: 100,
-					Name:       "なまえA",
+				c: model.Detail{
+					Date:  "2023-01-01",
+					Price: 1451,
+					Name:  "なまえA",
 				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "error data",
-			fields: fields{
-				Logger:  logger.NewLogger(),
-				PostURL: "http://localhost:8080/v2/record",
-			},
-			args: args{
-				ctx: context.Background(),
-				c: model.CFRecord{
-					YYYYMMDD:   "20230521",
-					Price:      "eeeeeeee-1,451",
-					CategoryID: 100,
-					Name:       "なまえA",
-				},
+				catID: 100,
 			},
 			wantErr: true,
 		},
@@ -95,7 +79,7 @@ func TestMawinterClient_Regist(t *testing.T) {
 				Logger:  tt.fields.Logger,
 				PostURL: tt.fields.PostURL,
 			}
-			if err := m.Regist(tt.args.ctx, tt.args.c); (err != nil) != tt.wantErr {
+			if err := m.Regist(tt.args.ctx, tt.args.c, tt.args.catID); (err != nil) != tt.wantErr {
 				t.Errorf("MawinterClient.Regist() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

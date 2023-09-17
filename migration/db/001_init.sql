@@ -22,8 +22,18 @@ CREATE TABLE `detail` (
   INDEX `idx3` (`raw_price`)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-
+CREATE TABLE `extract_rule` (
+  `id` INT NOT NULL AUTO_INCREMENT comment 'primary id',
+  `field_name` TEXT NOT NULL comment 'extract field name (m_category or name)',
+  `value` TEXT NOT NULL,
+  `exact_match` INT comment 'exact match = 1 or not 0',
+  `category_id` INT NOT NULL comment 'mawinter category id',
+  `created_at` datetime  default current_timestamp,
+  `updated_at` timestamp default current_timestamp on update current_timestamp,
+  PRIMARY KEY (`id`)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- +migrate Down
 
 DROP TABLE `detail`;
+DROP TABLE `extract_rule`;

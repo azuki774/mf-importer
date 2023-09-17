@@ -198,7 +198,7 @@ def _insert(insert_data):
                     VALUES 
                     (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
                     """
-                print(data)
+
                 cur.execute(
                     insert_query,
                     (

@@ -3,9 +3,10 @@ package mawinter
 import (
 	"context"
 	"mf-importer/internal/model"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
+
+var NULLtimeTime = time.Time{}
 
 var forTestExtractRule model.ExtractRule = model.ExtractRule{
 	FromName:        map[string]int{"かんぜんいっち": 100},
@@ -18,72 +19,45 @@ type mockMawinterClient struct{}
 type mockDBClient struct {
 }
 
-func (m *mockMawinterClient) Regist(ctx context.Context, c model.CFRecord) (err error) {
+func (m *mockMawinterClient) Regist(ctx context.Context, c model.Detail, catID int) (err error) {
 	return nil
 }
 
-type mockCSVFileOperator struct {
-}
-
-func (m *mockCSVFileOperator) LoadExtractCSV(path string) (es []model.ExtractRuleCSV, err error) {
-	es = []model.ExtractRuleCSV{
+func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
+	return []model.Detail{
 		{
-			FieldName:        "name",
-			Name:             "ふぃーるど１",
-			ExtractCondition: true,
-			CategoryID:       100,
+			ID:           11,
+			YYYYMMID:     1,
+			Date:         "2023-01-01",
+			RawDate:      "01/01（火）",
+			Name:         "ふぃーるど１",
+			Price:        1234,
+			LCategory:    "大分類",
+			MCategory:    "中分類",
+			MawCheckDate: NULLtimeTime,
 		},
 		{
-			FieldName:        "name",
-			Name:             "ふぃーるど２",
-			ExtractCondition: false,
-			CategoryID:       200,
-		},
-		{
-			FieldName:        "m_category",
-			Name:             "ふぃーるど３",
-			ExtractCondition: true,
-			CategoryID:       300,
-		},
-		{
-			FieldName:        "m_category",
-			Name:             "ふぃーるど４",
-			ExtractCondition: false,
-			CategoryID:       400,
-		},
-	}
-	return es, nil
-}
-
-func (m *mockDBClient) GetCFRecords(ctx context.Context) (cfRecords []model.CFRecord, err error) {
-	return []model.CFRecord{
-		{
-			ID:        primitive.ObjectID([12]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-			RegistID:  1,
-			YYYYMMDD:  "20230101",
-			Date:      "01/01（火）",
-			Name:      "ふぃーるど１",
-			Price:     "-1,234",
-			LCategory: "大分類",
-			MCategory: "中分類",
-		},
-		{
-			ID:        primitive.ObjectID([12]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
-			RegistID:  2,
-			YYYYMMDD:  "20230102",
-			Date:      "01/02（水）",
-			Name:      "ふぃーるど５",
-			Price:     "-1,234",
-			LCategory: "大分類",
-			MCategory: "中分類",
+			ID:           12,
+			YYYYMMID:     2,
+			Date:         "2023-01-02",
+			RawDate:      "01/02（水）",
+			Name:         "ふぃーるど５",
+			Price:        1234,
+			LCategory:    "大分類",
+			MCategory:    "中分類",
+			MawCheckDate: NULLtimeTime,
 		},
 	}, nil
 }
 
-func (m *mockDBClient) CheckCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+func (m *mockDBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
 	return nil
 }
 
-func (m *mockDBClient) RegistedCFRecords(ctx context.Context, cfRecords []model.CFRecord) (err error) {
+func (m *mockDBClient) RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
 	return nil
+}
+
+func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
+	return []model.ExtractRuleDB{}, nil // TODO
 }
