@@ -1,32 +1,24 @@
 version: '3'
 services:
-  mf-importer-portofolio:
-    image: mf-importer
-    container_name: mf-importer-portofolio
-    command: [ "portofolio" ]
-    volumes:
-      - ./:/data/
-    depends_on:
-      - mf-importer-db
-    environment:
-      - db_pass=pass
-
-  mf-importer-lastmonth:
-    image: mf-importer
-    container_name: mf-importer-lastmonth
-    command: [ "cf", "--lastmonth", "True" ]
-    volumes:
-      - ./:/data/
-    depends_on:
-      - mf-importer-db
-    environment:
-      - db_pass=pass
+  # mf-importer-lastmonth:
+  #   image: mf-importer
+  #   container_name: mf-importer-lastmonth
+  #   command: [ "cf", "--lastmonth", "True" ]
+  #   volumes:
+  #     - ./:/data/
+  #   depends_on:
+  #     - mf-importer-db
+  #   environment:
+  #     - db_pass=pass
 
   mf-importer-db:
-    image: mongo:6.0
+    image: mariadb:10.9
     container_name: mf-importer-db
     ports:
-      - "27017:27017"
+      - "3306:3306"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=pass
+      - MYSQL_DATABASE=mfimporter
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=pwd
+      - TZ=Asia/Tokyo

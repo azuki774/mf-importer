@@ -4,7 +4,7 @@ import datetime
 import logging
 import os
 from pythonjsonlogger import jsonlogger
-import pymongo
+import mysql.connector
 import format
 
 logger = logging.getLogger(__name__)
@@ -25,13 +25,10 @@ FURIKAE_NAME = [
 
 
 def _dbClient():
-    client = pymongo.MongoClient(
-        "mf-importer-db",
-        27017,
-        username="root",
-        password=os.getenv("db_pass"),
+    cnx = mysql.connector.connect(
+        user="root", database="mfimporter", password=os.getenv("pass")
     )
-    return client
+    return cnx
 
 
 def get(filePath):
@@ -151,30 +148,37 @@ def get(filePath):
 
 
 def _insert(insert_data):
-    client = _dbClient()
-    db = client.mfimporter
-    collection_depo = db.detail
+    """
+    引数の insert_data を実際にDB - detailに挿入する。
+    その仮定で既に登録済だと思われるものは省略する。
+    [insert_num, skip_num] を返す。
+    """
+    cnx = _dbClient()
+    cur = cnx.cursor(buffered=True)
 
     loaded_num = 0
     insert_num = 0
     for data in insert_data:
-        find = collection_depo.find_one(
-            # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断する）
-            filter={
-                "raw_date": data["raw_date"],
-                "name": data["name"],
-                "raw_price": data["raw_price"],
-            }
+        loaded_num += 1
+        # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断するため）
+        pre_serarch_query = (
+            "SELECT count(1) FROM detail "
+            "WHERE raw_date = %s "
+            "AND   name = %s "
+            "AND   raw_price = %s "
         )
-        if find == None:
+        print(pre_serarch_query)
+        cur.execute(
+            pre_serarch_query, (data["raw_date"], data["name"], data["raw_price"])
+        )
+        rows = cur.fetchall()
+        num = rows[0][0]  # count(1) の結果の数字を取得
+        print(rows)
+        if num == 0:
             # 未登録なら 登録
-            collection_depo.insert_one(data)
             insert_num += 1
 
-        loaded_num += 1
-
+    skip_num = loaded_num - insert_num
     logger.info("inserted new detail successfully: {0} records".format(insert_num))
-    logger.info(
-        "skipped already inserted records: {0} records".format(loaded_num - insert_num)
-    )
-    return 0
+    logger.info("skipped already inserted records: {0} records".format(skip_num))
+    return [insert_num, skip_num]
