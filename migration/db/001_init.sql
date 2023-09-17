@@ -20,7 +20,7 @@ CREATE TABLE `detail` (
   INDEX `idx1` (`maw_check_date`),
   INDEX `idx2` (`name`),
   INDEX `idx3` (`raw_price`)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 
 
