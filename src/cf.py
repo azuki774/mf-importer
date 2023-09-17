@@ -28,6 +28,7 @@ def _dbClient():
     cnx = mysql.connector.connect(
         user="root", database="mfimporter", password=os.getenv("pass")
     )
+    cnx.autocommit = False
     return cnx
 
 
@@ -158,27 +159,35 @@ def _insert(insert_data):
 
     loaded_num = 0
     insert_num = 0
-    for data in insert_data:
-        loaded_num += 1
-        # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断するため）
-        pre_serarch_query = (
-            "SELECT count(1) FROM detail "
-            "WHERE raw_date = %s "
-            "AND   name = %s "
-            "AND   raw_price = %s "
-        )
-        print(pre_serarch_query)
-        cur.execute(
-            pre_serarch_query, (data["raw_date"], data["name"], data["raw_price"])
-        )
-        rows = cur.fetchall()
-        num = rows[0][0]  # count(1) の結果の数字を取得
-        print(rows)
-        if num == 0:
-            # 未登録なら 登録
-            insert_num += 1
+
+    try:
+        for data in insert_data:
+            loaded_num += 1
+            # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断するため）
+            pre_serarch_query = (
+                "SELECT count(1) FROM detail "
+                "WHERE raw_date = %s "
+                "AND   name = %s "
+                "AND   raw_price = %s "
+            )
+
+            cur.execute(
+                pre_serarch_query, (data["raw_date"], data["name"], data["raw_price"])
+            )
+            rows = cur.fetchall()
+            num = rows[0][0]  # count(1) の結果の数字を取得
+            if num == 0:
+                # 未登録なら 登録
+                insert_num += 1
+        cnx.commit()
+    except Exception as e:
+        logger.info("failed to insert records: {0}".format(str(e)))
+        cnx.rollback()
+    finally:
+        cnx.close()
 
     skip_num = loaded_num - insert_num
+
     logger.info("inserted new detail successfully: {0} records".format(insert_num))
     logger.info("skipped already inserted records: {0} records".format(skip_num))
     return [insert_num, skip_num]
