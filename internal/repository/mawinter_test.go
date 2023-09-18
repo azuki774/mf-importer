@@ -5,6 +5,7 @@ import (
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"go.uber.org/zap"
@@ -47,7 +48,7 @@ func TestMawinterClient_Regist(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				c: model.Detail{
-					Date:  "2023-01-01",
+					Date:  time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
 					Price: 1451,
 					Name:  "なまえA",
 				},
@@ -64,7 +65,7 @@ func TestMawinterClient_Regist(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				c: model.Detail{
-					Date:  "2023-01-01",
+					Date:  time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
 					Price: 1451,
 					Name:  "なまえA",
 				},

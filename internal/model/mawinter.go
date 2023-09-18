@@ -1,7 +1,5 @@
 package model
 
-import "strings"
-
 const mfImportFromStr = "mf-importer"
 
 type CreateRecord struct {
@@ -16,7 +14,7 @@ type CreateRecord struct {
 func NewCreateRecord(c Detail, catID int) (r CreateRecord, err error) {
 	r = CreateRecord{
 		CategoryID: int64(catID),
-		Date:       strings.Replace(c.Date, "-", "", -1),
+		Date:       c.Date.Format("20060102"),
 		Price:      int64(c.Price),
 		From:       mfImportFromStr,
 		Memo:       c.Name, // メモ欄に元々の名前を入れる

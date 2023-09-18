@@ -11,7 +11,7 @@ import (
 )
 
 type DBClient interface {
-	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error)
+	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error)  // mawinter check未チェックのデータを取得
 	CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error)    // これらのレコードを mawinter check済とする
 	RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) // これらのレコードを mawinter regist済とする
 	GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error)
@@ -87,7 +87,6 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("fetch records from DB complete")
 
 	for _, c := range cfDetails {
-
 		catID, ok := m.getCategoryIDwithExtractCond(c)
 		if !ok {
 			// categoryID がない -> 抽出条件がないとき

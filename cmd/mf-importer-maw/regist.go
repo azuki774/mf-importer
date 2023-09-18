@@ -47,19 +47,41 @@ func init() {
 func registMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
+	host := os.Getenv("db_host")
+	port := os.Getenv("db_port")
+	user := os.Getenv("db_user")
+	pass := os.Getenv("db_pass")
+	name := os.Getenv("db_name")
+
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	if port == "" {
+		port = "3306"
+	}
+	if user == "" {
+		user = "root"
+	}
+	if pass == "" {
+		pass = "password"
+	}
+	if name == "" {
+		name = "mfimporter"
+	}
+
 	l.Info("using DB info",
-		zap.String("db_host", os.Getenv("db_host")),
-		zap.String("db_port", os.Getenv("db_port")),
-		zap.String("db_user", os.Getenv("db_user")),
-		zap.String("db_name", os.Getenv("db_name")),
+		zap.String("db_host", host),
+		zap.String("db_port", port),
+		zap.String("db_user", user),
+		zap.String("db_name", name),
 	)
 	l.Info("using mawinter API post endpoint", zap.String("api_uri", os.Getenv("api_uri")))
 	db, err := repository.NewDBRepository(
-		os.Getenv("db_host"),
-		os.Getenv("db_port"),
-		os.Getenv("db_user"),
-		os.Getenv("db_pass"),
-		os.Getenv("db_name"),
+		host,
+		port,
+		user,
+		pass,
+		name,
 	)
 	if err != nil {
 		l.Error("failed to connect DB", zap.Error(err))

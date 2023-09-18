@@ -46,45 +46,36 @@ func (d *DBClient) CloseDB() (err error) {
 	return dbconn.Close()
 }
 
-func (m *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
-	// mock
-	return []model.Detail{
-		{
-			ID:           11,
-			YYYYMMID:     1,
-			Date:         "2023-01-01",
-			RawDate:      "01/01（火）",
-			Name:         "ふぃーるど１",
-			Price:        1234,
-			LCategory:    "大分類",
-			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
-		},
-		{
-			ID:           12,
-			YYYYMMID:     2,
-			Date:         "2023-01-02",
-			RawDate:      "01/02（水）",
-			Name:         "ふぃーるど５",
-			Price:        1234,
-			LCategory:    "大分類",
-			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
-		},
-	}, nil
+func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
+	result := d.Conn.Table("detail").Where("maw_check_date IS NULL").Find(&cfRecords)
+	if result.Error != nil {
+		return []model.Detail{}, result.Error
+	}
+	return cfRecords, nil
 }
 
-func (m *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
-	// mock
+func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
+	id := cfDetail.ID
+	result := d.Conn.Table("detail").Where("ID = ?", id).Update("maw_check_date", time.Now())
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }
 
-func (m *DBClient) RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
-	// mock
+func (d *DBClient) RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
+	id := cfDetail.ID
+	result := d.Conn.Table("detail").Where("ID = ?", id).Update("maw_check_date", time.Now())
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }
 
-func (m *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
-	// mock
-	return []model.ExtractRuleDB{}, nil // TODO
+func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
+	result := d.Conn.Table("extract_rule").Find(&er)
+	if result.Error != nil {
+		return []model.ExtractRuleDB{}, result.Error
+	}
+	return er, nil
 }
