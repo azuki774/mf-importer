@@ -1,15 +1,16 @@
 version: '3'
 services:
-  # mf-importer-lastmonth:
-  #   image: mf-importer
-  #   container_name: mf-importer-lastmonth
-  #   command: [ "cf", "--lastmonth", "True" ]
-  #   volumes:
-  #     - ./:/data/
-  #   depends_on:
-  #     - mf-importer-db
-  #   environment:
-  #     - db_pass=pass
+  mf-importer-lastmonth:
+    image: mf-importer
+    container_name: mf-importer-lastmonth
+    command: [ "cf", "--lastmonth", "True" ]
+    volumes:
+      - ./:/data/
+    depends_on:
+      - mf-importer-db
+    environment:
+      - db_host=mf-importer-db
+      - db_pass=password
 
   mf-importer-db:
     image: mariadb:10.9

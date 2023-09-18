@@ -28,9 +28,9 @@ FURIKAE_NAME = [
 def _dbClient():
     cnx = mysql.connector.connect(
         user="root",
-        host=os.environ.get("dbhost", "127.0.0.1"),
+        host=os.environ.get("db_host", "127.0.0.1"),
         database="mfimporter",
-        password=os.getenv("dbpass"),
+        password=os.getenv("db_pass"),
     )
     cnx.autocommit = False
     return cnx
@@ -129,6 +129,10 @@ def get(filePath):
             ins_data["fin_ins"] = note_list.pop()
             ins_data["l_category"] = v_l_ctg_list.pop()
             ins_data["m_category"] = v_m_ctg_list.pop()
+        else:  # キーが存在しないとSQL挿入時にエラーになるので作成
+            ins_data["fin_ins"] = ""
+            ins_data["l_category"] = ""
+            ins_data["m_category"] = ""
 
         ins_data["regist_date"] = proc_yyyymmdd
         inserted_data.append(ins_data)
@@ -179,7 +183,7 @@ def _insert(insert_data):
             )
             rows = cur.fetchall()
             num = rows[0][0]  # count(1) の結果の数字を取得
-            print(num)
+
             if num == 0:
                 # 未登録なら 登録
                 insert_query = """
