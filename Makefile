@@ -22,7 +22,7 @@ debug:
 	docker compose -f deployment/compose.yml up
 
 pytest:
-	dbpass="password" pytest -v
+	db_pass="password" pytest -v
 
 gotest: 
 	gofmt -l .
