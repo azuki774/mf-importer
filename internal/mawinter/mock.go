@@ -50,11 +50,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 	}, nil
 }
 
-func (m *mockDBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
-	return nil
-}
-
-func (m *mockDBClient) RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
+func (m *mockDBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error) {
 	return nil
 }
 

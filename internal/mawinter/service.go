@@ -11,9 +11,9 @@ import (
 )
 
 type DBClient interface {
-	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error)  // mawinter check未チェックのデータを取得
-	CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error)    // これらのレコードを mawinter check済とする
-	RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) // これらのレコードを mawinter regist済とする
+	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error) // mawinter check未チェックのデータを取得
+	// CheckCFDetail: レコードを mawinter check/regist 済とする. regist = true なら registフラグも立てる
+	CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error)
 	GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error)
 }
 type MawinterClient interface {
@@ -87,43 +87,37 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.Logger.Info("fetch records from DB complete")
 
 	for _, c := range cfDetails {
-		catID, ok := m.getCategoryIDwithExtractCond(c)
-		if !ok {
-			// categoryID がない -> 抽出条件がないとき
-			continue
-		}
+		cLogger := m.Logger.With(
+			zap.Time("Date", c.Date),
+			zap.String("Name", c.Name),
+			zap.Int64("Price", c.Price),
+			zap.String("M_Category", c.MCategory),
+		)
 
-		err = m.DBClient.CheckCFDetail(ctx, c) // checked
-		if err != nil {
-			m.Logger.Error("failed to insert checked histories", zap.Error(err))
-			return err
-		}
-
-		// mawinter 登録対象のとき
+		// catID を取得する。ない場合は抽出対象外なので mawinter に post しない
+		catID, regist := m.getCategoryIDwithExtractCond(c)
 
 		// DryRunMode ONのときは何もせず終了
 		if m.Dryrun {
-			// comment
+			cLogger.Info("dryrun: post to mawinter", zap.Bool("regist", regist))
 			continue
 		}
 
-		m.Logger.Info("post to mawinter")
+		cLogger.Info("post to mawinter")
 		err := m.MawClient.Regist(ctx, c, catID)
 		if err != nil {
 			m.Logger.Error("failed to post mawinter", zap.Error(err))
 			return err
 		}
-		m.Logger.Info("post to mawinter complete")
+		cLogger.Info("post to mawinter complete")
 
-		m.Logger.Info("record post mawinter history")
-
-		err = m.DBClient.RegistedCFDetail(ctx, c) // registed
+		// detail テーブルを更新する
+		err = m.DBClient.CheckCFDetail(ctx, c, regist)
 		if err != nil {
-			m.Logger.Error("failed to insert registed histories", zap.Error(err))
+			cLogger.Error("failed to insert checked histories", zap.Error(err))
 			return err
 		}
 
-		m.Logger.Info("record post mawinter history complete")
 	}
 
 	m.Logger.Info("Regist end")

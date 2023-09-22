@@ -54,24 +54,15 @@ func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, 
 	return cfRecords, nil
 }
 
-func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
+func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error) {
 	id := cfDetail.ID
+	// TODO: regist フラグを見るようにする
 	result := d.Conn.Table("detail").Where("ID = ?", id).Update("maw_check_date", time.Now())
 	if result.Error != nil {
 		return result.Error
 	}
 	return nil
 }
-
-func (d *DBClient) RegistedCFDetail(ctx context.Context, cfDetail model.Detail) (err error) {
-	id := cfDetail.ID
-	result := d.Conn.Table("detail").Where("ID = ?", id).Update("maw_check_date", time.Now())
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
-}
-
 func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
 	result := d.Conn.Table("extract_rule").Find(&er)
 	if result.Error != nil {
