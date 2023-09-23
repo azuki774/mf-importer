@@ -77,6 +77,16 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 	// Fetch Extract Rule from DB
 	m.Logger.Info("fetch extract rules from DB")
+	ers, err := m.DBClient.GetExtractRules(ctx)
+	if err != nil {
+		m.Logger.Error("failed to extract rules from DB", zap.Error(err))
+		return err
+	}
+	err = m.ExtractRule.AddRule(ers)
+	if err != nil {
+		m.Logger.Error("failed to add extract rules", zap.Error(err))
+		return err
+	}
 
 	// Fetch Details from DB
 	cfDetails, err := m.DBClient.GetCFDetails(ctx)
