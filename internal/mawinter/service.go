@@ -103,13 +103,15 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 			continue
 		}
 
-		cLogger.Info("post to mawinter")
-		err := m.MawClient.Regist(ctx, c, catID)
-		if err != nil {
-			m.Logger.Error("failed to post mawinter", zap.Error(err))
-			return err
+		if regist {
+			cLogger.Info("post to mawinter")
+			err := m.MawClient.Regist(ctx, c, catID)
+			if err != nil {
+				m.Logger.Error("failed to post mawinter", zap.Error(err))
+				return err
+			}
+			cLogger.Info("post to mawinter complete")
 		}
-		cLogger.Info("post to mawinter complete")
 
 		// detail テーブルを更新する
 		err = m.DBClient.CheckCFDetail(ctx, c, regist)
