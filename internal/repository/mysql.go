@@ -56,7 +56,7 @@ func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, 
 
 func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error) {
 	id := cfDetail.ID
-	t := time.Now
+	t := time.Now().Format("2006-01-02")
 	err = d.Conn.Transaction(func(tx *gorm.DB) error {
 		result := tx.Table("detail").Where("ID = ?", id).Update("maw_check_date", t)
 		if result.Error != nil {
