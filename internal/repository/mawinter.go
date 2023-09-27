@@ -22,8 +22,8 @@ func NewMawinterClient(posturl string) *MawinterClient {
 	return &MawinterClient{Logger: l, PostURL: posturl}
 }
 
-func (m *MawinterClient) Regist(ctx context.Context, c model.CFRecord) (err error) {
-	rec, err := model.NewCreateRecord(c)
+func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) (err error) {
+	rec, err := model.NewCreateRecord(c, catID)
 	if err != nil {
 		return err
 	}

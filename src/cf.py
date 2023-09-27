@@ -4,7 +4,9 @@ import datetime
 import logging
 import os
 from pythonjsonlogger import jsonlogger
-import pymongo
+import mysql.connector
+import format
+import traceback
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -24,13 +26,14 @@ FURIKAE_NAME = [
 
 
 def _dbClient():
-    client = pymongo.MongoClient(
-        "mf-importer-db",
-        27017,
-        username="root",
+    cnx = mysql.connector.connect(
+        user="root",
+        host=os.environ.get("db_host", "127.0.0.1"),
+        database="mfimporter",
         password=os.getenv("db_pass"),
     )
-    return client
+    cnx.autocommit = False
+    return cnx
 
 
 def get(filePath):
@@ -112,25 +115,26 @@ def get(filePath):
 
     for i in range(date_num):
         ins_data = {}
-        ins_data["regist_date"] = proc_yyyymmdd
-
-        ins_data["date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
-        ins_data["name"] = name_list.pop()
-        ins_data["price"] = price_list.pop()
-
-        ins_data["yyyymm_id"] = i + 1  # 利用月ごとのID
-        ins_data["yyyymmdd"] = _get_yyyymmdd_from_procdate(
-            proc_yyyymmdd, ins_data["date"]
+        ins_data["yyyymm_id"] = int(i + 1)  # 利用月ごとのID
+        ins_data["raw_date"] = date_list.pop()  # 日付昇順で regist_id を振るため、pop を利用する
+        ins_data["date"] = format.get_yyyymmdd_from_procdate(
+            proc_yyyymmdd, ins_data["raw_date"]
         )
-        ins_data["yyyymm"] = _get_yyyymmdd_from_procdate(
-            proc_yyyymmdd, ins_data["date"]
-        )[:6]
+        ins_data["name"] = name_list.pop()
+        ins_data["raw_price"] = price_list.pop()
+        ins_data["price"] = format.get_price_frow_raw(ins_data["raw_price"])
 
         # note calc フィールドなどは（振替）のときは存在しないのでパスする
         if ins_data["name"] not in FURIKAE_NAME:
             ins_data["fin_ins"] = note_list.pop()
             ins_data["l_category"] = v_l_ctg_list.pop()
             ins_data["m_category"] = v_m_ctg_list.pop()
+        else:  # キーが存在しないとSQL挿入時にエラーになるので作成
+            ins_data["fin_ins"] = ""
+            ins_data["l_category"] = ""
+            ins_data["m_category"] = ""
+
+        ins_data["regist_date"] = proc_yyyymmdd
         inserted_data.append(ins_data)
 
     v_l_ctg_list.pop()  # 未分類がなぜか最初につくので、最後に pop にする
@@ -148,52 +152,84 @@ def get(filePath):
         logger.error("failed to parse")
         return 1
 
-    client = _dbClient()
-    db = client.mfimporter
-    collection_depo = db.detail
-
-    loaded_num = 0
-    insert_num = 0
-    for data in inserted_data:
-        find = collection_depo.find_one(
-            # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断する）
-            filter={
-                "yyyymmdd": data["yyyymmdd"],
-                "name": data["name"],
-                "price": data["price"],
-            }
-        )
-        if find == None:
-            # 未登録なら 登録
-            collection_depo.insert_one(data)
-            insert_num += 1
-
-        loaded_num += 1
-
-    logger.info("inserted new detail successfully: {0} records".format(insert_num))
-    logger.info(
-        "skipped already inserted records: {0} records".format(loaded_num - insert_num)
-    )
+    _insert(inserted_data)
     return 0
 
 
-def _get_yyyymmdd_from_procdate(proc_yyyymmdd, date):
+def _insert(insert_data):
     """
-    proc_yyyymmdd をベースにして、date フィールドから yyyymmdd を取得する
-    date フィールドは '05/09(火)' のような表記のため
-
-    proc_yyyymmdd = 20230519 , 05/15（ ）なら 20230515
-    proc_yyyymmdd = 20230101 , 12/15（ ）なら 20221215
+    引数の insert_data を実際にDB - detailに挿入する。
+    その仮定で既に登録済だと思われるものは省略する。
+    [insert_num, skip_num] を返す。
     """
+    cnx = _dbClient()
+    cur = cnx.cursor(buffered=True)
 
-    proc_yyyymmdd_yyyy = proc_yyyymmdd[:4]
-    proc_yyyymmdd_mm = proc_yyyymmdd[4:6]
-    date_mm = date[:2]
-    date_dd = date[3:5]
+    loaded_num = 0
+    insert_num = 0
 
-    if proc_yyyymmdd_mm == "01" and date_mm == "12":
-        # 年が変わるパターンだけ例外
-        return str(int(proc_yyyymmdd_yyyy) - 1) + date_mm + date_dd
+    try:
+        for data in insert_data:
+            loaded_num += 1
+            # yyyymmdd と name と price がすべて一致するものを抽出する（登録済と判断するため）
+            pre_search_query = (
+                "SELECT count(1) FROM detail "
+                "WHERE raw_date = %s "
+                "AND   name = %s "
+                "AND   raw_price = %s "
+            )
+            cur.execute(
+                pre_search_query, (data["raw_date"], data["name"], data["raw_price"])
+            )
+            rows = cur.fetchall()
+            num = rows[0][0]  # count(1) の結果の数字を取得
 
-    # 通常パターン
-    return proc_yyyymmdd_yyyy + date_mm + date_dd
+            if num == 0:
+                # 未登録なら 登録
+                insert_query = """
+                    INSERT INTO detail(
+                        yyyymm_id, 
+                        date,
+                        name,
+                        price, 
+                        fin_ins, 
+                        l_category, 
+                        m_category, 
+                        regist_date, 
+                        raw_date, 
+                        raw_price
+                    ) 
+                    VALUES 
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                    """
+
+                cur.execute(
+                    insert_query,
+                    (
+                        data["yyyymm_id"],
+                        data["date"],
+                        data["name"],
+                        data["price"],
+                        data["fin_ins"],
+                        data["l_category"],
+                        data["m_category"],
+                        data["regist_date"],
+                        data["raw_date"],
+                        data["raw_price"],
+                    ),
+                ),
+
+                insert_num += 1
+        cnx.commit()
+    except Exception as e:
+        traceback.print_exc()
+        logger.info("failed to insert records: {0}".format(str(e)))
+        cnx.rollback()
+    finally:
+        cnx.close()
+
+    skip_num = loaded_num - insert_num
+
+    logger.info("inserted new detail successfully: {0} records".format(insert_num))
+    logger.info("skipped already inserted records: {0} records".format(skip_num))
+    return [insert_num, skip_num]

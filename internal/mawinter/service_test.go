@@ -13,9 +13,8 @@ import (
 func TestMawinter_Regist(t *testing.T) {
 	type fields struct {
 		Logger      *zap.Logger
-		DBClient    MongoDBClient
+		DBClient    DBClient
 		MawClient   MawinterClient
-		CSVFileOp   CSVFileOperator
 		ExtractRule model.ExtractRule
 		ProcessDate time.Time
 		Dryrun      bool
@@ -35,7 +34,6 @@ func TestMawinter_Regist(t *testing.T) {
 				Logger:      logger.NewLogger(),
 				DBClient:    &mockDBClient{},
 				MawClient:   &mockMawinterClient{},
-				CSVFileOp:   &mockCSVFileOperator{},
 				ProcessDate: time.Now(),
 			},
 			args:    args{ctx: context.Background()},
@@ -47,7 +45,6 @@ func TestMawinter_Regist(t *testing.T) {
 				Logger:      logger.NewLogger(),
 				DBClient:    &mockDBClient{},
 				MawClient:   &mockMawinterClient{},
-				CSVFileOp:   &mockCSVFileOperator{},
 				ProcessDate: time.Now(),
 				Dryrun:      true,
 			},
@@ -61,7 +58,6 @@ func TestMawinter_Regist(t *testing.T) {
 				Logger:      tt.fields.Logger,
 				DBClient:    tt.fields.DBClient,
 				MawClient:   tt.fields.MawClient,
-				CSVFileOp:   tt.fields.CSVFileOp,
 				ExtractRule: tt.fields.ExtractRule,
 				ProcessDate: tt.fields.ProcessDate,
 				Dryrun:      tt.fields.Dryrun,
@@ -76,15 +72,14 @@ func TestMawinter_Regist(t *testing.T) {
 func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 	type fields struct {
 		Logger      *zap.Logger
-		DBClient    MongoDBClient
+		DBClient    DBClient
 		MawClient   MawinterClient
-		CSVFileOp   CSVFileOperator
 		ExtractRule model.ExtractRule
 		ProcessDate time.Time
 		Dryrun      bool
 	}
 	type args struct {
-		c model.CFRecord
+		c model.Detail
 	}
 	tests := []struct {
 		name      string
@@ -100,7 +95,7 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				ExtractRule: forTestExtractRule,
 			},
 			args: args{
-				c: model.CFRecord{
+				c: model.Detail{
 					Name:      "かんぜんいっち",
 					MCategory: "",
 				},
@@ -115,7 +110,7 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				ExtractRule: forTestExtractRule,
 			},
 			args: args{
-				c: model.CFRecord{
+				c: model.Detail{
 					Name:      "ねーむぶぶんめい",
 					MCategory: "",
 				},
@@ -130,7 +125,7 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				ExtractRule: forTestExtractRule,
 			},
 			args: args{
-				c: model.CFRecord{
+				c: model.Detail{
 					Name:      "",
 					MCategory: "かんぜんいっち",
 				},
@@ -145,7 +140,7 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				ExtractRule: forTestExtractRule,
 			},
 			args: args{
-				c: model.CFRecord{
+				c: model.Detail{
 					Name:      "",
 					MCategory: "AAAぶぶんめいかてごりー",
 				},
@@ -160,7 +155,7 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				ExtractRule: forTestExtractRule,
 			},
 			args: args{
-				c: model.CFRecord{
+				c: model.Detail{
 					Name:      "のっとふぁうんど",
 					MCategory: "のっとふぁうんど",
 				},
@@ -175,7 +170,6 @@ func TestMawinter_getCategoryIDwithExtractCond(t *testing.T) {
 				Logger:      tt.fields.Logger,
 				DBClient:    tt.fields.DBClient,
 				MawClient:   tt.fields.MawClient,
-				CSVFileOp:   tt.fields.CSVFileOp,
 				ExtractRule: tt.fields.ExtractRule,
 				ProcessDate: tt.fields.ProcessDate,
 				Dryrun:      tt.fields.Dryrun,

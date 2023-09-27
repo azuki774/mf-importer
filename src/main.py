@@ -2,7 +2,6 @@ import datetime
 from argparse import ArgumentParser
 import logging
 from pythonjsonlogger import jsonlogger
-import portfolio
 import cf
 
 logger = logging.getLogger(__name__)
@@ -44,8 +43,8 @@ def main():
     today = datetime.date.today()  # 出力：datetime.date(2020, 3, 22)
     yyyymmdd = "{0:%Y%m%d}".format(today)  # 20200322
 
-    if argp.component == "portfolio":
-        portfolio.get(DATA_BASE_DIR + yyyymmdd + "/portfolio")
+    # if argp.component == "portfolio":
+    #     portfolio.get(DATA_BASE_DIR + yyyymmdd + "/portfolio")
 
     if argp.component == "cf":
         # --last-month があれば cf_lastmonth も

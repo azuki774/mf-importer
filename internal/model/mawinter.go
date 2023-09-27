@@ -1,10 +1,5 @@
 package model
 
-import (
-	"strconv"
-	"strings"
-)
-
 const mfImportFromStr = "mf-importer"
 
 type CreateRecord struct {
@@ -16,30 +11,13 @@ type CreateRecord struct {
 	Memo       string `json:"memo"`
 }
 
-func convPriceForm(orig string) (price int, err error) {
-	// '-1,180' -> '1180'
-	orig = strings.Replace(orig, ",", "", -1)
-	orig = strings.Replace(orig, "-", "", -1)
-	price, err = strconv.Atoi(orig)
-	return price, err
-}
-
-func NewCreateRecord(c CFRecord) (r CreateRecord, err error) {
-	// yyyymmdd: '20230521',
-	// price: '-1,180',
-	// CategoryID: 100
-	price, err := convPriceForm(c.Price)
-	if err != nil {
-		return CreateRecord{}, err
-	}
-
+func NewCreateRecord(c Detail, catID int) (r CreateRecord, err error) {
 	r = CreateRecord{
-		CategoryID: int64(c.CategoryID),
-		Date:       c.YYYYMMDD,
-		Price:      int64(price),
+		CategoryID: int64(catID),
+		Date:       c.Date.Format("20060102"),
+		Price:      int64(c.Price),
 		From:       mfImportFromStr,
 		Memo:       c.Name, // メモ欄に元々の名前を入れる
 	}
-
 	return r, nil
 }

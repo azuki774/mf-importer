@@ -1,7 +1,9 @@
+SHELL=/bin/bash
+SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 
-.PHONY: bin build start debug
+.PHONY: bin build start debug migration
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
@@ -20,10 +22,17 @@ debug:
 	docker compose -f deployment/compose.yml up
 
 pytest:
-	pytest -v
+	db_pass="password" pytest -v
 
-test:
+gotest: 
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...
 	go test -v ./...
+
+test: pytest gotest
+
+migration:
+	cd migration; \
+	${SQL_MIGRATE_BIN} up -env=local; \
+	cd ../

@@ -47,18 +47,50 @@ func init() {
 func registMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
-	l.Info("using DB uri", zap.String("db_uri", os.Getenv("db_uri")))
+	host := os.Getenv("db_host")
+	port := os.Getenv("db_port")
+	user := os.Getenv("db_user")
+	pass := os.Getenv("db_pass")
+	name := os.Getenv("db_name")
+
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	if port == "" {
+		port = "3306"
+	}
+	if user == "" {
+		user = "root"
+	}
+	if pass == "" {
+		pass = "password"
+	}
+	if name == "" {
+		name = "mfimporter"
+	}
+
+	l.Info("using DB info",
+		zap.String("db_host", host),
+		zap.String("db_port", port),
+		zap.String("db_user", user),
+		zap.String("db_name", name),
+	)
 	l.Info("using mawinter API post endpoint", zap.String("api_uri", os.Getenv("api_uri")))
-	db, err := repository.NewMongoDB(ctx, os.Getenv("db_uri"))
+	db, err := repository.NewDBRepository(
+		host,
+		port,
+		user,
+		pass,
+		name,
+	)
 	if err != nil {
 		l.Error("failed to connect DB", zap.Error(err))
 		return err
 	}
-	defer db.Disconnect(ctx)
+	defer db.CloseDB()
 
-	csv := &repository.CSVFileOperator{}
 	maw := repository.NewMawinterClient(os.Getenv("api_uri"))
-	mw := mawinter.NewMawinter(db, csv, maw, dryRun)
+	mw := mawinter.NewMawinter(db, maw, dryRun)
 
 	err = mw.Regist(ctx)
 	if err != nil {
