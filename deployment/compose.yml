@@ -3,7 +3,8 @@ services:
   mf-importer-lastmonth:
     image: mf-importer
     container_name: mf-importer-lastmonth
-    command: [ "cf", "--lastmonth", "True" ]
+    command: [ "cf" ]
+    # command: [ "cf", "--lastmonth", "True" ]
     volumes:
       - ./:/data/
     depends_on:
