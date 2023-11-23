@@ -15,12 +15,40 @@ var forTestExtractRule model.ExtractRule = model.ExtractRule{
 	FromMCategoryIn: map[string]int{"ぶぶんめい": 400},
 }
 
-type mockMawinterClient struct{}
+type mockMawinterClient struct {
+	GetMawinterWebError error
+}
 type mockDBClient struct {
 }
 
 func (m *mockMawinterClient) Regist(ctx context.Context, c model.Detail, catID int) (err error) {
 	return nil
+}
+
+func (m *mockMawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) (recs []model.GetRecord, err error) {
+	if m.GetMawinterWebError != nil {
+		return []model.GetRecord{}, m.GetMawinterWebError
+	}
+
+	recs = []model.GetRecord{
+		{
+			ID:           1,
+			CategoryID:   100,
+			CategoryName: "cat1",
+			Datetime:     time.Date(2010, 1, 23, 1, 2, 3, 0, time.Local),
+			From:         fromMawinterWebText,
+			Price:        1234,
+		},
+		{
+			ID:           5,
+			CategoryID:   500,
+			CategoryName: "cat5",
+			Datetime:     time.Date(2010, 1, 24, 1, 2, 3, 0, time.Local),
+			From:         fromMawinterWebText,
+			Price:        5678,
+		},
+	}
+	return recs, nil
 }
 
 func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
@@ -43,6 +71,28 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			RawDate:      "01/02（水）",
 			Name:         "ふぃーるど５",
 			Price:        1234,
+			LCategory:    "大分類",
+			MCategory:    "中分類",
+			MawCheckDate: NULLtimeTime,
+		},
+		{
+			ID:           100, // regist
+			YYYYMMID:     2,
+			Date:         time.Date(2023, 01, 02, 0, 0, 0, 0, time.Local),
+			RawDate:      "01/02（水）",
+			Name:         "かんぜんいっち",
+			Price:        1234,
+			LCategory:    "大分類",
+			MCategory:    "中分類",
+			MawCheckDate: NULLtimeTime,
+		},
+		{
+			ID:           101, // already registed from mawinter-web
+			YYYYMMID:     2,
+			Date:         time.Date(2010, 01, 24, 0, 0, 0, 0, time.Local),
+			RawDate:      "01/24（水）",
+			Name:         "かんぜんいっち",
+			Price:        5678,
 			LCategory:    "大分類",
 			MCategory:    "中分類",
 			MawCheckDate: NULLtimeTime,
