@@ -75,7 +75,7 @@ func registMain() error {
 		zap.String("db_user", user),
 		zap.String("db_name", name),
 	)
-	l.Info("using mawinter API post endpoint", zap.String("api_uri", os.Getenv("api_uri")), zap.String("get_uri", os.Getenv("get_uri")))
+	l.Info("using mawinter API post endpoint", zap.String("api_uri", os.Getenv("api_uri")))
 	db, err := repository.NewDBRepository(
 		host,
 		port,
@@ -89,7 +89,7 @@ func registMain() error {
 	}
 	defer db.CloseDB()
 
-	maw := repository.NewMawinterClient(os.Getenv("api_uri"), os.Getenv("get_uri"))
+	maw := repository.NewMawinterClient(os.Getenv("api_uri"))
 	mw := mawinter.NewMawinter(db, maw, dryRun)
 
 	err = mw.Regist(ctx)

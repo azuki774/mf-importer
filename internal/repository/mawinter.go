@@ -14,14 +14,13 @@ import (
 )
 
 type MawinterClient struct {
-	Logger  *zap.Logger
-	PostURL string // mawinter-server Post API のエンドポイント
-	GetURL  string // mawinter-server Get API のエンドポイント
+	Logger *zap.Logger
+	APIURL string // mawinter-server API のエンドポイント
 }
 
-func NewMawinterClient(posturl string, geturl string) *MawinterClient {
+func NewMawinterClient(apiurl string) *MawinterClient {
 	l := logger.NewLogger()
-	return &MawinterClient{Logger: l, PostURL: posturl, GetURL: geturl}
+	return &MawinterClient{Logger: l, APIURL: apiurl}
 }
 
 func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) (err error) {
@@ -36,7 +35,7 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) 
 
 	req, err := http.NewRequest(
 		"POST",
-		m.PostURL,
+		m.APIURL,
 		bytes.NewBuffer(recB),
 	)
 	if err != nil {
@@ -62,7 +61,7 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) 
 }
 
 func (m *MawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) (recs []model.GetRecord, err error) {
-	url := m.GetURL + yyyymm + "?from=mawinter-web"
+	url := m.APIURL + "/" + yyyymm + "?from=mawinter-web"
 	resp, err := http.Get(url)
 	if err != nil {
 		return []model.GetRecord{}, err

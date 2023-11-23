@@ -25,8 +25,8 @@ func TestMain(m *testing.M) {
 
 func TestMawinterClient_Regist(t *testing.T) {
 	type fields struct {
-		Logger  *zap.Logger
-		PostURL string
+		Logger *zap.Logger
+		APIURL string
 	}
 	type args struct {
 		ctx   context.Context
@@ -42,8 +42,8 @@ func TestMawinterClient_Regist(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				Logger:  logger.NewLogger(),
-				PostURL: "http://localhost:8080/v2/record",
+				Logger: logger.NewLogger(),
+				APIURL: "http://localhost:8080/v2/record",
 			},
 			args: args{
 				ctx: context.Background(),
@@ -59,8 +59,8 @@ func TestMawinterClient_Regist(t *testing.T) {
 		{
 			name: "unexpected error",
 			fields: fields{
-				Logger:  logger.NewLogger(),
-				PostURL: "http://localhost:8081/v2/record",
+				Logger: logger.NewLogger(),
+				APIURL: "http://localhost:8081/v2/record",
 			},
 			args: args{
 				ctx: context.Background(),
@@ -77,8 +77,8 @@ func TestMawinterClient_Regist(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MawinterClient{
-				Logger:  tt.fields.Logger,
-				PostURL: tt.fields.PostURL,
+				Logger: tt.fields.Logger,
+				APIURL: tt.fields.APIURL,
 			}
 			if err := m.Regist(tt.args.ctx, tt.args.c, tt.args.catID); (err != nil) != tt.wantErr {
 				t.Errorf("MawinterClient.Regist() error = %v, wantErr %v", err, tt.wantErr)
