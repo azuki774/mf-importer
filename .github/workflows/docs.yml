@@ -1,0 +1,34 @@
+name: Document
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tbls.yml
+        uses: actions/checkout@v3
+      - uses: k1low/setup-tbls@v1
+      - name: Wait for ready DB
+        run: |
+          until mysql -u root -ppassword -h 127.0.0.1 -e '\q'; do sleep 1; done
+          echo "MariaDB is up!"
+      - name: migration
+        run: make migration
+      - name: Run tbls for generate database document
+        run: tbls doc
+
+    services:
+      db:
+        image: mariadb:10.9
+        ports:
+          - 3306:3306
+        env: 
+          MYSQL_DATABASE: mfimporter
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_USER: user
+          MYSQL_PASSWORD: pwd
+          TZ: Asia/Tokyo
