@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
 	"net/http"
@@ -18,9 +19,9 @@ type MawinterClient struct {
 	GetURL  string // mawinter-server Get API のエンドポイント
 }
 
-func NewMawinterClient(posturl string) *MawinterClient {
+func NewMawinterClient(posturl string, geturl string) *MawinterClient {
 	l := logger.NewLogger()
-	return &MawinterClient{Logger: l, PostURL: posturl}
+	return &MawinterClient{Logger: l, PostURL: posturl, GetURL: geturl}
 }
 
 func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) (err error) {
@@ -58,4 +59,23 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) 
 
 	m.Logger.Info("post records", zap.String("date", rec.Date), zap.Int64("category_id", rec.CategoryID), zap.Int64("price", rec.Price), zap.String("memo", rec.Memo))
 	return nil
+}
+
+func (m *MawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) (recs []model.GetRecord, err error) {
+	url := m.GetURL + yyyymm + "?from=mawinter-web"
+	resp, err := http.Get(url)
+	if err != nil {
+		return []model.GetRecord{}, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return []model.GetRecord{}, err
+	}
+	err = json.Unmarshal(body, &recs)
+	if err != nil {
+		return []model.GetRecord{}, err
+	}
+
+	return recs, nil
 }
