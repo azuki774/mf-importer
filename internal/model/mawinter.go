@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 const mfImportFromStr = "mf-importer"
 
 type CreateRecord struct {
@@ -9,6 +11,17 @@ type CreateRecord struct {
 	From       string `json:"from"`
 	Type       string `json:"type"`
 	Memo       string `json:"memo"`
+}
+
+type GetRecord struct {
+	ID           int       `json:"id"`
+	CategoryID   int       `json:"category_id"`
+	CategoryName string    `json:"category_name"`
+	Datetime     time.Time `json:"datetime"`
+	From         string    `json:"from"`
+	Type         string    `json:"type"`
+	Price        int       `json:"price"`
+	Memo         string    `json:"memo"`
 }
 
 func NewCreateRecord(c Detail, catID int) (r CreateRecord, err error) {

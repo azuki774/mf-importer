@@ -14,7 +14,8 @@ import (
 
 type MawinterClient struct {
 	Logger  *zap.Logger
-	PostURL string // mawinter-server API のエンドポイント
+	PostURL string // mawinter-server Post API のエンドポイント
+	GetURL  string // mawinter-server Get API のエンドポイント
 }
 
 func NewMawinterClient(posturl string) *MawinterClient {
