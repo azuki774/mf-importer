@@ -76,6 +76,18 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			MawCheckDate: NULLtimeTime,
 		},
 		{
+			ID:           13, // suica
+			YYYYMMID:     3,
+			Date:         time.Date(2023, 01, 02, 0, 0, 0, 0, time.Local),
+			RawDate:      "01/02（水）",
+			Name:         "入 岡山 出 静岡",
+			Price:        500,
+			LCategory:    "大分類",
+			MCategory:    "中分類",
+			FinIns:       "モバイルSuica (モバイルSuica ID)",
+			MawCheckDate: NULLtimeTime,
+		},
+		{
 			ID:           100, // regist
 			YYYYMMID:     2,
 			Date:         time.Date(2023, 01, 02, 0, 0, 0, 0, time.Local),
