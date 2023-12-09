@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const category_train = 270
+
 type DBClient interface {
 	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error) // mawinter check未チェックのデータを取得
 	// CheckCFDetail: レコードを mawinter check/regist 済とする. regist = true なら registフラグも立てる
@@ -129,6 +131,15 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 		// catID を取得する。ない場合は抽出対象外なので mawinter に post しない
 		catID, regist := m.getCategoryIDwithExtractCond(c)
+
+		// suica は別方法で抽出する
+		if !regist {
+			isSuica := model.IsSuicaDetail(c)
+			if isSuica {
+				catID = category_train
+				regist = true
+			}
+		}
 
 		// DryRunMode ONのときは何もせず終了
 		if m.Dryrun {

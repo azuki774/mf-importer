@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 )
 
 type ExtractCondition int
@@ -50,4 +51,25 @@ func (e *ExtractRule) AddRule(ers []ExtractRuleDB) (err error) {
 	}
 
 	return nil
+}
+
+// そのレコードが Suica のものかを判定する
+// 内容: '入 XXXX 出 YYYY'
+// 保有金融機関: 'モバイルSuica (モバイルSuica ID)'
+func IsSuicaDetail(d Detail) (ok bool) {
+	const mobileSuicaFinIns = "モバイルSuica (モバイルSuica ID)"
+	if d.FinIns != mobileSuicaFinIns {
+		return false
+	}
+	iri_index := strings.Index(d.Name, "入")
+	de_index := strings.Index(d.Name, "出")
+	if iri_index == -1 || de_index == -1 {
+		// 入、出が存在しない場合
+		return false
+	}
+	if iri_index >= de_index {
+		// 出xxx入yyyy と順番が逆の場合
+		return false
+	}
+	return true
 }
