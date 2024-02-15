@@ -10,8 +10,11 @@ cd ${WORKDIR}
 
 # useful symbolic link
 sudo mkdir -p /data/
-sudo chown -R "${USER}:${USER}" /data/
-ln -s /workspace/mf-importer/.devcontainer/data/ /data
+sudo chown -R ${USER}:${USER} /data/
+sudo ln -s /workspace/mf-importer/.devcontainer/data/ /data
 
 # python library
 pip install --break-system-packages -r ${WORKDIR}/mf-importer/build/requirements.txt
+
+# go install
+go install honnef.co/go/tools/cmd/staticcheck@latest
