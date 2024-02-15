@@ -65,7 +65,7 @@ def test_insert():
 
     try:
         for t in tt:
-            assert t["want"] == cf._insert(t["insert_data"])
+            assert t["want"] == cf.insert(t["insert_data"])
     finally:
         # delete testdata
         os.environ["pass"] = "password"

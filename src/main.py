@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import logging
 from pythonjsonlogger import jsonlogger
 import cf
+import cf_history
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -40,20 +41,31 @@ def main():
     )
     argp = argparser.parse_args()
 
-
     if argp.component == "cf":
+        insert_num = 0
+        skip_num = 0
+
         # --last-month があれば cf_lastmonth も
         ret = cf.get(DATA_BASE_DIR + "/cf")
-        if ret != 0:
+        if ret == 1:
             return ret  # error end
+        [ins, ski] = cf.insert(insert_data=ret)
+        insert_num += ins
+        skip_num += ski
+
         if argp.lastmonth:
             logger.info("lastmonth option detected")
             ret = cf.get(DATA_BASE_DIR + "/cf_lastmonth")
-            if ret != 0:
+            if ret == 1:
                 return ret  # error end
+            [ins, ski] = cf.insert(insert_data=ret)
+            insert_num += ins
+            skip_num += ski
+
+        cf_history.insert(insert_num, skip_num)
 
     logger.info("end")
-
+    # portofolio は未実装
 
 if __name__ == "__main__":
     main()
