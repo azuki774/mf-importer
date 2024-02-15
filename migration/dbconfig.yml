@@ -2,3 +2,8 @@ local:
     dialect: mysql
     dir: db/
     datasource: root:password@tcp(127.0.0.1)/mfimporter?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true
+
+dev:
+    dialect: mysql
+    dir: db/
+    datasource: root:password@tcp(mf-importer-db)/mfimporter?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true

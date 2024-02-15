@@ -4,3 +4,4 @@ memo
 .pytest_cache
 src/__pycache__/*
 build/bin/mf-importer-maw
+.devcontainer/data/*
