@@ -2,6 +2,7 @@ SHELL=/bin/bash
 SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
+CONTAINER_NAME_METRICS=mf-importer-metrics
 
 .PHONY: bin build start debug migration
 bin:
@@ -14,6 +15,7 @@ bin:
 build: bin
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
 	docker build -t $(CONTAINER_NAME_MAW) -f build/Dockerfile-maw .
+	docker build -t $(CONTAINER_NAME_METRICS) -f build/metrics/Dockerfile .
 
 start:
 	docker compose -f deployment/compose.yml up -d
