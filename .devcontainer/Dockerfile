@@ -17,5 +17,5 @@ RUN wget -O /workspace/go${GOLANG_VERSION}.linux-amd64.tar.gz https://go.dev/dl/
     chmod -R 777 ${GOPATH} && chmod -R 777 ${GOROOT}
 
 USER ${USER}
-ENV PATH=/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/${USER}/.local/bin:/usr/local/bin
+ENV PATH=${GOPATH}/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/${USER}/.local/bin:/usr/local/bin
 

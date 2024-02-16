@@ -38,6 +38,11 @@ def _dbClient():
 
 
 def get(filePath):
+    """
+    cfファイルからデータを読みこみ、DBに挿入すべきデータを取り出す。
+    成功時は insert すべきデータ
+    エラー時は 1 が返される。
+    """
     date_num = 0
     with open(filePath) as f:
         html = f.read()
@@ -153,11 +158,10 @@ def get(filePath):
         logger.error("failed to parse")
         return 1
 
-    _insert(inserted_data)
-    return 0
+    return inserted_data
 
 
-def _insert(insert_data):
+def insert(insert_data):
     """
     引数の insert_data を実際にDB - detailに挿入する。
     その仮定で既に登録済だと思われるものは省略する。

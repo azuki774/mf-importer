@@ -22,3 +22,13 @@ services:
       - MYSQL_USER=user
       - MYSQL_PASSWORD=pwd
       - TZ=Asia/Tokyo
+
+  mf-importer-phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: mf-importer-phpmyadmin
+    environment:
+      - PMA_HOSTS=mf-importer-db
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    ports:
+      - "3001:80"
