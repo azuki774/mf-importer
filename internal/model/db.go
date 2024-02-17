@@ -30,3 +30,12 @@ type ExtractRuleDB struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+type InsertHistory struct {
+	ID             int64
+	JobLabel       string
+	ParsedEntryNum int64
+	NewEntryNum    int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
