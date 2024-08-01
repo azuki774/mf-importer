@@ -3,5 +3,6 @@ memo
 .vscode
 .pytest_cache
 src/__pycache__/*
+build/bin/mf-importer
 build/bin/mf-importer-maw
 .devcontainer/data/*
