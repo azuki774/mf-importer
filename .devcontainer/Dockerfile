@@ -1,6 +1,6 @@
 FROM python:3.9.18
 ARG USER=user
-ENV GOLANG_VERSION=1.20.14
+ENV GOLANG_VERSION=1.22.5
 
 RUN useradd -s /bin/bash -m ${USER}
 RUN apt update && \
