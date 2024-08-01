@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/repository"
+	"mf-importer/internal/service"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ var inputDir string
 
 // startCmd represents the regist command
 var startCmd = &cobra.Command{
-	Use:   "regist",
+	Use:   "start",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -25,7 +26,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("regist called")
+		fmt.Println("start called")
 		return startMain()
 	},
 }
@@ -47,7 +48,7 @@ func init() {
 
 func startMain() error {
 	l := logger.NewLogger()
-	_ = context.Background()
+	ctx := context.Background()
 	host := os.Getenv("db_host")
 	port := os.Getenv("db_port")
 	user := os.Getenv("db_user")
@@ -88,6 +89,11 @@ func startMain() error {
 		return err
 	}
 	defer db.CloseDB()
+
+	importer := service.NewImporter(l, db, inputDir, dryRun)
+	if err := importer.Start(ctx); err != nil {
+		return err
+	}
 
 	return nil
 }
