@@ -3,7 +3,7 @@ SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 
-.PHONY: bin build start debug migration
+.PHONY: bin build start test debug migration
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
