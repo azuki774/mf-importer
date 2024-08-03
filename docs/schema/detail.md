@@ -21,12 +21,12 @@ CREATE TABLE `detail` (
   `raw_date` text DEFAULT NULL,
   `raw_price` text DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx1` (`maw_check_date`),
   KEY `idx2` (`name`(768)),
   KEY `idx3` (`raw_price`(768))
-) ENGINE=InnoDB AUTO_INCREMENT=[Redacted by tbls] DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ```
 
 </details>
@@ -49,7 +49,7 @@ CREATE TABLE `detail` (
 | raw_date | text | NULL | true |  |  |  |  |
 | raw_price | text | NULL | true |  |  |  |  |
 | created_at | datetime | current_timestamp() | true |  |  |  |  |
-| updated_at | timestamp | current_timestamp() | false | on update current_timestamp() |  |  |  |
+| updated_at | timestamp | current_timestamp() | true | on update current_timestamp() |  |  |  |
 
 ## Constraints
 

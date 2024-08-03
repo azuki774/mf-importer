@@ -1,4 +1,4 @@
-# extract_rule
+# import_history
 
 ## Description
 
@@ -6,15 +6,15 @@
 <summary><strong>Table Definition</strong></summary>
 
 ```sql
-CREATE TABLE `extract_rule` (
+CREATE TABLE `import_history` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'primary id',
-  `field_name` text NOT NULL COMMENT 'extract field name (m_category or name)',
-  `value` text NOT NULL,
-  `exact_match` int(11) DEFAULT NULL COMMENT 'exact match = 1 or not 0',
-  `category_id` int(11) NOT NULL COMMENT 'mawinter category id',
+  `job_label` text DEFAULT NULL COMMENT 'importer sets joblabel',
+  `parsed_entry_num` int(11) NOT NULL,
+  `new_entry_num` int(11) NOT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx1` (`job_label`(768))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ```
 
@@ -25,10 +25,9 @@ CREATE TABLE `extract_rule` (
 | Name | Type | Default | Nullable | Extra Definition | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | ---------------- | -------- | ------- | ------- |
 | id | int(11) |  | false | auto_increment |  |  | primary id |
-| field_name | text |  | false |  |  |  | extract field name (m_category or name) |
-| value | text |  | false |  |  |  |  |
-| exact_match | int(11) | NULL | true |  |  |  | exact match = 1 or not 0 |
-| category_id | int(11) |  | false |  |  |  | mawinter category id |
+| job_label | text | NULL | true |  |  |  | importer sets joblabel |
+| parsed_entry_num | int(11) |  | false |  |  |  |  |
+| new_entry_num | int(11) |  | false |  |  |  |  |
 | created_at | datetime | current_timestamp() | true |  |  |  |  |
 | updated_at | timestamp | current_timestamp() | true | on update current_timestamp() |  |  |  |
 
@@ -42,11 +41,12 @@ CREATE TABLE `extract_rule` (
 
 | Name | Definition |
 | ---- | ---------- |
+| idx1 | KEY idx1 (job_label) USING BTREE |
 | PRIMARY | PRIMARY KEY (id) USING BTREE |
 
 ## Relations
 
-![er](extract_rule.svg)
+![er](import_history.svg)
 
 ---
 
