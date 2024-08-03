@@ -21,16 +21,11 @@ start:
 debug:
 	docker compose -f deployment/compose.yml up
 
-pytest:
-	db_pass="password" pytest -v
-
-gotest: 
+test: 
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...
 	go test -v ./...
-
-test: pytest gotest
 
 migration:
 	cd migration; \

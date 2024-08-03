@@ -25,7 +25,7 @@ jobs:
           version: "latest"
 
       - name: Test
-        run: make gotest
+        run: make test
         
       - name: Build
         run: make bin
