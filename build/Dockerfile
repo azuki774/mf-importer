@@ -19,4 +19,5 @@ RUN --mount=type=bind,target=. \
 FROM gcr.io/distroless/base-debian12 AS runner
 ENV TZ=Tokyo/Asia
 COPY --from=builder /bin/mf-importer /bin/mf-importer
+CMD ["start"]
 ENTRYPOINT ["/bin/mf-importer"]
