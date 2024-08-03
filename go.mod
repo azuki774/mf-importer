@@ -1,6 +1,6 @@
 module mf-importer
 
-go 1.20
+go 1.22.5
 
 require (
 	github.com/jarcoal/httpmock v1.3.0

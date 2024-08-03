@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var NULLtimeTime = time.Time{}
-
 var forTestExtractRule model.ExtractRule = model.ExtractRule{
 	FromName:        map[string]int{"かんぜんいっち": 100},
 	FromNameIn:      map[string]int{"ぶぶんめい": 200},
@@ -62,7 +60,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			Price:        1234,
 			LCategory:    "大分類",
 			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
+			MawCheckDate: nil,
 		},
 		{
 			ID:           12,
@@ -73,7 +71,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			Price:        1234,
 			LCategory:    "大分類",
 			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
+			MawCheckDate: nil,
 		},
 		{
 			ID:           13, // suica
@@ -85,7 +83,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			LCategory:    "大分類",
 			MCategory:    "中分類",
 			FinIns:       "モバイルSuica (モバイルSuica ID)",
-			MawCheckDate: NULLtimeTime,
+			MawCheckDate: nil,
 		},
 		{
 			ID:           100, // regist
@@ -96,7 +94,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			Price:        1234,
 			LCategory:    "大分類",
 			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
+			MawCheckDate: nil,
 		},
 		{
 			ID:           101, // already registed from mawinter-web
@@ -107,7 +105,7 @@ func (m *mockDBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Deta
 			Price:        5678,
 			LCategory:    "大分類",
 			MCategory:    "中分類",
-			MawCheckDate: NULLtimeTime,
+			MawCheckDate: nil,
 		},
 	}, nil
 }
