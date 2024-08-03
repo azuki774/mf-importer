@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"mf-importer/internal/model"
 	"net"
 	"time"
@@ -84,4 +85,38 @@ func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleD
 		return []model.ExtractRuleDB{}, result.Error
 	}
 	return er, nil
+}
+
+// yyyymmdd と name と price がすべて一致するものを抽出する（登録済判断に利用）
+// すでに登録があれば true とする
+func (d *DBClient) CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error) {
+	var getDetail model.Detail
+	if err = d.Conn.WithContext(ctx).Table("detail").
+		Where("regist_date = ?", detail.RegistDate.Format("2006-01-02")). // DB には日付しか登録しないため変形
+		Where("name = ?", detail.Name).
+		Where("price = ?", detail.Price).
+		First(&getDetail).Error; err != nil {
+		// 何らかのエラー or データなし
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// データなし
+			return false, nil
+		} else {
+			// 何らかのエラー
+			return false, err
+		}
+	}
+	// データあり
+	return true, nil
+}
+func (d *DBClient) RegistDetail(ctx context.Context, detail model.Detail) (err error) {
+	return d.Conn.WithContext(ctx).Table("detail").Create(&detail).Error
+}
+
+func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
+	importHis := model.ImportHistory{
+		JobLabel:       jobname,
+		ParsedEntryNum: int64(parsedNum),
+		NewEntryNum:    int64(insertNum),
+	}
+	return d.Conn.WithContext(ctx).Table("import_history").Create(&importHis).Error
 }

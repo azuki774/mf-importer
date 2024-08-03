@@ -37,6 +37,12 @@ type ExtractRuleDB struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+type ImportHistory struct {
+	JobLabel       string `gorm:"job_label"`
+	ParsedEntryNum int64  `gorm:"parsed_entry_num"`
+	NewEntryNum    int64  `gorm:"new_entry_num"`
+}
+
 // ex: 20240110 のとき
 // 01/07(火) -> 20240107
 // 12/24(水) -> 20231224
