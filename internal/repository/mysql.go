@@ -92,7 +92,7 @@ func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleD
 func (d *DBClient) CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error) {
 	var getDetail model.Detail
 	if err = d.Conn.WithContext(ctx).Table("detail").
-		Where("regist_date = ?", detail.RegistDate.Format("2006-01-02")). // DB には日付しか登録しないため変形
+		Where("date = ?", detail.Date.Format("2006-01-02")). // DB には日付しか登録しないため変形
 		Where("name = ?", detail.Name).
 		Where("price = ?", detail.Price).
 		First(&getDetail).Error; err != nil {
