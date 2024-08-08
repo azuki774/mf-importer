@@ -1,3 +1,13 @@
+<script setup lang="ts">
+const record_name_list = ref<string[]>(['テスト明細1', 'テスト明細2', 'テスト明細3']);
+const nameField = ref("");
+const urlFull = "https://repos.azuki.blue/testjson.json";
+const response = await $fetch(urlFull) as any;
+const name = response.name;
+nameField.value = name;
+</script>
+
+
 <template>
   <h1>mf-importer-web</h1>
 
@@ -28,13 +38,14 @@
           <td>2024-01-25 15:00</td>
           <td>NULL</td>
         </tr>
+        <tr>
+          <td>2024-01-23</td>
+          <td>{{ nameField }}</td>
+          <td>2024-01-25 12:00</td>
+          <td>2024-01-25 15:00</td>
+          <td>NULL</td>
+        </tr>
       </tbody>
     </table>
   </section>
-
 </template>
-
-
-<script setup lang="ts">
-const record_name_list = ref<string[]>(['テスト明細1', 'テスト明細2', 'テスト明細3']);
-</script>
