@@ -1,10 +1,15 @@
 <script setup lang="ts">
 const record_name_list = ref<string[]>(['テスト明細1', 'テスト明細2', 'テスト明細3']);
-const nameField = ref("");
-const urlFull = "https://repos.azuki.blue/testjson.json";
-const response = await $fetch(urlFull) as any;
-const name = response.name;
-nameField.value = name;
+const asyncData = await useFetch("https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json",
+  {
+    transform: (data: any): string => {
+      const jsname = data[0].publishingOffice;
+      return jsname;
+    }
+  }
+);
+const res = asyncData.data;
+console.log(`${res.value}`)
 </script>
 
 
@@ -40,7 +45,7 @@ nameField.value = name;
         </tr>
         <tr>
           <td>2024-01-23</td>
-          <td>{{ nameField }}</td>
+          <td>{{ res }}</td>
           <td>2024-01-25 12:00</td>
           <td>2024-01-25 15:00</td>
           <td>NULL</td>
