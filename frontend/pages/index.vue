@@ -1,15 +1,19 @@
 <script setup lang="ts">
+import type { ImportRecord } from "@/interfaces";
 const record_name_list = ref<string[]>(['テスト明細1', 'テスト明細2', 'テスト明細3']);
-const asyncData = await useFetch("https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json",
-  {
-    transform: (data: any): string => {
-      const jsname = data[0].publishingOffice;
-      return jsname;
-    }
-  }
-);
-const res = asyncData.data;
-console.log(`${res.value}`)
+const record_list = ref<ImportRecord[]>()
+// const asyncData = await useFetch("http://172.19.250.172:20010/",
+//   {
+//     transform: (data: any): string => {
+//       const jsname = data[0].name;
+//       return jsname;
+//     }
+//   }
+// );
+// const res = asyncData.data;
+const response = await $fetch("http://172.19.250.172:20010/") as ImportRecord[];
+record_list.value = response // 取得した値を代入
+console.log(`${record_list.value[1].name}`)
 </script>
 
 
@@ -29,26 +33,12 @@ console.log(`${res.value}`)
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>2024-01-23</td>
-          <td>テスト明細0</td>
-          <td>2024-01-25 12:00</td>
-          <td>2024-01-25 15:00</td>
-          <td>NULL</td>
-        </tr>
-        <tr v-for="record_name in record_name_list" :key="record_name">
-          <td>2024-01-23</td>
-          <td>{{ record_name }}</td>
-          <td>2024-01-25 12:00</td>
-          <td>2024-01-25 15:00</td>
-          <td>NULL</td>
-        </tr>
-        <tr>
-          <td>2024-01-23</td>
-          <td>{{ res }}</td>
-          <td>2024-01-25 12:00</td>
-          <td>2024-01-25 15:00</td>
-          <td>NULL</td>
+        <tr v-for="record in record_list" :key="record_list">
+          <td>{{ record.use_date }}</td>
+          <td>{{ record.name }}</td>
+          <td>{{ record.regist_date }}</td>
+          <td>{{ record.import_judge_date }}</td>
+          <td>{{ record.import_date }}</td>
         </tr>
       </tbody>
     </table>
