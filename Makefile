@@ -2,6 +2,7 @@ SHELL=/bin/bash
 SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
+CONTAINER_NAME_FRONT=mf-importer-frontend
 
 .PHONY: bin build start test debug migration
 bin:
@@ -11,9 +12,10 @@ bin:
 	-X main.build=$(git describe --tags)" \
 	-o build/bin/ ./...
 
-build: bin
+build:
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
 	docker build -t $(CONTAINER_NAME_MAW) -f build/maw/Dockerfile .
+	docker build -t $(CONTAINER_NAME_FRONT) -f build/frontend/Dockerfile .
 
 start:
 	docker compose -f deployment/compose.yml up -d
