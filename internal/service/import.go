@@ -56,10 +56,16 @@ func (i *Importer) Start(ctx context.Context) (err error) {
 			return err
 		}
 
+		// d.YYYYMMID とDBの挿入順 (ID) を一致させるため、逆順にする
+		var revDetails []model.Detail
+		for i := 0; i < len(details); i++ {
+			revDetails = append(revDetails, details[len(details)-i-1])
+		}
+
 		var parsedNum int
 		var insertedNum int
 
-		for _, d := range details {
+		for _, d := range revDetails {
 			exists, err := i.DBClient.CheckAlreadyRegistDetail(ctx, d)
 			if err != nil {
 				return err
