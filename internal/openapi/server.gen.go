@@ -14,11 +14,11 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Your GET endpoint
+	// (GET /details)
+	GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams)
+	// Your GET endpoint
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
-	// Your GET endpoint
-	// (GET details)
-	GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -26,14 +26,14 @@ type ServerInterface interface {
 type Unimplemented struct{}
 
 // Your GET endpoint
-// (GET /health)
-func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
+// (GET /details)
+func (_ Unimplemented) GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Your GET endpoint
-// (GET details)
-func (_ Unimplemented) GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams) {
+// (GET /health)
+func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -45,21 +45,6 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
-
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHealth(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
 
 // GetDetails operation middleware
 func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +65,21 @@ func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetDetails(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHealth(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -203,10 +203,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
+		r.Get(options.BaseURL+"/details", wrapper.GetDetails)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"details", wrapper.GetDetails)
+		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 
 	return r

@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:3000'
 paths:
-  details:
+  /details:
     get:
       summary: Your GET endpoint
       operationId: get-details

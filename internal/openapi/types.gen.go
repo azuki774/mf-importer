@@ -20,13 +20,13 @@ type Detail struct {
 	UseDate         openapi_types.Date `json:"useDate"`
 }
 
-// GetHealthTextBody defines parameters for GetHealth.
-type GetHealthTextBody = string
-
 // GetDetailsParams defines parameters for GetDetails.
 type GetDetailsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// GetHealthTextBody defines parameters for GetHealth.
+type GetHealthTextBody = string
 
 // GetHealthTextRequestBody defines body for GetHealth for text/plain ContentType.
 type GetHealthTextRequestBody = GetHealthTextBody
