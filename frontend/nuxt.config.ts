@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: { // 外部から取得するにはpublic が必要
-      apiBaseEndpoint: "http://172.19.250.172:20010",
+      apiBaseEndpoint: "", // .env の NUXT_PUBLIC_API_BASE_ENDPOINT から取得
     }
   }
 })
