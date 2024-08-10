@@ -5,4 +5,9 @@ export default defineNuxtConfig({
   routeRules: {
     "/": { ssr: true, prerender: true },
   },
+  runtimeConfig: {
+    public: { // 外部から取得するにはpublic が必要
+      apiBaseEndpoint: "http://172.19.250.172:20010",
+    }
+  }
 })

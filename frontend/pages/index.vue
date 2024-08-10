@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { ImportRecord } from "@/interfaces";
-const record_list = ref<ImportRecord[]>()
-// const response = await $fetch("http://172.19.250.172:20010/") as ImportRecord[]; // TODO: アドレス
+const config = useRuntimeConfig(); // nuxt.config.ts に書いてあるコンフィグを読み出す
+const record_list = ref<any>()
 const asyncData = await useAsyncData(
   `api`,
   (): Promise<any> => {
-    const url = "http://172.19.250.172:20010/";
+    const url = config.public.apiBaseEndpoint + "/";
     const response = $fetch(url);
     return response;
   }
@@ -31,11 +31,11 @@ record_list.value = data.value
       </thead>
       <tbody>
         <tr v-for="record in record_list" :key="record_list">
-          <td>{{ record.use_date }}</td>
+          <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
-          <td>{{ record.regist_date }}</td>
-          <td>{{ record.import_judge_date }}</td>
-          <td>{{ record.import_date }}</td>
+          <td>{{ record.registDate }}</td>
+          <td>{{ record.importJudgeDate }}</td>
+          <td>{{ record.importDate }}</td>
         </tr>
       </tbody>
     </table>

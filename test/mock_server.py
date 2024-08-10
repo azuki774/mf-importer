@@ -11,25 +11,25 @@ class MockHandler(BaseHTTPRequestHandler):
         self.end_headers()
         response = [
             {
-                'use_date': '2024-06-01',
+                'useDate': '2024-06-01',
                 'name': 'てすと明細X',
-                'regist_date': '2024-06-03',
-                'import_judge_date': '2024-06-03 15:00:00',
-                'import_date': '2024-06-03 15:00:00'
+                'registDate': '2024-06-03',
+                'importJudgeDate': '2024-06-03 15:00:00',
+                'importDate': '2024-06-03 15:00:00'
             },
             {
-                'use_date': '2024-06-02',
+                'useDate': '2024-06-02',
                 'name': 'てすと明細Y',
-                'regist_date': '2024-06-04',
-                'import_judge_date': '2024-06-04 15:00:00',
-                'import_date': '2024-06-04 15:00:00'
+                'registDate': '2024-06-04',
+                'importJudgeDate': '2024-06-04 15:00:00',
+                'importDate': '2024-06-04 15:00:00'
             },
             {
-                'use_date': '2024-06-03',
+                'useDate': '2024-06-03',
                 'name': 'てすと明細Z',
-                'regist_date': '2024-06-05',
-                'import_judge_date': '2024-06-05 15:00:00',
-                # 'import_date': ,
+                'registDate': '2024-06-05',
+                'importJudgeDate': '2024-06-05 15:00:00',
+                # 'importDate': ,
             },
             ]
         responseBody = json.dumps(response)
