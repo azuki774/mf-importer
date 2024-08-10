@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import type { ImportRecord } from "@/interfaces";
 const record_list = ref<ImportRecord[]>()
-const response = await $fetch("http://172.19.250.172:20010/") as ImportRecord[]; // TODO: アドレス
-record_list.value = response // APIから取得した値を代入
+// const response = await $fetch("http://172.19.250.172:20010/") as ImportRecord[]; // TODO: アドレス
+const asyncData = await useAsyncData(
+  `api`,
+  (): Promise<any> => {
+    const url = "http://172.19.250.172:20010/";
+    const response = $fetch(url);
+    return response;
+  }
+);
+const data = asyncData.data;
+record_list.value = data.value
 </script>
 
 <template>

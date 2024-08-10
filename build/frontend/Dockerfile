@@ -1,17 +1,19 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22 AS builder
-ENV NODE_ENV=production
+FROM node:22-alpine AS builder
 WORKDIR /frontend
 
 COPY ./frontend/package.json ./frontend/package-lock.json /frontend/
 RUN npm install
 COPY ./frontend /frontend
-RUN npm run generate
+RUN npm run build
 
-FROM nginx:1.27.0-alpine AS runner
+FROM node:22-alpine AS runner
 RUN apk --update add tzdata
 
-# --from=builder dist -> /frontend/.output/public
-COPY --from=builder /frontend/.output/public /usr/share/nginx/html/
-RUN rm -f /usr/share/nginx/html/200.html
+COPY --from=builder /frontend/.output/ ./src/.output
+COPY --from=builder /frontend/node_modules ./src/node_modules
+COPY --from=builder /frontend/package.json ./src/package.json
+
+EXPOSE 3000
+CMD ["node", "src/.output/server/index.mjs"]
