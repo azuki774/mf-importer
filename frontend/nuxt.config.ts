@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
   routeRules: {
-    "/": { ssr: true, prerender: true },
+    "/": { ssr: true },
   },
   runtimeConfig: {
     public: { // 外部から取得するにはpublic が必要
