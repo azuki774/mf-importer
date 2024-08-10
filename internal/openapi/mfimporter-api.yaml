@@ -95,6 +95,8 @@ components:
           format: date
         name:
           type: string
+        price:
+          type: integer
         registDate:
           type: string
           format: date-time
@@ -108,4 +110,5 @@ components:
         - id
         - useDate
         - name
+        - price
         - registDate

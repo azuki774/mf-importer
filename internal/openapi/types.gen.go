@@ -15,6 +15,7 @@ type Detail struct {
 	ImportDate      *time.Time         `json:"importDate,omitempty"`
 	ImportJudgeDate *time.Time         `json:"importJudgeDate,omitempty"`
 	Name            string             `json:"name"`
+	Price           int                `json:"price"`
 	RegistDate      time.Time          `json:"registDate"`
 	UseDate         openapi_types.Date `json:"useDate"`
 }
