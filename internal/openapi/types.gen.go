@@ -19,7 +19,13 @@ type Import struct {
 	UseDate         openapi_types.Date `json:"useDate"`
 }
 
+// GetHealthTextBody defines parameters for GetHealth.
+type GetHealthTextBody = string
+
 // GetImportsParams defines parameters for GetImports.
 type GetImportsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// GetHealthTextRequestBody defines body for GetHealth for text/plain ContentType.
+type GetHealthTextRequestBody = GetHealthTextBody

@@ -14,6 +14,9 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Your GET endpoint
+	// (GET /health)
+	GetHealth(w http.ResponseWriter, r *http.Request)
+	// Your GET endpoint
 	// (GET /imports)
 	GetImports(w http.ResponseWriter, r *http.Request, params GetImportsParams)
 }
@@ -21,6 +24,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Your GET endpoint
+// (GET /health)
+func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Your GET endpoint
 // (GET /imports)
@@ -36,6 +45,21 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // GetImports operation middleware
 func (siw *ServerInterfaceWrapper) GetImports(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +202,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
+	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/imports", wrapper.GetImports)
 	})

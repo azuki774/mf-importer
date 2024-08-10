@@ -26,6 +26,24 @@ paths:
                   $ref: '#/components/schemas/Import'
       servers:
         - url: 'http://localhost:3000'
+  /health:
+    get:
+      summary: Your GET endpoint
+      operationId: get-health
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+              default: OK
+              examples:
+                - OK
+            examples:
+              default:
+                value: OK
+      responses: {}
+      servers:
+        - url: 'http://localhost:3000'
 components:
   responses:
     import:
