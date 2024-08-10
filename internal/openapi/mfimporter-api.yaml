@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  version: '1.0'
+  title: mfimporter-api
+  summary: ''
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /details:
+    get:
+      summary: Your GET endpoint
+      operationId: get-details
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Detail'
+      servers:
+        - url: 'http://localhost:3000'
+  /health:
+    get:
+      summary: Your GET endpoint
+      operationId: get-health
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+              default: OK
+              examples:
+                - OK
+            examples:
+              default:
+                value: OK
+      responses: {}
+      servers:
+        - url: 'http://localhost:3000'
+components:
+  responses:
+    import:
+      description: /import response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              useDate:
+                type: string
+                format: date
+                examples:
+                  - '2024-06-01'
+              name:
+                type: string
+              registDate:
+                type: string
+                format: date-time
+                examples:
+                  - '2024-06-03 15:00:00'
+              importJudgeDate:
+                type: string
+                format: date-time
+              importDate:
+                type: string
+                format: date-time
+                examples:
+                  - '2024-06-03 15:00:00'
+            required:
+              - useDate
+              - name
+              - registDate
+              - importJudgeDate
+            examples:
+              - '2024-06-01'
+          examples:
+            default:
+              value: '2024-06-01'
+  schemas:
+    Detail:
+      type: object
+      title: Import
+      properties:
+        id:
+          type: integer
+        useDate:
+          type: string
+          format: date
+        name:
+          type: string
+        price:
+          type: integer
+        registDate:
+          type: string
+          format: date-time
+        importJudgeDate:
+          type: string
+          format: date-time
+        importDate:
+          type: string
+          format: date-time
+      required:
+        - id
+        - useDate
+        - name
+        - price
+        - registDate
