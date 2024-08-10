@@ -24,7 +24,7 @@ func (s *Server) Start(ctx context.Context) error {
 	swagger.Servers = nil
 	r := chi.NewRouter()
 
-	openapi.HandlerFromMux(&apigateway{Logger: s.Logger}, r)
+	openapi.HandlerFromMux(&apigateway{Logger: s.Logger, APIService: s.APIService}, r)
 	addr := ":8080"
 	if err := http.ListenAndServe(addr, r); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {

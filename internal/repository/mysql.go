@@ -122,6 +122,6 @@ func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, pars
 }
 
 func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {
-	err = d.Conn.WithContext(ctx).Table("detail").Limit(limit).Find(&details).Error
+	err = d.Conn.WithContext(ctx).Table("detail").Order("ID desc").Limit(limit).Find(&details).Error
 	return details, err
 }
