@@ -89,7 +89,7 @@ components:
       title: Import
       properties:
         id:
-          type: number
+          type: integer
         useDate:
           type: string
           format: date

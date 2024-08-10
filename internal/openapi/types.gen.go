@@ -11,7 +11,7 @@ import (
 
 // Detail defines model for Detail.
 type Detail struct {
-	Id              float32            `json:"id"`
+	Id              int                `json:"id"`
 	ImportDate      *time.Time         `json:"importDate,omitempty"`
 	ImportJudgeDate *time.Time         `json:"importJudgeDate,omitempty"`
 	Name            string             `json:"name"`
