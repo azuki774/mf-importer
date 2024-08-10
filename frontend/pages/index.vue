@@ -5,7 +5,7 @@ const record_list = ref<any>()
 const asyncData = await useAsyncData(
   `api`,
   (): Promise<any> => {
-    const url = config.public.apiBaseEndpoint + "/";
+    const url = config.public.apiBaseEndpoint + "/details";
     const response = $fetch(url);
     return response;
   }
