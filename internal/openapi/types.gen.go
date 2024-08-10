@@ -9,8 +9,8 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Import defines model for Import.
-type Import struct {
+// Detail defines model for Detail.
+type Detail struct {
 	Id              float32            `json:"id"`
 	ImportDate      *time.Time         `json:"importDate,omitempty"`
 	ImportJudgeDate *time.Time         `json:"importJudgeDate,omitempty"`
@@ -22,8 +22,8 @@ type Import struct {
 // GetHealthTextBody defines parameters for GetHealth.
 type GetHealthTextBody = string
 
-// GetImportsParams defines parameters for GetImports.
-type GetImportsParams struct {
+// GetDetailsParams defines parameters for GetDetails.
+type GetDetailsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 

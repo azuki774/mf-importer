@@ -6,10 +6,10 @@ info:
 servers:
   - url: 'http://localhost:3000'
 paths:
-  /imports:
+  details:
     get:
       summary: Your GET endpoint
-      operationId: get-imports
+      operationId: get-details
       parameters:
         - name: limit
           in: query
@@ -17,13 +17,13 @@ paths:
             type: integer
       responses:
         '200':
-          description: OK
+          description: ''
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Import'
+                  $ref: '#/components/schemas/Detail'
       servers:
         - url: 'http://localhost:3000'
   /health:
@@ -84,7 +84,7 @@ components:
             default:
               value: '2024-06-01'
   schemas:
-    Import:
+    Detail:
       type: object
       title: Import
       properties:

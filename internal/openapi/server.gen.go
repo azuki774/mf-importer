@@ -17,8 +17,8 @@ type ServerInterface interface {
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
 	// Your GET endpoint
-	// (GET /imports)
-	GetImports(w http.ResponseWriter, r *http.Request, params GetImportsParams)
+	// (GET details)
+	GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -32,8 +32,8 @@ func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // Your GET endpoint
-// (GET /imports)
-func (_ Unimplemented) GetImports(w http.ResponseWriter, r *http.Request, params GetImportsParams) {
+// (GET details)
+func (_ Unimplemented) GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -61,14 +61,14 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// GetImports operation middleware
-func (siw *ServerInterfaceWrapper) GetImports(w http.ResponseWriter, r *http.Request) {
+// GetDetails operation middleware
+func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var err error
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetImportsParams
+	var params GetDetailsParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -79,7 +79,7 @@ func (siw *ServerInterfaceWrapper) GetImports(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetImports(w, r, params)
+		siw.Handler.GetDetails(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -206,7 +206,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/imports", wrapper.GetImports)
+		r.Get(options.BaseURL+"details", wrapper.GetDetails)
 	})
 
 	return r
