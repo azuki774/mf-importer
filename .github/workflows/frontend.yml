@@ -1,0 +1,18 @@
+name: Go
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  frontend-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker image build
+        run: docker build -t mf-importer-frontend -f build/frontend/Dockerfile .
