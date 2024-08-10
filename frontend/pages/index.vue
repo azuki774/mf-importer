@@ -41,3 +41,23 @@ record_list.value = data.value
     </table>
   </section>
 </template>
+
+<style lang="css">
+.Lists {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.Lists th {
+  padding: 10px;
+  background: #e9faf9;
+  border: solid 1px #778ca3;
+}
+
+.Lists td {
+  padding: 10px;
+  border: solid 1px #778ca3;
+}
+</style>
