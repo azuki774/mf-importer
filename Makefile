@@ -3,6 +3,7 @@ SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-frontend
+OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 
 .PHONY: bin build start test debug migration
 bin:
@@ -33,3 +34,8 @@ migration:
 	cd migration; \
 	${SQL_MIGRATE_BIN} up -env=local; \
 	cd ../
+
+generate:
+	oapi-codegen -package "openapi" -generate "chi-server" ${OPENAPI_YAML} > internal/openapi/server.gen.go
+	oapi-codegen -package "openapi" -generate "spec"       ${OPENAPI_YAML} > internal/openapi/spec.gen.go
+	oapi-codegen -package "openapi" -generate "types"      ${OPENAPI_YAML} > internal/openapi/types.gen.go
