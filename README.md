@@ -1,5 +1,9 @@
 # mf-importer
-- マネーフォワードME のデータをHTML形式で入力すると、このスクリプトでパースされてDBに登録する。
+- マネーフォワードME のデータをDBに登録する。
+    - ファイルの元ネタは https://github.com/azuki774/myscrapers
 
 ## mf-import-maw
 - 取り込んだDBの情報を抽出して、https://github.com/azuki774/mawinter-server と連携する
+
+## mf-importer-fe
+- 取り込み状況の画面表示をする
