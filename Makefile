@@ -3,6 +3,7 @@ SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-fe
+CONTAINER_NAME_API=mf-importer-api
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 
 .PHONY: bin build start test debug migration
@@ -16,6 +17,7 @@ bin:
 build:
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
 	docker build -t $(CONTAINER_NAME_MAW) -f build/maw/Dockerfile .
+	docker build -t $(CONTAINER_NAME_API) -f build/api/Dockerfile .
 	docker build -t $(CONTAINER_NAME_FRONT) -f build/fe/Dockerfile .
 
 start:
