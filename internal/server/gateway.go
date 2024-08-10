@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"mf-importer/internal/openapi"
 	"net/http"
@@ -8,8 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type APIService interface {
+	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
+}
+
 type apigateway struct {
-	Logger *zap.Logger
+	Logger     *zap.Logger
+	APIService APIService
 }
 
 func (a *apigateway) GetHealth(w http.ResponseWriter, r *http.Request) {

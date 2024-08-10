@@ -4,6 +4,7 @@ import (
 	"context"
 	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
+	"mf-importer/internal/repository"
 	"time"
 
 	"github.com/oapi-codegen/runtime/types"
@@ -27,6 +28,10 @@ type DBRepository interface {
 type APIService struct {
 	Logger *zap.Logger
 	Repo   DBRepository
+}
+
+func NewAPIService(l *zap.Logger, db *repository.DBClient) (ap *APIService) {
+	return &APIService{Logger: l, Repo: db}
 }
 
 func (a *APIService) GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error) {

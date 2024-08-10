@@ -11,7 +11,8 @@ import (
 )
 
 type Server struct {
-	Logger *zap.Logger
+	Logger     *zap.Logger
+	APIService APIService
 }
 
 func (s *Server) Start(ctx context.Context) error {

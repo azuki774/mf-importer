@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"mf-importer/internal/logger"
+	"mf-importer/internal/mfapi"
+	"mf-importer/internal/repository"
 	"mf-importer/internal/server"
+	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 var dryRun bool
@@ -46,48 +50,50 @@ func init() {
 func startMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
-	// host := os.Getenv("DB_HOST")
-	// port := os.Getenv("DB_PORT")
-	// user := os.Getenv("DB_USER")
-	// pass := os.Getenv("DB_PASS")
-	// name := os.Getenv("DB_NAME")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	pass := os.Getenv("DB_PASS")
+	name := os.Getenv("DB_NAME")
 
-	// if host == "" {
-	// 	host = "127.0.0.1"
-	// }
-	// if port == "" {
-	// 	port = "3306"
-	// }
-	// if user == "" {
-	// 	user = "root"
-	// }
-	// if pass == "" {
-	// 	pass = "password"
-	// }
-	// if name == "" {
-	// 	name = "mfimporter"
-	// }
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	if port == "" {
+		port = "3306"
+	}
+	if user == "" {
+		user = "root"
+	}
+	if pass == "" {
+		pass = "password"
+	}
+	if name == "" {
+		name = "mfimporter"
+	}
 
-	// l.Info("using DB info",
-	// 	zap.String("db_host", host),
-	// 	zap.String("db_port", port),
-	// 	zap.String("db_user", user),
-	// 	zap.String("db_name", name),
-	// )
-	// db, err := repository.NewDBRepository(
-	// 	host,
-	// 	port,
-	// 	user,
-	// 	pass,
-	// 	name,
-	// )
-	// if err != nil {
-	// 	l.Error("failed to connect DB", zap.Error(err))
-	// 	return err
-	// }
-	// defer db.CloseDB()
+	l.Info("using DB info",
+		zap.String("DB_HOST", host),
+		zap.String("DB_PORT", port),
+		zap.String("DB_USER", user),
+		zap.String("DB_PASS", name),
+	)
+	db, err := repository.NewDBRepository(
+		host,
+		port,
+		user,
+		pass,
+		name,
+	)
+	if err != nil {
+		l.Error("failed to connect DB", zap.Error(err))
+		return err
+	}
+	defer db.CloseDB()
 
-	server := server.Server{Logger: l}
+	ap := mfapi.NewAPIService(l, db)
+
+	server := server.Server{Logger: l, APIService: ap}
 	if err := server.Start(ctx); err != nil {
 		return err
 	}
