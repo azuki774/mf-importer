@@ -1,4 +1,4 @@
-name: Go
+name: Frontend
 
 on:
   push:
@@ -9,10 +9,43 @@ on:
       - "**"
 
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.5"
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - run: node --version
+
+      - name: npm install
+        run: npm install
+        working-directory: frontend
+
+      - name: npm ci
+        run: npm ci
+        working-directory: frontend
+
+      - name: npm run build
+        run: npm run build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=8192"
+        working-directory: frontend
+
+      - name: npm run generate
+        run: npm run build
+        working-directory: frontend
+
   frontend-docker:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Docker image build
-        run: docker build -t mf-importer-frontend -f build/frontend/Dockerfile .
+      - name: Build for Docker
+        run: docker build -t mf-importer-fe -f build/fe/Dockerfile .
