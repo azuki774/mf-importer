@@ -12,6 +12,19 @@ const asyncData = await useAsyncData(
 );
 
 const data = asyncData.data.value as ImportRecord[];
+
+// fetchデータを整形
+for (let d of data) {
+  d.registDate = d.registDate.slice(0, 19);
+  if (d.importJudgeDate != undefined) { // 2023-09-23T00:00:00+09:00 -> 2023-09-23T00:00:00
+    d.importJudgeDate = d.importJudgeDate.slice(0, 19);
+  }
+  d.importJudgeDate = d.importJudgeDate.slice(0, 19);
+  if (d.importDate != undefined) {
+    d.importDate = d.importDate.slice(0, 19);
+  }
+}
+
 record_list.value = data
 </script>
 
