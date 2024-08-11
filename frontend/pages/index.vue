@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ImportRecord } from "@/interfaces";
 const config = useRuntimeConfig(); // nuxt.config.ts に書いてあるコンフィグを読み出す
-const record_list = ref<any>()
+const record_list = ref<ImportRecord[]>()
 const asyncData = await useAsyncData(
   `api`,
   (): Promise<any> => {
@@ -10,8 +10,22 @@ const asyncData = await useAsyncData(
     return response;
   }
 );
-const data = asyncData.data;
-record_list.value = data.value
+
+const data = asyncData.data.value as ImportRecord[];
+
+// fetchデータを整形
+for (let d of data) {
+  d.registDate = d.registDate.slice(0, 19);
+  if (d.importJudgeDate != undefined) { // 2023-09-23T00:00:00+09:00 -> 2023-09-23T00:00:00
+    d.importJudgeDate = d.importJudgeDate.slice(0, 19);
+  }
+  d.importJudgeDate = d.importJudgeDate.slice(0, 19);
+  if (d.importDate != undefined) {
+    d.importDate = d.importDate.slice(0, 19);
+  }
+}
+
+record_list.value = data
 </script>
 
 <template>
@@ -24,15 +38,17 @@ record_list.value = data.value
         <tr>
           <th>利用日時</th>
           <th>名前</th>
+          <th>料金</th>
           <th>登録日時</th>
           <th>取り込み判定日時</th>
           <th>取り込み日時</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in record_list" :key="record_list">
+        <tr v-for="record in record_list">
           <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
+          <td>{{ record.price }}</td>
           <td>{{ record.registDate }}</td>
           <td>{{ record.importJudgeDate }}</td>
           <td>{{ record.importDate }}</td>
@@ -44,8 +60,10 @@ record_list.value = data.value
 
 <style lang="css">
 .Lists {
-  width: 100%;
+  width: 75%;
   text-align: center;
+  margin-left: auto;
+  margin-right: auto;
   border-collapse: collapse;
   border-spacing: 0;
 }
