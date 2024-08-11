@@ -6,6 +6,7 @@ const asyncData = await useAsyncData(
   `api`,
   (): Promise<any> => {
     const url = config.public.apiBaseEndpoint + "/details";
+    console.log(url)
     const response = $fetch(url);
     return response;
   }
