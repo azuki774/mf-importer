@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ImportRecord } from "@/interfaces";
 const config = useRuntimeConfig(); // nuxt.config.ts に書いてあるコンフィグを読み出す
-const record_list = ref<any>()
+const record_list = ref<ImportRecord[]>()
 const asyncData = await useAsyncData(
   `api`,
   (): Promise<any> => {
@@ -10,8 +10,9 @@ const asyncData = await useAsyncData(
     return response;
   }
 );
-const data = asyncData.data;
-record_list.value = data.value
+
+const data = asyncData.data.value as ImportRecord[];
+record_list.value = data
 </script>
 
 <template>
@@ -31,7 +32,7 @@ record_list.value = data.value
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in record_list" :key="record_list">
+        <tr v-for="record in record_list">
           <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
           <td>{{ record.price }}</td>
