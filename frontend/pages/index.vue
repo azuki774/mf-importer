@@ -46,8 +46,10 @@ record_list.value = data.value
 
 <style lang="css">
 .Lists {
-  width: 100%;
+  width: 75%;
   text-align: center;
+  margin-left: auto;
+  margin-right: auto;
   border-collapse: collapse;
   border-spacing: 0;
 }
