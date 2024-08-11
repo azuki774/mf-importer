@@ -24,6 +24,7 @@ record_list.value = data.value
         <tr>
           <th>利用日時</th>
           <th>名前</th>
+          <th>料金</th>
           <th>登録日時</th>
           <th>取り込み判定日時</th>
           <th>取り込み日時</th>
@@ -33,6 +34,7 @@ record_list.value = data.value
         <tr v-for="record in record_list" :key="record_list">
           <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
+          <td>{{ record.price }}</td>
           <td>{{ record.registDate }}</td>
           <td>{{ record.importJudgeDate }}</td>
           <td>{{ record.importDate }}</td>
