@@ -20,7 +20,6 @@ type DBClient interface {
 }
 type MawinterClient interface {
 	Regist(ctx context.Context, c model.Detail, catID int) (err error)
-	GetMawinterWeb(ctx context.Context, yyyymm string) (recs []model.GetRecord, err error) // mawinter-web から登録されたデータをYYYYMM単位で取得
 }
 
 const fromMawinterWebText = "mawinter-web"
@@ -102,25 +101,6 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	}
 	m.Logger.Info("fetch records from DB complete")
 
-	// 重複判定に利用するため、mawinter から登録済のデータで、from="mawinter-web" なものを取ってくる
-	yyyymm := time.Now().Format("200601")
-	yyyymmLastMonth := time.Now().AddDate(0, -1, 0).Format("200601")
-	mawrecs, err := m.MawClient.GetMawinterWeb(ctx, yyyymm)
-	if err != nil {
-		m.Logger.Error("failed to records from mawinter", zap.Error(err))
-		return err
-	}
-	mrc2, err := m.MawClient.GetMawinterWeb(ctx, yyyymmLastMonth)
-	if err != nil {
-		m.Logger.Error("failed to records from mawinter", zap.Error(err))
-		return err
-	}
-	mawrecs = append(mawrecs, mrc2...)
-	m.Logger.Info(
-		"fetch records from mawinter (from = mawinter-web, this month and lastmonth)",
-		zap.Int("num", len(mawrecs)),
-	)
-
 	for _, c := range cfDetails {
 		cLogger := m.Logger.With(
 			zap.Time("Date", c.Date),
@@ -148,22 +128,13 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 		}
 
 		if regist {
-			// 既に mawinter-web に登録済のデータでなければ送信する
-			if !judgeAlreadyRegisted(c, mawrecs) {
-				cLogger.Info("post to mawinter")
-				err := m.MawClient.Regist(ctx, c, catID)
-				if err != nil {
-					m.Logger.Error("failed to post mawinter", zap.Error(err))
-					return err
-				}
-				cLogger.Info("post to mawinter complete")
-			} else {
-				// 既に登録済の場合
-				// detail テーブル更新の際には、maw_regist_date には日付を入れないので regist フラグを下ろす
-				cLogger.Warn("this record may be already registed", zap.Int64("ID", c.ID), zap.Time("Date", c.Date))
-				regist = false
+			cLogger.Info("post to mawinter")
+			err := m.MawClient.Regist(ctx, c, catID)
+			if err != nil {
+				m.Logger.Error("failed to post mawinter", zap.Error(err))
+				return err
 			}
-
+			cLogger.Info("post to mawinter complete")
 		}
 
 		// detail テーブルを更新する
@@ -177,24 +148,4 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 
 	m.Logger.Info("Regist end")
 	return nil
-}
-
-// これから登録しようとしているデータがリスト内にあるかを確認する
-// 判定条件: 日時の yyyymmdd が一致 && price が一致
-func judgeAlreadyRegisted(dr model.Detail, alrecs []model.GetRecord) (duplicate bool) {
-	for _, r := range alrecs {
-		// 金額が違う場合はそのレコードは false
-		if r.Price != int(dr.Price) {
-			continue
-		}
-
-		// YYYYMMDD が違う場合はそのレコードは false
-		if r.Datetime.Format("20060102") != dr.Date.Format("20060102") {
-			continue
-		}
-
-		// レコード一致判定
-		return true
-	}
-	return false
 }

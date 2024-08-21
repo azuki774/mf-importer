@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/model"
 	"net/http"
@@ -60,21 +59,3 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) 
 	return nil
 }
 
-func (m *MawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) (recs []model.GetRecord, err error) {
-	url := m.APIURL + "/" + yyyymm + "?from=mawinter-web"
-	resp, err := http.Get(url)
-	if err != nil {
-		return []model.GetRecord{}, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return []model.GetRecord{}, err
-	}
-	err = json.Unmarshal(body, &recs)
-	if err != nil {
-		return []model.GetRecord{}, err
-	}
-
-	return recs, nil
-}
