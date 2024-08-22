@@ -32,19 +32,20 @@ record_list.value = data
   <h1>mf-importer-web</h1>
 
   <section class="container">
-    <h1>リスト</h1>
-    <table class="Lists">
-      <thead>
+    <h3>取り込み履歴</h3>
+    <table class="table small bordered striped table-bordered">
+      <thead class="table-info">
         <tr>
-          <th>利用日時</th>
-          <th>名前</th>
-          <th>料金</th>
-          <th>登録日時</th>
-          <th>取り込み判定日時</th>
-          <th>取り込み日時</th>
+          <th scope="col">利用日時</th>
+          <th scope="col">名前</th>
+          <th scope="col">料金</th>
+          <th scope="col">登録日時</th>
+          <th scope="col">取り込み判定日時</th>
+          <th scope="col">取り込み日時</th>
         </tr>
       </thead>
       <tbody>
+        <th scope="row"></th>
         <tr v-for="record in record_list">
           <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
