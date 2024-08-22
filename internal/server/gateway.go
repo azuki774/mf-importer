@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
 	"net/http"
 
@@ -13,6 +15,7 @@ import (
 type APIService interface {
 	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
 	GetRules(ctx context.Context) ([]openapi.Rule, error)
+	GetRule(ctx context.Context, id int) (openapi.Rule, error)
 	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
 }
 
@@ -118,11 +121,29 @@ func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request) {
 }
 
 // (GET /rules/{id})
-func (a *apigateway) DeleteRulesId(w http.ResponseWriter, r *http.Request, id string) {
+func (a *apigateway) DeleteRulesId(w http.ResponseWriter, r *http.Request, id int) {
 
 }
 
 // (GET /rules/{id})
-func (a *apigateway) GetRulesId(w http.ResponseWriter, r *http.Request, id string) {
+func (a *apigateway) GetRulesId(w http.ResponseWriter, r *http.Request, id int) {
+	rule, err := a.APIService.GetRule(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, model.ErrRecordNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	outputJson, err := json.Marshal(&rule)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, string(outputJson))
 }

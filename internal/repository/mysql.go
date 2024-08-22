@@ -92,6 +92,17 @@ func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleD
 	return er, nil
 }
 
+func (d *DBClient) GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error) {
+	result := d.Conn.Table(tableNameExtractRule).Where("ID = ?", id).First(&er)
+	if result.Error != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.ExtractRuleDB{}, model.ErrRecordNotFound
+		}
+		return model.ExtractRuleDB{}, result.Error
+	}
+	return er, nil
+}
+
 // yyyymmdd と name と price がすべて一致するものを抽出する（登録済判断に利用）
 // すでに登録があれば true とする
 func (d *DBClient) CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error) {

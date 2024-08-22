@@ -24,6 +24,7 @@ func init() {
 type DBRepository interface {
 	GetDetails(ctx context.Context, limit int) (details []model.Detail, err error)
 	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
+	GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error)
 	AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error)
 }
 
@@ -73,6 +74,17 @@ func (a *APIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {
 		rules = append(rules, rule)
 	}
 	return rules, nil
+}
+
+func (a *APIService) GetRule(ctx context.Context, id int) (openapi.Rule, error) {
+	er, err := a.Repo.GetExtractRule(ctx, id)
+	if err != nil {
+		a.Logger.Error("failed to get rules from DB", zap.Error(err))
+		return openapi.Rule{}, err
+	}
+
+	rule := er.ToExtractRule()
+	return rule, nil
 }
 
 func (a *APIService) AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error) {
