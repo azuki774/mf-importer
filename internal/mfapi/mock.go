@@ -42,3 +42,30 @@ func (m *mockDBClient) GetDetails(ctx context.Context, limit int) (details []mod
 	}
 	return details, nil
 }
+
+func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+
+	return []model.ExtractRuleDB{
+		{
+			ID:         1,
+			FieldName:  "name",
+			Value:      "かんぜんいっち",
+			ExactMatch: 1,
+			CategoryID: 100,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		},
+		{
+			ID:         2,
+			FieldName:  "m_category",
+			Value:      "ぶぶんいっち",
+			ExactMatch: 0,
+			CategoryID: 400,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		},
+	}, nil
+}

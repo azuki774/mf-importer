@@ -97,3 +97,71 @@ func TestAPIService_GetDetails(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIService_GetRules(t *testing.T) {
+	type fields struct {
+		Logger *zap.Logger
+		Repo   DBRepository
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    []openapi.Rule
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			fields: fields{
+				Logger: l,
+				Repo:   &mockDBClient{},
+			},
+			args: args{ctx: context.Background()},
+			want: []openapi.Rule{
+				{
+					Id:         1,
+					FieldName:  "name",
+					Value:      "かんぜんいっち",
+					ExactMatch: 1,
+					CategoryId: 100,
+				},
+				{
+					Id:         2,
+					FieldName:  "m_category",
+					Value:      "ぶぶんいっち",
+					ExactMatch: 0,
+					CategoryId: 400,
+				},
+			},
+		},
+		{
+			name: "error",
+			fields: fields{
+				Logger: l,
+				Repo:   &mockDBClient{err: errors.New("error")},
+			},
+			args:    args{ctx: context.Background()},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &APIService{
+				Logger: tt.fields.Logger,
+				Repo:   tt.fields.Repo,
+			}
+			got, err := a.GetRules(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("APIService.GetRules() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("APIService.GetRules() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
