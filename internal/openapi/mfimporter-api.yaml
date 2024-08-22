@@ -141,6 +141,41 @@ paths:
                 $ref: '#/components/schemas/Rule'
       servers:
         - url: 'http://localhost:3000'
+  '/rules/{id}':
+    get:
+      summary: '[WIP] get rule'
+      operationId: get-rules-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
+    delete:
+      summary: '[WIP] delete rule'
+      operationId: delete-rules-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content: {}
+      responses:
+        '204':
+          description: No Content
+      servers:
+        - url: 'http://localhost:3000'
 components:
   responses:
     import:

@@ -37,6 +37,12 @@ type ServerInterface interface {
 	// [WIP] add extract rule
 	// (POST /rules)
 	PostRules(w http.ResponseWriter, r *http.Request)
+	// [WIP] delete rule
+	// (DELETE /rules/{id})
+	DeleteRulesId(w http.ResponseWriter, r *http.Request, id int)
+	// [WIP] get rule
+	// (GET /rules/{id})
+	GetRulesId(w http.ResponseWriter, r *http.Request, id int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -88,6 +94,18 @@ func (_ Unimplemented) GetRules(w http.ResponseWriter, r *http.Request) {
 // [WIP] add extract rule
 // (POST /rules)
 func (_ Unimplemented) PostRules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// [WIP] delete rule
+// (DELETE /rules/{id})
+func (_ Unimplemented) DeleteRulesId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// [WIP] get rule
+// (GET /rules/{id})
+func (_ Unimplemented) GetRulesId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -284,6 +302,58 @@ func (siw *ServerInterfaceWrapper) PostRules(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// DeleteRulesId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRulesId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRulesId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetRulesId operation middleware
+func (siw *ServerInterfaceWrapper) GetRulesId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRulesId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -420,6 +490,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/rules", wrapper.PostRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/rules/{id}", wrapper.DeleteRulesId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/rules/{id}", wrapper.GetRulesId)
 	})
 
 	return r

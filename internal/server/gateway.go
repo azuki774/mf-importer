@@ -116,3 +116,13 @@ func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(outputJson))
 }
+
+// (GET /rules/{id})
+func (a *apigateway) DeleteRulesId(w http.ResponseWriter, r *http.Request, id string) {
+
+}
+
+// (GET /rules/{id})
+func (a *apigateway) GetRulesId(w http.ResponseWriter, r *http.Request, id string) {
+
+}
