@@ -2,7 +2,10 @@
 - マネーフォワードME のデータをDBに登録する。
     - ファイルの元ネタは https://github.com/azuki774/myscrapers
 
-## mf-import-maw
+## mf-importer-api
+- https://azuki774.github.io/mf-importer/api.html
+
+## mf-importer-maw
 - 取り込んだDBの情報を抽出して、https://github.com/azuki774/mawinter-server と連携する
 
 ## mf-importer-fe
