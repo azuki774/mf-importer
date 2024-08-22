@@ -12,6 +12,7 @@ import (
 
 type APIService interface {
 	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
+	GetRules(ctx context.Context) ([]openapi.Rule, error)
 }
 
 type apigateway struct {
@@ -50,31 +51,45 @@ func (a *apigateway) GetDetails(w http.ResponseWriter, r *http.Request, params o
 }
 
 // (DELETE /details/{id})
-func (a *apigateway) DeleteDetailsId(w http.ResponseWriter, r *http.Request, id int){
+func (a *apigateway) DeleteDetailsId(w http.ResponseWriter, r *http.Request, id int) {
 	// TODO
 }
 
 // (GET /details/{id})
-func (a *apigateway) GetDetailsId(w http.ResponseWriter, r *http.Request, id int){
+func (a *apigateway) GetDetailsId(w http.ResponseWriter, r *http.Request, id int) {
 	// TODO
 }
 
 // (PATCH /details/{id})
-func (a *apigateway) PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params openapi.PatchDetailsIdParams){
+func (a *apigateway) PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params openapi.PatchDetailsIdParams) {
 	// TODO
 }
 
 // (GET /histories)
-func (a *apigateway) GetHistories(w http.ResponseWriter, r *http.Request){
+func (a *apigateway) GetHistories(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }
 
 // (GET /rules)
-func (a *apigateway) GetRules(w http.ResponseWriter, r *http.Request){
-	// TODO
+func (a *apigateway) GetRules(w http.ResponseWriter, r *http.Request) {
+	rules, err := a.APIService.GetRules(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	outputJson, err := json.Marshal(&rules)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, string(outputJson))
 }
 
 // (POST /rules)
-func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request){
+func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request) {
 	// TODO
 }

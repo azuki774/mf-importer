@@ -23,6 +23,7 @@ func init() {
 
 type DBRepository interface {
 	GetDetails(ctx context.Context, limit int) (details []model.Detail, err error)
+	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
 }
 
 type APIService struct {
@@ -56,4 +57,25 @@ func (a *APIService) GetDetails(ctx context.Context, limit int) (dets []openapi.
 	}
 
 	return dets, nil
+}
+
+func (a *APIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {
+	ers, err := a.Repo.GetExtractRules(ctx)
+	if err != nil {
+		a.Logger.Error("failed to get rules from DB", zap.Error(err))
+		return nil, err
+	}
+
+	rules := []openapi.Rule{}
+	for _, er := range ers {
+		rule := openapi.Rule{
+			CategoryId: int(er.CategoryID),
+			ExactMatch: int(er.ExactMatch),
+			FieldName:  er.FieldName,
+			Id:         int(er.ID),
+			Value:      er.Value,
+		}
+		rules = append(rules, rule)
+	}
+	return rules, nil
 }
