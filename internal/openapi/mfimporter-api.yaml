@@ -67,12 +67,24 @@ paths:
       summary: '[WIP] change status detail'
       operationId: patch-details-id
       parameters:
+        - name: ope
+          in: query
+          description: 'operate name ("reset": judge history reset)'
+          required: true
+          schema:
+            type: string
         - name: id
           in: path
           required: true
           schema:
             type: integer
-      responses: {}
+      requestBody:
+        content: {}
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: "Bad Request\r\nUnknown operate name"
       servers:
         - url: 'http://localhost:3000'
       x-internal: false

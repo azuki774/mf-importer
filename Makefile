@@ -47,4 +47,4 @@ generate:
 doc:
 	docker build -t $(CONTAINER_NAME_DOC) -f docs/Dockerfile .
 	docker run --rm -it -v $(pwd)/internal/openapi/:/data/ $(CONTAINER_NAME_DOC)
-	mv internal/openapi/api.html docs/api.html
+	mv -f internal/openapi/api.html docs/api.html
