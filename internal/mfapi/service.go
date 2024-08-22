@@ -24,6 +24,7 @@ func init() {
 type DBRepository interface {
 	GetDetails(ctx context.Context, limit int) (details []model.Detail, err error)
 	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
+	AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error)
 }
 
 type APIService struct {
@@ -68,14 +69,20 @@ func (a *APIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {
 
 	rules := []openapi.Rule{}
 	for _, er := range ers {
-		rule := openapi.Rule{
-			CategoryId: int(er.CategoryID),
-			ExactMatch: int(er.ExactMatch),
-			FieldName:  er.FieldName,
-			Id:         int(er.ID),
-			Value:      er.Value,
-		}
+		rule := er.ToExtractRule()
 		rules = append(rules, rule)
 	}
 	return rules, nil
+}
+
+func (a *APIService) AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error) {
+	ruleDB, err := a.Repo.AddExtractRule(ctx, req)
+	if err != nil {
+		a.Logger.Error("failed to post new rules from DB", zap.Error(err))
+		return openapi.Rule{}, err
+	}
+
+	a.Logger.Info("add new rule to DB", zap.Int("id", int(ruleDB.ID)))
+	rule := ruleDB.ToExtractRule()
+	return rule, nil
 }

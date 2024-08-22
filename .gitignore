@@ -1,5 +1,6 @@
 deployment/*/*
 memo
+tmp/*
 .vscode
 .pytest_cache
 src/__pycache__/*
