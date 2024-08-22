@@ -13,7 +13,7 @@ class MockHandler(BaseHTTPRequestHandler):
             {
                 'useDate': '2024-06-03',
                 'name': 'てすと明細Z',
-                'Price': 1234,
+                'price': 1234,
                 'registDate': '2024-06-05',
                 'importJudgeDate': '2024-06-05 15:00:00',
                 # 'importDate': ,
@@ -21,7 +21,7 @@ class MockHandler(BaseHTTPRequestHandler):
             {
                 'useDate': '2024-06-02',
                 'name': 'てすと明細Y',
-                'Price': 1234,
+                'price': 1234,
                 'registDate': '2024-06-04',
                 'importJudgeDate': '2024-06-04 15:00:00',
                 'importDate': '2024-06-04 15:00:00'
@@ -29,7 +29,7 @@ class MockHandler(BaseHTTPRequestHandler):
             {
                 'useDate': '2024-06-01',
                 'name': 'てすと明細X',
-                'Price': 1234,
+                'price': 1234,
                 'registDate': '2024-06-03',
                 'importJudgeDate': '2024-06-03 15:00:00',
                 'importDate': '2024-06-03 15:00:00'
