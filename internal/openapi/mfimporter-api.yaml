@@ -109,6 +109,38 @@ paths:
       responses: {}
       servers:
         - url: 'http://localhost:3000'
+  /rules:
+    get:
+      summary: '[WIP] get all extract rules'
+      operationId: get-rules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
+    post:
+      summary: '[WIP] add extract rule'
+      operationId: post-rules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
 components:
   responses:
     import:
@@ -177,3 +209,50 @@ components:
         - name
         - price
         - registDate
+    Rule:
+      type: object
+      title: ExtractRule
+      properties:
+        id:
+          type: integer
+        field_name:
+          type: string
+          examples:
+            - name
+        value:
+          type: string
+        category_id:
+          type: integer
+          examples:
+            - 210
+        exact_match:
+          type: integer
+          minimum: 0
+          maximum: 1
+      required:
+        - id
+        - field_name
+        - value
+        - category_id
+        - exact_match
+    RuleRequest:
+      type: object
+      title: ExtractRuleRequest
+      properties:
+        field_name:
+          type: string
+          examples:
+            - name
+        value:
+          type: string
+        category_id:
+          type: integer
+        exact_match:
+          type: integer
+          minimum: 0
+          maximum: 1
+      required:
+        - field_name
+        - value
+        - category_id
+        - exact_match
