@@ -3,6 +3,7 @@ package mfapi
 import (
 	"context"
 	"mf-importer/internal/model"
+	"mf-importer/internal/openapi"
 	"time"
 )
 
@@ -67,5 +68,21 @@ func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractR
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		},
+	}, nil
+}
+
+func (m *mockDBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error) {
+	if m.err != nil {
+		return model.ExtractRuleDB{}, m.err
+	}
+
+	return model.ExtractRuleDB{
+		ID:         100, // fix value
+		FieldName:  rule.FieldName,
+		Value:      rule.Value,
+		ExactMatch: int64(rule.ExactMatch),
+		CategoryID: int64(rule.CategoryId),
+		CreatedAt:  time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt:  time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 	}, nil
 }

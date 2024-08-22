@@ -13,6 +13,7 @@ import (
 type APIService interface {
 	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
 	GetRules(ctx context.Context) ([]openapi.Rule, error)
+	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
 }
 
 type apigateway struct {
@@ -91,5 +92,27 @@ func (a *apigateway) GetRules(w http.ResponseWriter, r *http.Request) {
 
 // (POST /rules)
 func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	var req openapi.RuleRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	rule, err := a.APIService.AddRule(r.Context(), req)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	outputJson, err := json.Marshal(&rule)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, string(outputJson))
 }
