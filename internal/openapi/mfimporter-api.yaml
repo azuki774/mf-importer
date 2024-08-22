@@ -8,7 +8,7 @@ servers:
 paths:
   /details:
     get:
-      summary: Your GET endpoint
+      summary: get details
       operationId: get-details
       parameters:
         - name: limit
@@ -28,7 +28,7 @@ paths:
         - url: 'http://localhost:3000'
   /health:
     get:
-      summary: Your GET endpoint
+      summary: health check
       operationId: get-health
       requestBody:
         content:
@@ -41,6 +41,59 @@ paths:
             examples:
               default:
                 value: OK
+      responses: {}
+      servers:
+        - url: 'http://localhost:3000'
+  '/details/{id}':
+    get:
+      summary: '[WIP] get detail'
+      operationId: get-details-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+      servers:
+        - url: 'http://localhost:3000'
+    patch:
+      summary: '[WIP] change status detail'
+      operationId: patch-details-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses: {}
+      servers:
+        - url: 'http://localhost:3000'
+      x-internal: false
+    delete:
+      summary: '[WIP] delete detail'
+      operationId: delete-details-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content
+      servers:
+        - url: 'http://localhost:3000'
+  /histories:
+    get:
+      summary: '[WIP] get import hisories'
+      operationId: get-histories
       responses: {}
       servers:
         - url: 'http://localhost:3000'
