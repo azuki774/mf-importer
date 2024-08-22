@@ -71,6 +71,22 @@ func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractR
 	}, nil
 }
 
+func (m *mockDBClient) GetExtractRule(ctx context.Context, id int) (model.ExtractRuleDB, error) {
+	if m.err != nil {
+		return model.ExtractRuleDB{}, m.err
+	}
+
+	return model.ExtractRuleDB{
+		ID:         1,
+		FieldName:  "name",
+		Value:      "かんぜんいっち",
+		ExactMatch: 1,
+		CategoryID: 100,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}, nil
+}
+
 func (m *mockDBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error) {
 	if m.err != nil {
 		return model.ExtractRuleDB{}, m.err
