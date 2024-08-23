@@ -242,3 +242,56 @@ func TestAPIService_AddRule(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIService_DeleteRule(t *testing.T) {
+	type fields struct {
+		Logger *zap.Logger
+		Repo   DBRepository
+	}
+	type args struct {
+		ctx context.Context
+		id  int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			fields: fields{
+				Logger: l,
+				Repo:   &mockDBClient{},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  100,
+			},
+			wantErr: false,
+		},
+		{
+			name: "error",
+			fields: fields{
+				Logger: l,
+				Repo:   &mockDBClient{err: errors.New("error")},
+			},
+			args: args{
+				ctx: context.Background(),
+				id:  100,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &APIService{
+				Logger: tt.fields.Logger,
+				Repo:   tt.fields.Repo,
+			}
+			if err := a.DeleteRule(tt.args.ctx, tt.args.id); (err != nil) != tt.wantErr {
+				t.Errorf("APIService.DeleteRule() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
