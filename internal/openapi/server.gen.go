@@ -31,16 +31,16 @@ type ServerInterface interface {
 	// [WIP] get import hisories
 	// (GET /histories)
 	GetHistories(w http.ResponseWriter, r *http.Request)
-	// [WIP] get all extract rules
+	// get all extract rules
 	// (GET /rules)
 	GetRules(w http.ResponseWriter, r *http.Request)
-	// [WIP] add extract rule
+	// add extract rule
 	// (POST /rules)
 	PostRules(w http.ResponseWriter, r *http.Request)
-	// [WIP] delete rule
+	// delete rule
 	// (DELETE /rules/{id})
 	DeleteRulesId(w http.ResponseWriter, r *http.Request, id int)
-	// [WIP] get rule
+	// get rule
 	// (GET /rules/{id})
 	GetRulesId(w http.ResponseWriter, r *http.Request, id int)
 }
@@ -85,25 +85,25 @@ func (_ Unimplemented) GetHistories(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// [WIP] get all extract rules
+// get all extract rules
 // (GET /rules)
 func (_ Unimplemented) GetRules(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// [WIP] add extract rule
+// add extract rule
 // (POST /rules)
 func (_ Unimplemented) PostRules(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// [WIP] delete rule
+// delete rule
 // (DELETE /rules/{id})
 func (_ Unimplemented) DeleteRulesId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// [WIP] get rule
+// get rule
 // (GET /rules/{id})
 func (_ Unimplemented) GetRulesId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
