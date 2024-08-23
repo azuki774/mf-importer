@@ -2,12 +2,10 @@
 import type { ImportRecord } from "@/interfaces";
 const config = useRuntimeConfig(); // nuxt.config.ts に書いてあるコンフィグを読み出す
 const record_list = ref<ImportRecord[]>()
-const asyncData = await useAsyncData(
-  `api`,
-  (): Promise<any> => {
-    const url = config.public.apiBaseEndpoint + "/details";
-    const response = $fetch(url);
-    return response;
+const asyncData = await useFetch(
+  "/api/details",
+  {
+    key: `/api/details`,
   }
 );
 
