@@ -20,9 +20,32 @@ type Detail struct {
 	UseDate         openapi_types.Date `json:"useDate"`
 }
 
+// Rule defines model for Rule.
+type Rule struct {
+	CategoryId int    `json:"category_id"`
+	ExactMatch int    `json:"exact_match"`
+	FieldName  string `json:"field_name"`
+	Id         int    `json:"id"`
+	Value      string `json:"value"`
+}
+
+// RuleRequest defines model for RuleRequest.
+type RuleRequest struct {
+	CategoryId int    `json:"category_id"`
+	ExactMatch int    `json:"exact_match"`
+	FieldName  string `json:"field_name"`
+	Value      string `json:"value"`
+}
+
 // GetDetailsParams defines parameters for GetDetails.
 type GetDetailsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// PatchDetailsIdParams defines parameters for PatchDetailsId.
+type PatchDetailsIdParams struct {
+	// Ope operate name ("reset": judge history reset)
+	Ope string `form:"ope" json:"ope"`
 }
 
 // GetHealthTextBody defines parameters for GetHealth.
@@ -30,3 +53,6 @@ type GetHealthTextBody = string
 
 // GetHealthTextRequestBody defines body for GetHealth for text/plain ContentType.
 type GetHealthTextRequestBody = GetHealthTextBody
+
+// PostRulesJSONRequestBody defines body for PostRules for application/json ContentType.
+type PostRulesJSONRequestBody = RuleRequest

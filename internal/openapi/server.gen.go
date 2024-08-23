@@ -13,27 +13,99 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Your GET endpoint
+	// get details
 	// (GET /details)
 	GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams)
-	// Your GET endpoint
+	// [WIP] delete detail
+	// (DELETE /details/{id})
+	DeleteDetailsId(w http.ResponseWriter, r *http.Request, id int)
+	// [WIP] get detail
+	// (GET /details/{id})
+	GetDetailsId(w http.ResponseWriter, r *http.Request, id int)
+	// [WIP] change status detail
+	// (PATCH /details/{id})
+	PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams)
+	// health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// [WIP] get import hisories
+	// (GET /histories)
+	GetHistories(w http.ResponseWriter, r *http.Request)
+	// get all extract rules
+	// (GET /rules)
+	GetRules(w http.ResponseWriter, r *http.Request)
+	// add extract rule
+	// (POST /rules)
+	PostRules(w http.ResponseWriter, r *http.Request)
+	// delete rule
+	// (DELETE /rules/{id})
+	DeleteRulesId(w http.ResponseWriter, r *http.Request, id int)
+	// get rule
+	// (GET /rules/{id})
+	GetRulesId(w http.ResponseWriter, r *http.Request, id int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Your GET endpoint
+// get details
 // (GET /details)
 func (_ Unimplemented) GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Your GET endpoint
+// [WIP] delete detail
+// (DELETE /details/{id})
+func (_ Unimplemented) DeleteDetailsId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// [WIP] get detail
+// (GET /details/{id})
+func (_ Unimplemented) GetDetailsId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// [WIP] change status detail
+// (PATCH /details/{id})
+func (_ Unimplemented) PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// health check
 // (GET /health)
 func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// [WIP] get import hisories
+// (GET /histories)
+func (_ Unimplemented) GetHistories(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// get all extract rules
+// (GET /rules)
+func (_ Unimplemented) GetRules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// add extract rule
+// (POST /rules)
+func (_ Unimplemented) PostRules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// delete rule
+// (DELETE /rules/{id})
+func (_ Unimplemented) DeleteRulesId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// get rule
+// (GET /rules/{id})
+func (_ Unimplemented) GetRulesId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -74,12 +146,205 @@ func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// DeleteDetailsId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDetailsId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDetailsId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetDetailsId operation middleware
+func (siw *ServerInterfaceWrapper) GetDetailsId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDetailsId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// PatchDetailsId operation middleware
+func (siw *ServerInterfaceWrapper) PatchDetailsId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchDetailsIdParams
+
+	// ------------- Required query parameter "ope" -------------
+
+	if paramValue := r.URL.Query().Get("ope"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "ope"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "ope", r.URL.Query(), &params.Ope)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ope", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchDetailsId(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetHistories operation middleware
+func (siw *ServerInterfaceWrapper) GetHistories(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHistories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetRules operation middleware
+func (siw *ServerInterfaceWrapper) GetRules(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// PostRules operation middleware
+func (siw *ServerInterfaceWrapper) PostRules(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostRules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DeleteRulesId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRulesId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRulesId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetRulesId operation middleware
+func (siw *ServerInterfaceWrapper) GetRulesId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRulesId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -206,7 +471,31 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/details", wrapper.GetDetails)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/details/{id}", wrapper.DeleteDetailsId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/details/{id}", wrapper.GetDetailsId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/details/{id}", wrapper.PatchDetailsId)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/histories", wrapper.GetHistories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/rules", wrapper.GetRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/rules", wrapper.PostRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/rules/{id}", wrapper.DeleteRulesId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/rules/{id}", wrapper.GetRulesId)
 	})
 
 	return r

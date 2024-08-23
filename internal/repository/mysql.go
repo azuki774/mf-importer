@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"mf-importer/internal/model"
+	"mf-importer/internal/openapi"
 	"net"
 	"time"
 
@@ -15,6 +16,10 @@ const DBConnectRetry = 5
 const DBConnectRetryInterval = 5
 
 var NULLtimeTime = time.Time{} // mock
+
+const tableNameDetail = "detail"
+const tableNameExtractRule = "extract_rule"
+const tableNameImportHistory = "import_history"
 
 type DBClient struct {
 	Conn *gorm.DB
@@ -48,7 +53,7 @@ func (d *DBClient) CloseDB() (err error) {
 }
 
 func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
-	result := d.Conn.Table("detail").Where("maw_check_date IS NULL").Find(&cfRecords)
+	result := d.Conn.Table(tableNameDetail).Where("maw_check_date IS NULL").Find(&cfRecords)
 	if result.Error != nil {
 		return []model.Detail{}, result.Error
 	}
@@ -59,13 +64,13 @@ func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, reg
 	id := cfDetail.ID
 	t := time.Now().Format("2006-01-02")
 	err = d.Conn.Transaction(func(tx *gorm.DB) error {
-		result := tx.Table("detail").Where("ID = ?", id).Update("maw_check_date", t)
+		result := tx.Table(tableNameDetail).Where("ID = ?", id).Update("maw_check_date", t)
 		if result.Error != nil {
 			return result.Error
 		}
 
 		if regist {
-			result := tx.Table("detail").Where("ID = ?", id).Update("maw_regist_date", t)
+			result := tx.Table(tableNameDetail).Where("ID = ?", id).Update("maw_regist_date", t)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -80,9 +85,20 @@ func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, reg
 	return nil
 }
 func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
-	result := d.Conn.Table("extract_rule").Find(&er)
+	result := d.Conn.Table(tableNameExtractRule).Find(&er)
 	if result.Error != nil {
 		return []model.ExtractRuleDB{}, result.Error
+	}
+	return er, nil
+}
+
+func (d *DBClient) GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error) {
+	result := d.Conn.Table(tableNameExtractRule).Where("ID = ?", id).First(&er)
+	if result.Error != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.ExtractRuleDB{}, model.ErrRecordNotFound
+		}
+		return model.ExtractRuleDB{}, result.Error
 	}
 	return er, nil
 }
@@ -91,7 +107,7 @@ func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleD
 // すでに登録があれば true とする
 func (d *DBClient) CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error) {
 	var getDetail model.Detail
-	if err = d.Conn.WithContext(ctx).Table("detail").
+	if err = d.Conn.WithContext(ctx).Table(tableNameDetail).
 		Where("date = ?", detail.Date.Format("2006-01-02")). // DB には日付しか登録しないため変形
 		Where("name = ?", detail.Name).
 		Where("price = ?", detail.Price).
@@ -109,7 +125,7 @@ func (d *DBClient) CheckAlreadyRegistDetail(ctx context.Context, detail model.De
 	return true, nil
 }
 func (d *DBClient) RegistDetail(ctx context.Context, detail model.Detail) (err error) {
-	return d.Conn.WithContext(ctx).Table("detail").Create(&detail).Error
+	return d.Conn.WithContext(ctx).Table(tableNameDetail).Create(&detail).Error
 }
 
 func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
@@ -118,10 +134,39 @@ func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, pars
 		ParsedEntryNum: int64(parsedNum),
 		NewEntryNum:    int64(insertNum),
 	}
-	return d.Conn.WithContext(ctx).Table("import_history").Create(&importHis).Error
+	return d.Conn.WithContext(ctx).Table(tableNameImportHistory).Create(&importHis).Error
 }
 
 func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {
-	err = d.Conn.WithContext(ctx).Table("detail").Order("ID desc").Limit(limit).Find(&details).Error
+	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Order("ID desc").Limit(limit).Find(&details).Error
 	return details, err
+}
+
+func (d *DBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error) {
+	ruleDB = model.ExtractRuleDB{
+		// ID
+		FieldName:  rule.FieldName,
+		Value:      rule.Value,
+		ExactMatch: int64(rule.ExactMatch),
+		CategoryID: int64(rule.CategoryId),
+		// CreatedAt
+		// UpdatedAt
+	}
+
+	result := d.Conn.Table(tableNameExtractRule).Create(&ruleDB)
+	if result.Error != nil {
+		return model.ExtractRuleDB{}, result.Error
+	}
+	return ruleDB, nil
+}
+
+func (d *DBClient) DeleteExtractRule(ctx context.Context, id int) (err error) {
+	result := d.Conn.Table(tableNameExtractRule).Delete(&model.ExtractRuleDB{}, id)
+	if result.Error != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.ErrRecordNotFound
+		}
+		return result.Error
+	}
+	return nil
 }

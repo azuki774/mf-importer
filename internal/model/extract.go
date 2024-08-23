@@ -7,6 +7,7 @@ import (
 
 type ExtractCondition int
 
+// 抽出、取り込みバッチ用構造体
 type ExtractRule struct {
 	FromName        map[string]int // Name -> CategoryID（完全一致）
 	FromNameIn      map[string]int // Name -> CategoryID（部分一致）
