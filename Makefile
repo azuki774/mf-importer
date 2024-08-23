@@ -8,7 +8,7 @@ CONTAINER_NAME_DOC=mf-importer-doc
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 pwd := $(shell pwd)
 
-.PHONY: bin build start test debug migration doc
+.PHONY: bin build start stop test debug migration doc
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
@@ -24,6 +24,9 @@ build:
 
 start:
 	docker compose -f deployment/compose.yml up -d
+
+stop:
+	docker compose -f deployment/compose.yml down
 
 debug:
 	docker compose -f deployment/compose.yml up

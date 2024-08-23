@@ -22,18 +22,18 @@ type Detail struct {
 
 // Rule defines model for Rule.
 type Rule struct {
-	CategoryId int    `json:"category_id"`
-	ExactMatch int    `json:"exact_match"`
-	FieldName  string `json:"field_name"`
+	CategoryId int    `json:"categoryId"`
+	ExactMatch int    `json:"exactMatch"`
+	FieldName  string `json:"fieldName"`
 	Id         int    `json:"id"`
 	Value      string `json:"value"`
 }
 
 // RuleRequest defines model for RuleRequest.
 type RuleRequest struct {
-	CategoryId int    `json:"category_id"`
-	ExactMatch int    `json:"exact_match"`
-	FieldName  string `json:"field_name"`
+	CategoryId int    `json:"categoryId"`
+	ExactMatch int    `json:"exactMatch"`
+	FieldName  string `json:"fieldName"`
 	Value      string `json:"value"`
 }
 
