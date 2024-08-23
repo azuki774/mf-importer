@@ -250,44 +250,44 @@ components:
       properties:
         id:
           type: integer
-        field_name:
+        fieldName:
           type: string
           examples:
             - name
         value:
           type: string
-        category_id:
+        categoryId:
           type: integer
           examples:
             - 210
-        exact_match:
+        exactMatch:
           type: integer
           minimum: 0
           maximum: 1
       required:
         - id
-        - field_name
+        - fieldName
         - value
-        - category_id
-        - exact_match
+        - categoryId
+        - exactMatch
     RuleRequest:
       type: object
       title: ExtractRuleRequest
       properties:
-        field_name:
+        fieldName:
           type: string
           examples:
             - name
         value:
           type: string
-        category_id:
+        categoryId:
           type: integer
-        exact_match:
+        exactMatch:
           type: integer
           minimum: 0
           maximum: 1
       required:
-        - field_name
+        - fieldName
         - value
-        - category_id
-        - exact_match
+        - categoryId
+        - exactMatch
