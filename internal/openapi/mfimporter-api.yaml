@@ -111,7 +111,7 @@ paths:
         - url: 'http://localhost:3000'
   /rules:
     get:
-      summary: '[WIP] get all extract rules'
+      summary: get all extract rules
       operationId: get-rules
       responses:
         '200':
@@ -125,7 +125,7 @@ paths:
       servers:
         - url: 'http://localhost:3000'
     post:
-      summary: '[WIP] add extract rule'
+      summary: add extract rule
       operationId: post-rules
       requestBody:
         content:
@@ -143,7 +143,7 @@ paths:
         - url: 'http://localhost:3000'
   '/rules/{id}':
     get:
-      summary: '[WIP] get rule'
+      summary: get rule
       operationId: get-rules-id
       parameters:
         - name: id
@@ -161,7 +161,7 @@ paths:
       servers:
         - url: 'http://localhost:3000'
     delete:
-      summary: '[WIP] delete rule'
+      summary: delete rule
       operationId: delete-rules-id
       parameters:
         - name: id
