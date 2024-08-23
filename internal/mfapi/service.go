@@ -26,6 +26,7 @@ type DBRepository interface {
 	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
 	GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error)
 	AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error)
+	DeleteExtractRule(ctx context.Context, id int) (err error)
 }
 
 type APIService struct {
@@ -97,4 +98,15 @@ func (a *APIService) AddRule(ctx context.Context, req openapi.RuleRequest) (open
 	a.Logger.Info("add new rule to DB", zap.Int("id", int(ruleDB.ID)))
 	rule := ruleDB.ToExtractRule()
 	return rule, nil
+}
+
+func (a *APIService) DeleteRule(ctx context.Context, id int) error {
+	err := a.Repo.DeleteExtractRule(ctx, id)
+	if err != nil {
+		a.Logger.Error("failed to delete rules from DB", zap.Error(err))
+		return err
+	}
+
+	a.Logger.Info("delete the rule to DB", zap.Int("id", id))
+	return nil
 }

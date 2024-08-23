@@ -159,3 +159,14 @@ func (d *DBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequest)
 	}
 	return ruleDB, nil
 }
+
+func (d *DBClient) DeleteExtractRule(ctx context.Context, id int) (err error) {
+	result := d.Conn.Table(tableNameExtractRule).Delete(&model.ExtractRuleDB{}, id)
+	if result.Error != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.ErrRecordNotFound
+		}
+		return result.Error
+	}
+	return nil
+}

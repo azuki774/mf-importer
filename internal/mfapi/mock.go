@@ -102,3 +102,11 @@ func (m *mockDBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequ
 		UpdatedAt:  time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 	}, nil
 }
+
+func (m *mockDBClient) DeleteExtractRule(ctx context.Context, id int) (err error){
+	if m.err != nil {
+		return m.err
+	}
+
+	return nil
+}

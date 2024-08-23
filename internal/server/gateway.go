@@ -17,6 +17,7 @@ type APIService interface {
 	GetRules(ctx context.Context) ([]openapi.Rule, error)
 	GetRule(ctx context.Context, id int) (openapi.Rule, error)
 	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
+	DeleteRule(ctx context.Context, id int) error
 }
 
 type apigateway struct {
@@ -122,7 +123,16 @@ func (a *apigateway) PostRules(w http.ResponseWriter, r *http.Request) {
 
 // (GET /rules/{id})
 func (a *apigateway) DeleteRulesId(w http.ResponseWriter, r *http.Request, id int) {
-
+	err := a.APIService.DeleteRule(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, model.ErrRecordNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // (GET /rules/{id})
