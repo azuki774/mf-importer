@@ -49,6 +49,28 @@ const postButton = async (): Promise<void> => {
   location.reload()
 };
 
+async function showDeleteDialog(id: number): Promise<void> {
+  const userResponse: boolean = confirm("このデータを削除しますか");
+  if (userResponse == true) {
+    console.log('delete: id=' + id);
+    const asyncDataDeleteBtn = await useAsyncData(
+      `deleteRule `,
+      (): Promise<any> => {
+        const param = { 'id': id };
+        const paramStr = "?id=" + param['id'];
+        const localurl = "/api/rules" + paramStr
+        const response = $fetch(localurl,
+          {
+            method: "DELETE"
+          }
+        );
+        return response;
+      }
+    );
+    location.reload()
+  }
+};
+
 </script>
 
 <template>
@@ -91,7 +113,7 @@ const postButton = async (): Promise<void> => {
     </div>
 
     <h4>一覧</h4>
-    <table class="table small bordered striped table-bordered">
+    <table class="table table-sm bordered striped table-bordered">
       <thead class="table-warning">
         <tr>
           <th scope="col">ID</th>
@@ -99,6 +121,7 @@ const postButton = async (): Promise<void> => {
           <th scope="col">値</th>
           <th scope="col">完全一致</th>
           <th scope="col">カテゴリID</th>
+          <th scope="col">削除</th>
         </tr>
       </thead>
       <tbody>
@@ -109,6 +132,7 @@ const postButton = async (): Promise<void> => {
           <td>{{ rule.value }}</td>
           <td>{{ rule.exactMatch }}</td>
           <td>{{ rule.categoryId }}</td>
+          <td><button class="btn btn-secondary btn-sm" @click="showDeleteDialog(rule.id)">削除</button></td>
         </tr>
       </tbody>
     </table>
