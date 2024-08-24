@@ -6,8 +6,9 @@
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
 	"features": {
 		"ghcr.io/devcontainers/features/go:1": {
-			"version": "1.21"
-		}
+			"version": "1.22"
+		},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 	}
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
