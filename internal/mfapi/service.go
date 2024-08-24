@@ -23,6 +23,7 @@ func init() {
 
 type DBRepository interface {
 	GetDetails(ctx context.Context, limit int) (details []model.Detail, err error)
+	ResetImportDetails(ctx context.Context, id int) (err error)
 	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
 	GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error)
 	AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error)
@@ -60,6 +61,15 @@ func (a *APIService) GetDetails(ctx context.Context, limit int) (dets []openapi.
 	}
 
 	return dets, nil
+}
+
+func (a *APIService) ResetImportDetails(ctx context.Context, id int) (err error) {
+	if err := a.Repo.ResetImportDetails(ctx, id); err != nil {
+		a.Logger.Error("failed to reset import history", zap.Int("id", id), zap.Error(err))
+		return err
+	}
+	a.Logger.Info("reset import history", zap.Int("id", id))
+	return nil
 }
 
 func (a *APIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {

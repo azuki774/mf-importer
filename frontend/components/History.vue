@@ -18,7 +18,6 @@ if (data != undefined) { // 取得済の場合のみ
     if (d.importJudgeDate != undefined) { // 2023-09-23T00:00:00+09:00 -> 2023-09-23T00:00:00
       d.importJudgeDate = d.importJudgeDate.slice(0, 19);
     }
-    d.importJudgeDate = d.importJudgeDate.slice(0, 19);
     if (d.importDate != undefined) {
       d.importDate = d.importDate.slice(0, 19);
     }
@@ -27,6 +26,28 @@ if (data != undefined) { // 取得済の場合のみ
   record_list.value = data
 }
 
+async function showPatchDialog(id: number): Promise<void> {
+  const userResponse: boolean = confirm("このデータを再判定対象にしますか");
+  if (userResponse == true) {
+    console.log('patch: id=' + id);
+    const asyncDataDeleteBtn = await useAsyncData(
+      `patchDetail `,
+      (): Promise<any> => {
+        const param = { 'id': id, 'ope': 'reset' };
+        const paramStr = "?id=" + param['id'] + "&ope=" + param['ope'];
+        const localurl = "/api/detail" + paramStr
+        console.log(localurl)
+        const response = $fetch(localurl,
+          {
+            method: "PATCH"
+          }
+        );
+        return response;
+      }
+    );
+    location.reload()
+  }
+};
 
 </script>
 
@@ -46,6 +67,7 @@ if (data != undefined) { // 取得済の場合のみ
           <th scope="col">登録日時</th>
           <th scope="col">取り込み判定日時</th>
           <th scope="col">取り込み日時</th>
+          <th scope="col">再判定</th>
         </tr>
       </thead>
       <tbody>
@@ -57,6 +79,7 @@ if (data != undefined) { // 取得済の場合のみ
           <td>{{ record.registDate }}</td>
           <td>{{ record.importJudgeDate }}</td>
           <td>{{ record.importDate }}</td>
+          <td><button class="btn btn-secondary btn-sm" @click="showPatchDialog(record.id)">再判定</button></td>
         </tr>
       </tbody>
     </table>

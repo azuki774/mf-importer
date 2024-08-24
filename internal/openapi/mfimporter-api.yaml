@@ -64,7 +64,7 @@ paths:
       servers:
         - url: 'http://localhost:3000'
     patch:
-      summary: '[WIP] change status detail'
+      summary: change status detail
       operationId: patch-details-id
       parameters:
         - name: ope

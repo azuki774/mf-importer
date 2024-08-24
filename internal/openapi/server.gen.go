@@ -22,7 +22,7 @@ type ServerInterface interface {
 	// [WIP] get detail
 	// (GET /details/{id})
 	GetDetailsId(w http.ResponseWriter, r *http.Request, id int)
-	// [WIP] change status detail
+	// change status detail
 	// (PATCH /details/{id})
 	PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams)
 	// health check
@@ -67,7 +67,7 @@ func (_ Unimplemented) GetDetailsId(w http.ResponseWriter, r *http.Request, id i
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// [WIP] change status detail
+// change status detail
 // (PATCH /details/{id})
 func (_ Unimplemented) PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams) {
 	w.WriteHeader(http.StatusNotImplemented)
