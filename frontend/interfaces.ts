@@ -6,3 +6,11 @@ export interface ImportRecord {
     importJudgeDate: string;
     importDate: string;
 }
+
+export interface Rule {
+    id: number;
+    fieldName: string;
+    value: number;
+    exactMatch: number;
+    categoryId: number;
+}
