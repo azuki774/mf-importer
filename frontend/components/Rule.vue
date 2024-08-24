@@ -53,6 +53,10 @@ const postButton = async (): Promise<void> => {
 
 <template>
   <section class="container">
+    <div class="mb-3 mt-3">
+      <input type="button" class="sendbutton btn btn-primary" onclick="location.href='../'" value="トップに戻る">
+    </div>
+
     <h3>抽出連携ルール</h3>
 
     <h4>追加</h4>

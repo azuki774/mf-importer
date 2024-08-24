@@ -32,6 +32,10 @@ if (data != undefined) { // 取得済の場合のみ
 
 <template>
   <section class="container">
+    <div class="mb-3 mt-3">
+      <input type="button" class="sendbutton btn btn-primary" onclick="location.href='./rules'" value="ルール設定を表示">
+    </div>
+
     <h3>取り込み履歴</h3>
     <table class="table small bordered striped table-bordered">
       <thead class="table-info">

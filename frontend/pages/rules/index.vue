@@ -3,8 +3,7 @@
 
 <template>
   <section>
-    <h1>mf-importer-web</h1>
-    <History />
+    <Rule />
   </section>
 </template>
 
