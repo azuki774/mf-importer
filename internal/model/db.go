@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"mf-importer/internal/openapi"
 	"mf-importer/internal/util"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ type Detail struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
+// DB操作用
 type ExtractRuleDB struct {
 	ID         int64     `json:"id"`
 	FieldName  string    `json:"field_name"`
@@ -126,4 +128,14 @@ func ConvCSVtoDetail(csv [][]string) (details []Detail, err error) {
 		details = append(details, row)
 	}
 	return details, nil
+}
+
+func (e *ExtractRuleDB) ToExtractRule() openapi.Rule {
+	return openapi.Rule{
+		CategoryId: int(e.CategoryID),
+		ExactMatch: int(e.ExactMatch),
+		FieldName:  e.FieldName,
+		Id:         int(e.ID),
+		Value:      e.Value,
+	}
 }

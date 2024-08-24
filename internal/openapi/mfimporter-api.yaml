@@ -109,6 +109,73 @@ paths:
       responses: {}
       servers:
         - url: 'http://localhost:3000'
+  /rules:
+    get:
+      summary: get all extract rules
+      operationId: get-rules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
+    post:
+      summary: add extract rule
+      operationId: post-rules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
+  '/rules/{id}':
+    get:
+      summary: get rule
+      operationId: get-rules-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+      servers:
+        - url: 'http://localhost:3000'
+    delete:
+      summary: delete rule
+      operationId: delete-rules-id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content: {}
+      responses:
+        '204':
+          description: No Content
+      servers:
+        - url: 'http://localhost:3000'
 components:
   responses:
     import:
@@ -177,3 +244,50 @@ components:
         - name
         - price
         - registDate
+    Rule:
+      type: object
+      title: ExtractRule
+      properties:
+        id:
+          type: integer
+        fieldName:
+          type: string
+          examples:
+            - name
+        value:
+          type: string
+        categoryId:
+          type: integer
+          examples:
+            - 210
+        exactMatch:
+          type: integer
+          minimum: 0
+          maximum: 1
+      required:
+        - id
+        - fieldName
+        - value
+        - categoryId
+        - exactMatch
+    RuleRequest:
+      type: object
+      title: ExtractRuleRequest
+      properties:
+        fieldName:
+          type: string
+          examples:
+            - name
+        value:
+          type: string
+        categoryId:
+          type: integer
+        exactMatch:
+          type: integer
+          minimum: 0
+          maximum: 1
+      required:
+        - fieldName
+        - value
+        - categoryId
+        - exactMatch
