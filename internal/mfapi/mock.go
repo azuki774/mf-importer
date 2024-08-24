@@ -44,6 +44,14 @@ func (m *mockDBClient) GetDetails(ctx context.Context, limit int) (details []mod
 	return details, nil
 }
 
+func (m *mockDBClient) ResetImportDetails(ctx context.Context, id int) (err error) {
+	if m.err != nil {
+		return m.err
+	}
+
+	return nil
+}
+
 func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
 	if m.err != nil {
 		return nil, m.err
@@ -103,7 +111,7 @@ func (m *mockDBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequ
 	}, nil
 }
 
-func (m *mockDBClient) DeleteExtractRule(ctx context.Context, id int) (err error){
+func (m *mockDBClient) DeleteExtractRule(ctx context.Context, id int) (err error) {
 	if m.err != nil {
 		return m.err
 	}

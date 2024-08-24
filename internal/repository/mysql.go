@@ -142,6 +142,20 @@ func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.D
 	return details, err
 }
 
+func (d *DBClient) ResetImportDetails(ctx context.Context, id int) (err error) {
+	err = d.Conn.Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Table(tableNameDetail).Where("id = ?", id).Update("maw_check_date", gorm.Expr("NULL")).Update("maw_regist_date", gorm.Expr("NULL")).Error; err != nil {
+			return err
+		}
+
+		if err := tx.WithContext(ctx).Table(tableNameDetail).Where("id = ?", id).Update("maw_regist_date", gorm.Expr("NULL")).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
 func (d *DBClient) AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error) {
 	ruleDB = model.ExtractRuleDB{
 		// ID

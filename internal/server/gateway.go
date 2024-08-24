@@ -12,10 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const patchOpeReset = "reset"
+
 type APIService interface {
 	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
 	GetRules(ctx context.Context) ([]openapi.Rule, error)
 	GetRule(ctx context.Context, id int) (openapi.Rule, error)
+	ResetImportDetails(ctx context.Context, id int) (err error)
 	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
 	DeleteRule(ctx context.Context, id int) error
 }
@@ -67,7 +70,18 @@ func (a *apigateway) GetDetailsId(w http.ResponseWriter, r *http.Request, id int
 
 // (PATCH /details/{id})
 func (a *apigateway) PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params openapi.PatchDetailsIdParams) {
-	// TODO
+	if params.Ope == patchOpeReset {
+		if err := a.APIService.ResetImportDetails(r.Context(), id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("not defined operation"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // (GET /histories)
