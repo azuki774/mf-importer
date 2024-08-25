@@ -16,31 +16,13 @@ func Test_getDateFromCSV(t *testing.T) {
 		args     args
 		wantDate time.Time
 		wantErr  bool
-		nowT     time.Time // Unittestの時間
 	}{
 		{
 			name: "normal1",
 			args: args{
-				rawDate: "07/16(火)",
+				rawDate: "2024/08/22",
 			},
-			wantDate: time.Date(2000, 7, 16, 0, 0, 0, 0, time.Local),
-			nowT:     time.Date(2000, 7, 20, 0, 0, 0, 0, time.Local),
-		},
-		{
-			name: "normal2(lastmonth)",
-			args: args{
-				rawDate: "02/02(火)",
-			},
-			wantDate: time.Date(2000, 2, 2, 0, 0, 0, 0, time.Local),
-			nowT:     time.Date(2000, 3, 10, 0, 0, 0, 0, time.Local),
-		},
-		{
-			name: "normal3(lastyear)",
-			args: args{
-				rawDate: "12/30(火)",
-			},
-			wantDate: time.Date(1999, 12, 30, 0, 0, 0, 0, time.Local),
-			nowT:     time.Date(2000, 1, 3, 0, 0, 0, 0, time.Local),
+			wantDate: time.Date(2024, 8, 22, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "error1",
@@ -48,13 +30,11 @@ func Test_getDateFromCSV(t *testing.T) {
 				rawDate: "1/30(火)",
 			},
 			wantDate: time.Time{},
-			nowT:     time.Date(2000, 2, 20, 0, 0, 0, 0, time.Local),
 			wantErr:  true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			util.NowFunc = tt.nowT.Local
 			gotDate, err := getDateFromCSV(tt.args.rawDate)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDateFromCSV() error = %v, wantErr %v", err, tt.wantErr)
@@ -131,8 +111,8 @@ func TestConvCSVtoDetail(t *testing.T) {
 			name: "normal",
 			args: args{
 				csv: [][]string{
-					{"", "07/19(金)", "はま寿司", `"-1,705"`, "三井住友カード", "食費", "外食", "", "", ""}, // YYYYMMID = 2
-					{"", "07/16(火)", "ローソン", "-291", "三井住友カード", "食費", "食料品", "", "", ""},    // YYYYMMDDID = 1
+					{"", "2024/07/19", "はま寿司", `"-1,705"`, "三井住友カード", "食費", "外食", "", "", ""}, // YYYYMMID = 2
+					{"", "2024/07/16", "ローソン", "-291", "三井住友カード", "食費", "食料品", "", "", ""},    // YYYYMMDDID = 1
 				},
 			},
 			wantDetails: []Detail{
@@ -145,7 +125,7 @@ func TestConvCSVtoDetail(t *testing.T) {
 					MCategory: "外食",
 					// RegistDate: util.NowFunc(),
 					Price:    int64(1705),
-					RawDate:  "07/19(金)",
+					RawDate:  "2024/07/19",
 					RawPrice: `"-1,705"`,
 				},
 				{
@@ -157,7 +137,7 @@ func TestConvCSVtoDetail(t *testing.T) {
 					MCategory: "食料品",
 					// RegistDate: util.NowFunc(),
 					Price:    int64(291),
-					RawDate:  "07/16(火)",
+					RawDate:  "2024/07/16",
 					RawPrice: "-291",
 				},
 			},
