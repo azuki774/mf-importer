@@ -45,30 +45,12 @@ type ImportHistory struct {
 	NewEntryNum    int64  `gorm:"new_entry_num"`
 }
 
-// ex: 20240110 のとき
-// 01/07(火) -> 20240107
-// 12/24(水) -> 20231224
+// ex: "2024/08/18"
 func getDateFromCSV(rawDate string) (date time.Time, err error) {
-	t := util.NowFunc() // 今の日時
-
-	yyyystr := t.Format("2006") // 今の年
-	yyyyint, _ := strconv.Atoi(yyyystr)
-	mmint, err := strconv.Atoi(rawDate[0:2])
+	date, err = time.ParseInLocation("2006/01/02", rawDate, time.Local)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, nil
 	}
-	ddint, err := strconv.Atoi(rawDate[3:5])
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	tmpT := time.Date(yyyyint, time.Month(mmint), ddint, 0, 0, 0, 0, time.Local) // 今の年として RawDate を読んだ値
-	if !t.After(tmpT) {
-		// now <= tmpT
-		// 取り込んだデータは去年のデータであるので、1年戻す
-		yyyyint = yyyyint - 1
-	}
-	date = time.Date(yyyyint, time.Month(mmint), ddint, 0, 0, 0, 0, time.Local)
 	return date, nil
 }
 
@@ -86,7 +68,7 @@ func getPriceFromCSV(rawPrice string) (price int64, err error) {
 
 func ConvCSVtoDetail(csv [][]string) (details []Detail, err error) {
 	// CSV
-	// 計算対象,日付,内容,金額（円）,保有金融機関,大項目,中項目,メモ,振替,削除
+	// 計算対象,日付,内容,金額（円）,保有金融機関,大項目,中項目,メモ,振替,ID
 	// ,07/16(火),ローソン,-291,三井住友カード,食費,食料品,,,
 	for i, row := range csv {
 		if len(row) != 10 {
