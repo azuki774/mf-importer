@@ -99,12 +99,12 @@ func ConvCSVtoDetail(csv [][]string) (details []Detail, err error) {
 
 		row.Date, err = getDateFromCSV(row.RawDate)
 		if err != nil {
-			return []Detail{}, fmt.Errorf("failed to convert date")
+			return []Detail{}, fmt.Errorf("failed to convert date: %s", row.Name)
 		}
 
 		row.Price, err = getPriceFromCSV(row.RawPrice)
 		if err != nil {
-			return []Detail{}, fmt.Errorf("failed to convert price")
+			return []Detail{}, fmt.Errorf("failed to convert price: %s", row.Name)
 		}
 
 		details = append(details, row)
