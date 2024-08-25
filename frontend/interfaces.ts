@@ -1,4 +1,5 @@
 export interface ImportRecord {
+    id: number;
     useDate: string;
     name: string;
     price: number;
