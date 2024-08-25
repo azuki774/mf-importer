@@ -49,7 +49,7 @@ type ImportHistory struct {
 func getDateFromCSV(rawDate string) (date time.Time, err error) {
 	date, err = time.ParseInLocation("2006/01/02", rawDate, time.Local)
 	if err != nil {
-		return time.Time{}, nil
+		return time.Time{}, err
 	}
 	return date, nil
 }
