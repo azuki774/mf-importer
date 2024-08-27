@@ -38,8 +38,8 @@ test:
 	go test -v ./...
 
 migration:
-	cd migration; \
-	${SQL_MIGRATE_BIN} up -env=local; \
+	cd migration; &&
+	${SQL_MIGRATE_BIN} up -env=local; &&
 	cd ../
 
 generate:
