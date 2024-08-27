@@ -28,6 +28,13 @@ jobs:
       - name: Migration
         run: make migration
 
+      - name: Migration Down
+        run: |
+          cd migration; \
+          ${SQL_MIGRATE_BIN} down -limit=0 -env=local;
+        env:
+          SQL_MIGRATE_BIN: "../vendor_ci/sql-migrate"
+
     services:
       mariadb:
         image: mariadb:11

@@ -111,29 +111,32 @@
 <!-- import_history -->
 <g id="node4" class="node">
 <title>import_history</title>
-<polygon fill="#efefef" stroke="transparent" points="1053,-357.5 1053,-392.5 1307,-392.5 1307,-357.5 1053,-357.5"/>
-<polygon fill="none" stroke="#000000" points="1053,-357.5 1053,-392.5 1307,-392.5 1307,-357.5 1053,-357.5"/>
-<text text-anchor="start" x="1059.7158" y="-370.3" font-family="Arial Bold" font-size="18.00" fill="#000000">import_history</text>
-<text text-anchor="start" x="1172.7162" y="-370.3" font-family="Arial" font-size="14.00" fill="#000000">    </text>
-<text text-anchor="start" x="1206.921" y="-370.3" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
-<polygon fill="none" stroke="#000000" points="1053,-327.5 1053,-357.5 1307,-357.5 1307,-327.5 1053,-327.5"/>
-<text text-anchor="start" x="1060" y="-338.9" font-family="Arial" font-size="14.00" fill="#000000">id    </text>
-<text text-anchor="start" x="1105.094" y="-338.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
-<polygon fill="none" stroke="#000000" points="1053,-297.5 1053,-327.5 1307,-327.5 1307,-297.5 1053,-297.5"/>
-<text text-anchor="start" x="1060" y="-308.9" font-family="Arial" font-size="14.00" fill="#000000">job_label    </text>
-<text text-anchor="start" x="1150.2202" y="-308.9" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
-<polygon fill="none" stroke="#000000" points="1053,-267.5 1053,-297.5 1307,-297.5 1307,-267.5 1053,-267.5"/>
-<text text-anchor="start" x="1060" y="-278.9" font-family="Arial" font-size="14.00" fill="#000000">parsed_entry_num    </text>
-<text text-anchor="start" x="1210.9032" y="-278.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
-<polygon fill="none" stroke="#000000" points="1053,-237.5 1053,-267.5 1307,-267.5 1307,-237.5 1053,-237.5"/>
-<text text-anchor="start" x="1060" y="-248.9" font-family="Arial" font-size="14.00" fill="#000000">new_entry_num    </text>
-<text text-anchor="start" x="1193.784" y="-248.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
-<polygon fill="none" stroke="#000000" points="1053,-207.5 1053,-237.5 1307,-237.5 1307,-207.5 1053,-207.5"/>
-<text text-anchor="start" x="1060" y="-218.9" font-family="Arial" font-size="14.00" fill="#000000">created_at    </text>
-<text text-anchor="start" x="1160.3422" y="-218.9" font-family="Arial" font-size="14.00" fill="#666666">[datetime]</text>
-<polygon fill="none" stroke="#000000" points="1053,-177.5 1053,-207.5 1307,-207.5 1307,-177.5 1053,-177.5"/>
-<text text-anchor="start" x="1060" y="-188.9" font-family="Arial" font-size="14.00" fill="#000000">updated_at    </text>
-<text text-anchor="start" x="1164.2468" y="-188.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp]</text>
+<polygon fill="#efefef" stroke="transparent" points="1053,-372.5 1053,-407.5 1307,-407.5 1307,-372.5 1053,-372.5"/>
+<polygon fill="none" stroke="#000000" points="1053,-372.5 1053,-407.5 1307,-407.5 1307,-372.5 1053,-372.5"/>
+<text text-anchor="start" x="1059.7158" y="-385.3" font-family="Arial Bold" font-size="18.00" fill="#000000">import_history</text>
+<text text-anchor="start" x="1172.7162" y="-385.3" font-family="Arial" font-size="14.00" fill="#000000">    </text>
+<text text-anchor="start" x="1206.921" y="-385.3" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
+<polygon fill="none" stroke="#000000" points="1053,-342.5 1053,-372.5 1307,-372.5 1307,-342.5 1053,-342.5"/>
+<text text-anchor="start" x="1060" y="-353.9" font-family="Arial" font-size="14.00" fill="#000000">id    </text>
+<text text-anchor="start" x="1105.094" y="-353.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
+<polygon fill="none" stroke="#000000" points="1053,-312.5 1053,-342.5 1307,-342.5 1307,-312.5 1053,-312.5"/>
+<text text-anchor="start" x="1060" y="-323.9" font-family="Arial" font-size="14.00" fill="#000000">job_label    </text>
+<text text-anchor="start" x="1150.2202" y="-323.9" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
+<polygon fill="none" stroke="#000000" points="1053,-282.5 1053,-312.5 1307,-312.5 1307,-282.5 1053,-282.5"/>
+<text text-anchor="start" x="1060" y="-293.9" font-family="Arial" font-size="14.00" fill="#000000">parsed_entry_num    </text>
+<text text-anchor="start" x="1210.9032" y="-293.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
+<polygon fill="none" stroke="#000000" points="1053,-252.5 1053,-282.5 1307,-282.5 1307,-252.5 1053,-252.5"/>
+<text text-anchor="start" x="1060" y="-263.9" font-family="Arial" font-size="14.00" fill="#000000">new_entry_num    </text>
+<text text-anchor="start" x="1193.784" y="-263.9" font-family="Arial" font-size="14.00" fill="#666666">[int(11)]</text>
+<polygon fill="none" stroke="#000000" points="1053,-222.5 1053,-252.5 1307,-252.5 1307,-222.5 1053,-222.5"/>
+<text text-anchor="start" x="1060" y="-233.9" font-family="Arial" font-size="14.00" fill="#000000">created_at    </text>
+<text text-anchor="start" x="1160.3422" y="-233.9" font-family="Arial" font-size="14.00" fill="#666666">[datetime]</text>
+<polygon fill="none" stroke="#000000" points="1053,-192.5 1053,-222.5 1307,-222.5 1307,-192.5 1053,-192.5"/>
+<text text-anchor="start" x="1060" y="-203.9" font-family="Arial" font-size="14.00" fill="#000000">updated_at    </text>
+<text text-anchor="start" x="1164.2468" y="-203.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp]</text>
+<polygon fill="none" stroke="#000000" points="1053,-162.5 1053,-192.5 1307,-192.5 1307,-162.5 1053,-162.5"/>
+<text text-anchor="start" x="1060" y="-173.9" font-family="Arial" font-size="14.00" fill="#000000">src_file    </text>
+<text text-anchor="start" x="1138.5344" y="-173.9" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
 </g>
 </g>
 </svg>

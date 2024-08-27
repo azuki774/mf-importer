@@ -13,6 +13,7 @@ CREATE TABLE `import_history` (
   `new_entry_num` int(11) NOT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `src_file` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx1` (`job_label`(768))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -30,6 +31,7 @@ CREATE TABLE `import_history` (
 | new_entry_num | int(11) |  | false |  |  |  |  |
 | created_at | datetime | current_timestamp() | true |  |  |  |  |
 | updated_at | timestamp | current_timestamp() | true | on update current_timestamp() |  |  |  |
+| src_file | text | NULL | true |  |  |  |  |
 
 ## Constraints
 
