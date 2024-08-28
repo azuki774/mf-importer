@@ -128,13 +128,24 @@ func (d *DBClient) RegistDetail(ctx context.Context, detail model.Detail) (err e
 	return d.Conn.WithContext(ctx).Table(tableNameDetail).Create(&detail).Error
 }
 
-func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
+func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error) {
 	importHis := model.ImportHistory{
 		JobLabel:       jobname,
 		ParsedEntryNum: int64(parsedNum),
 		NewEntryNum:    int64(insertNum),
+		SrcFile:        srcFile,
 	}
 	return d.Conn.WithContext(ctx).Table(tableNameImportHistory).Create(&importHis).Error
+}
+
+func (d *DBClient) GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile string) (parsedNum, insertedNum int, err error) {
+	var ih model.ImportHistory
+	// src_file が一致する最新のデータ1件
+	err = d.Conn.WithContext(ctx).Table(tableNameImportHistory).Where("src_file = ?", srcFile).Order("ID desc").First(&ih).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(ih.ParsedEntryNum), int(ih.NewEntryNum), nil
 }
 
 func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {

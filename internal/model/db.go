@@ -43,6 +43,7 @@ type ImportHistory struct {
 	JobLabel       string `gorm:"job_label"`
 	ParsedEntryNum int64  `gorm:"parsed_entry_num"`
 	NewEntryNum    int64  `gorm:"new_entry_num"`
+	SrcFile        string `gorm:"src_file"`
 }
 
 // ex: "2024/08/18"

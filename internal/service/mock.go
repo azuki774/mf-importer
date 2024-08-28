@@ -35,8 +35,15 @@ func (m *mockDBClient) RegistDetail(ctx context.Context, detail model.Detail) (e
 	return m.err
 }
 
-func (m *mockDBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
+func (m *mockDBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error) {
 	return m.err
+}
+
+func (m *mockDBClient) GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile string) (parsedNum, insertedNum int, err error) {
+	if m.err != nil {
+		return 0, 0, m.err
+	}
+	return 100, 50, nil
 }
 
 func (m *mockDetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details []model.Detail, err error) {
