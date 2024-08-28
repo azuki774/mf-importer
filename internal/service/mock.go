@@ -35,7 +35,7 @@ func (m *mockDBClient) RegistDetail(ctx context.Context, detail model.Detail) (e
 	return m.err
 }
 
-func (m *mockDBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
+func (m *mockDBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error) {
 	return m.err
 }
 

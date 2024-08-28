@@ -5,6 +5,7 @@ import (
 	"mf-importer/internal/model"
 	"mf-importer/internal/repository"
 	"os"
+	"path/filepath"
 
 	"go.uber.org/zap"
 )
@@ -12,7 +13,7 @@ import (
 type DBClient interface {
 	CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error)
 	RegistDetail(ctx context.Context, detail model.Detail) (err error)
-	RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error)
+	RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error)
 }
 
 type DetailCSVOperator interface {
@@ -89,7 +90,8 @@ func (i *Importer) Start(ctx context.Context) (err error) {
 		lf.Info("insert detail sucessfully", zap.Int("parsedNum", parsedNum), zap.Int("insertedNum", insertedNum))
 
 		// history regist
-		if err := i.DBClient.RegistDetailHistory(ctx, i.JobName, parsedNum, insertedNum); err != nil {
+		fileName := filepath.Base(path)
+		if err := i.DBClient.RegistDetailHistory(ctx, i.JobName, parsedNum, insertedNum, fileName); err != nil {
 			lf.Error("failed to insert import history", zap.Error(err))
 			return err
 		}
