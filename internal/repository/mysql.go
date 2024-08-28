@@ -138,6 +138,16 @@ func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, pars
 	return d.Conn.WithContext(ctx).Table(tableNameImportHistory).Create(&importHis).Error
 }
 
+func (d *DBClient) GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile string) (parsedNum, insertedNum int, err error) {
+	var ih model.ImportHistory
+	// src_file が一致する最新のデータ1件
+	err = d.Conn.WithContext(ctx).Table(tableNameImportHistory).Where("src_file = ?", srcFile).Order("ID desc").First(&ih).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(ih.ParsedEntryNum), int(ih.NewEntryNum), nil
+}
+
 func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {
 	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Order("ID desc").Limit(limit).Find(&details).Error
 	return details, err
