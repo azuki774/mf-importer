@@ -128,11 +128,12 @@ func (d *DBClient) RegistDetail(ctx context.Context, detail model.Detail) (err e
 	return d.Conn.WithContext(ctx).Table(tableNameDetail).Create(&detail).Error
 }
 
-func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int) (err error) {
+func (d *DBClient) RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error) {
 	importHis := model.ImportHistory{
 		JobLabel:       jobname,
 		ParsedEntryNum: int64(parsedNum),
 		NewEntryNum:    int64(insertNum),
+		SrcFile:        srcFile,
 	}
 	return d.Conn.WithContext(ctx).Table(tableNameImportHistory).Create(&importHis).Error
 }
