@@ -14,6 +14,8 @@ type DBClient interface {
 	CheckAlreadyRegistDetail(ctx context.Context, detail model.Detail) (exists bool, err error)
 	RegistDetail(ctx context.Context, detail model.Detail) (err error)
 	RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error)
+	// そのソースファイルを取り込んだ、最後の情報をDBから取得する
+	GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile string) (parsedNum, insertedNum int, err error)
 }
 
 type DetailCSVOperator interface {
@@ -91,9 +93,17 @@ func (i *Importer) Start(ctx context.Context) (err error) {
 
 		// history regist
 		fileName := filepath.Base(path)
-		if err := i.DBClient.RegistDetailHistory(ctx, i.JobName, parsedNum, insertedNum, fileName); err != nil {
-			lf.Error("failed to insert import history", zap.Error(err))
-			return err
+		pn, _, err := i.DBClient.GetLastDetailHistoryWhereSrcFile(ctx, fileName)
+		if err != nil {
+			// このデータ取得失敗ではエラーにしない
+			lf.Warn("failed to get last detail history", zap.Error(err))
+		}
+		if pn != parsedNum || err != nil {
+			// 前回取り込み時と変化を検知したとき or 前回取り込みがエラーになったとき
+			if err := i.DBClient.RegistDetailHistory(ctx, i.JobName, parsedNum, insertedNum, fileName); err != nil {
+				lf.Error("failed to insert import history", zap.Error(err))
+				return err
+			}
 		}
 
 		lf.Info("insert detail history sucessfully")
