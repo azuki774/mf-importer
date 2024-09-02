@@ -16,7 +16,7 @@ func TestIsSuicaDetail(t *testing.T) {
 			args: args{
 				d: Detail{
 					Name:   "入 東京 出 大阪",
-					FinIns: "モバイルSuica (モバイルSuica ID)",
+					FinIns: "モバイルSuica",
 				},
 			},
 			wantOk: true,
@@ -36,7 +36,7 @@ func TestIsSuicaDetail(t *testing.T) {
 			args: args{
 				d: Detail{
 					Name:   "出 東京 入 大阪",
-					FinIns: "モバイルSuica (モバイルSuica ID)",
+					FinIns: "モバイルSuica",
 				},
 			},
 			wantOk: false,
@@ -46,7 +46,7 @@ func TestIsSuicaDetail(t *testing.T) {
 			args: args{
 				d: Detail{
 					Name:   "物販",
-					FinIns: "モバイルSuica (モバイルSuica ID)",
+					FinIns: "モバイルSuica",
 				},
 			},
 			wantOk: false,

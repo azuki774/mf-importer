@@ -22,8 +22,6 @@ type MawinterClient interface {
 	Regist(ctx context.Context, c model.Detail, catID int) (err error)
 }
 
-const fromMawinterWebText = "mawinter-web"
-
 type Mawinter struct {
 	Logger      *zap.Logger
 	DBClient    DBClient

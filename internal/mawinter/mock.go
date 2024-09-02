@@ -34,7 +34,7 @@ func (m *mockMawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) 
 			CategoryID:   100,
 			CategoryName: "cat1",
 			Datetime:     time.Date(2010, 1, 23, 1, 2, 3, 0, time.Local),
-			From:         fromMawinterWebText,
+			From:         "手動",
 			Price:        1234,
 		},
 		{
@@ -42,7 +42,7 @@ func (m *mockMawinterClient) GetMawinterWeb(ctx context.Context, yyyymm string) 
 			CategoryID:   500,
 			CategoryName: "cat5",
 			Datetime:     time.Date(2010, 1, 24, 1, 2, 3, 0, time.Local),
-			From:         fromMawinterWebText,
+			From:         "手動",
 			Price:        5678,
 		},
 	}

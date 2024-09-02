@@ -56,9 +56,9 @@ func (e *ExtractRule) AddRule(ers []ExtractRuleDB) (err error) {
 
 // そのレコードが Suica のものかを判定する
 // 内容: '入 XXXX 出 YYYY'
-// 保有金融機関: 'モバイルSuica (モバイルSuica ID)'
+// 保有金融機関: 'モバイルSuica'
 func IsSuicaDetail(d Detail) (ok bool) {
-	const mobileSuicaFinIns = "モバイルSuica (モバイルSuica ID)"
+	const mobileSuicaFinIns = "モバイルSuica"
 	if d.FinIns != mobileSuicaFinIns {
 		return false
 	}
