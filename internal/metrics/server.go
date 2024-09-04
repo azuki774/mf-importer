@@ -77,7 +77,7 @@ func (m *MetricsServer) Start(ctx context.Context) error {
 		}
 	}()
 
-	m.Logger.Info("start listening", zap.String("port", s.Port))
+	m.Logger.Info("start listening", zap.String("port", m.Port))
 	err := server.ListenAndServe()
 
 	if errors.Is(err, http.ErrServerClosed) {
