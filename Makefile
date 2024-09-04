@@ -5,6 +5,7 @@ CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-fe
 CONTAINER_NAME_API=mf-importer-api
 CONTAINER_NAME_DOC=mf-importer-doc
+CONTAINER_NAME_METRICS=mf-importer-metrics
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 pwd := $(shell pwd)
 
@@ -20,6 +21,7 @@ build:
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
 	docker build -t $(CONTAINER_NAME_MAW) -f build/maw/Dockerfile .
 	docker build -t $(CONTAINER_NAME_API) -f build/api/Dockerfile .
+	docker build -t $(CONTAINER_NAME_METRICS) -f build/metrics/Dockerfile .
 	docker build -t $(CONTAINER_NAME_FRONT) -f build/fe/Dockerfile .
 
 start:
