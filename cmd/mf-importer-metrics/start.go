@@ -1,9 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"mf-importer/internal/logger"
+	"mf-importer/internal/metrics"
+	"mf-importer/internal/repository"
+	"os"
+	"os/signal"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 // startCmd represents the regist command
@@ -16,7 +22,61 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("start called")
+		l := logger.NewLogger()
+		ctx := context.Background()
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+
+		host := os.Getenv("DB_HOST")
+		port := os.Getenv("DB_PORT")
+		user := os.Getenv("DB_USER")
+		pass := os.Getenv("DB_PASS")
+		name := os.Getenv("DB_NAME")
+
+		if host == "" {
+			host = "127.0.0.1"
+		}
+		if port == "" {
+			port = "3306"
+		}
+		if user == "" {
+			user = "root"
+		}
+		if pass == "" {
+			pass = "password"
+		}
+		if name == "" {
+			name = "mfimporter"
+		}
+
+		l.Info("using DB info",
+			zap.String("DB_HOST", host),
+			zap.String("DB_PORT", port),
+			zap.String("DB_USER", user),
+			zap.String("DB_PASS", name),
+		)
+		db, err := repository.NewDBRepository(
+			host,
+			port,
+			user,
+			pass,
+			name,
+		)
+		if err != nil {
+			l.Error("failed to connect DB", zap.Error(err))
+			return err
+		}
+		defer db.CloseDB()
+
+		srv := metrics.MetricsServer{
+			Logger:   l,
+			Port:     "9000",
+			JobLabel: os.Getenv("job_label"),
+			DBClient: db,
+		}
+		if err := srv.Start(ctx); err != nil {
+			return err
+		}
 		return nil
 	},
 }

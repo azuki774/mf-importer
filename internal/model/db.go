@@ -40,10 +40,12 @@ type ExtractRuleDB struct {
 }
 
 type ImportHistory struct {
-	JobLabel       string `gorm:"job_label"`
-	ParsedEntryNum int64  `gorm:"parsed_entry_num"`
-	NewEntryNum    int64  `gorm:"new_entry_num"`
-	SrcFile        string `gorm:"src_file"`
+	JobLabel       string    `gorm:"job_label"`
+	ParsedEntryNum int64     `gorm:"parsed_entry_num"`
+	NewEntryNum    int64     `gorm:"new_entry_num"`
+	SrcFile        string    `gorm:"src_file"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // ex: "2024/08/18"

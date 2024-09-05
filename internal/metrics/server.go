@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mf-importer/internal/model"
 	"net/http"
 	"time"
 
@@ -12,10 +13,15 @@ import (
 	"go.uber.org/zap"
 )
 
+type DBClient interface {
+	GetLastDetailHistoryWhereJobLabel(ctx context.Context, jobLabel string) (model.ImportHistory, error)
+}
+
 type MetricsServer struct {
-	Logger    *zap.Logger
-	Port      string
-	JobLabels []string // 対象とする job_label のリスト
+	Logger   *zap.Logger
+	Port     string
+	JobLabel string // 対象とする job_label
+	DBClient DBClient
 }
 
 // 各 job_label ごとにこの metrics を出力
@@ -49,7 +55,28 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 	reg.MustRegister(m.ParsedEntryNum)
 	reg.MustRegister(m.NewEntryNum)
 	reg.MustRegister(m.UpdatedAt)
+
 	return m
+}
+
+func (m *MetricsServer) refresh(ctx context.Context, metrics *metrics) {
+	const refreshPeriod = 30
+	go func() {
+		for {
+			// 更新処理
+			ih, err := m.DBClient.GetLastDetailHistoryWhereJobLabel(ctx, joblabel)
+			if err != nil {
+				m.Logger.Error("failed to get metrics info", zap.Error(err))
+			}
+			metrics.ParsedEntryNum.With(m.JobLabel).Set(float64(ih.ParsedEntryNum))
+			metrics.NewEntryNum.With(m.JobLabel).Set(float64(ih.NewEntryNum))
+			metrics.UpdatedAt.With(m.JobLabel).Set(float64(ih.UpdatedAt.Unix()))
+
+			time.Sleep(refreshPeriod * time.Second)
+		}
+	}()
+	<-ctx.Done()
+	m.Logger.Info("refresh routine close")
 }
 
 func (m *MetricsServer) Start(ctx context.Context) error {
@@ -58,7 +85,8 @@ func (m *MetricsServer) Start(ctx context.Context) error {
 	reg := prometheus.NewRegistry()
 
 	// Create new metrics and register them using the custom registry.
-	_ = NewMetrics(reg) // TODO
+	metrics := NewMetrics(reg)
+	go m.refresh(ctx, metrics)
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 
