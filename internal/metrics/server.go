@@ -64,13 +64,16 @@ func (m *MetricsServer) refresh(ctx context.Context, metrics *metrics) {
 	go func() {
 		for {
 			// 更新処理
-			ih, err := m.DBClient.GetLastDetailHistoryWhereJobLabel(ctx, joblabel)
+			ih, err := m.DBClient.GetLastDetailHistoryWhereJobLabel(ctx, m.JobLabel)
 			if err != nil {
 				m.Logger.Error("failed to get metrics info", zap.Error(err))
 			}
-			metrics.ParsedEntryNum.With(m.JobLabel).Set(float64(ih.ParsedEntryNum))
-			metrics.NewEntryNum.With(m.JobLabel).Set(float64(ih.NewEntryNum))
-			metrics.UpdatedAt.With(m.JobLabel).Set(float64(ih.UpdatedAt.Unix()))
+
+			pl := prometheus.Labels{"job_label": m.JobLabel}
+
+			metrics.ParsedEntryNum.With(pl).Set(float64(ih.ParsedEntryNum))
+			metrics.NewEntryNum.With(pl).Set(float64(ih.NewEntryNum))
+			metrics.UpdatedAt.With(pl).Set(float64(ih.UpdatedAt.Unix()))
 
 			time.Sleep(refreshPeriod * time.Second)
 		}
