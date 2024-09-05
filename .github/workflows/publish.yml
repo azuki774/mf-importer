@@ -161,7 +161,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./build/api/Dockerfile
+          file: ./build/metrics/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
