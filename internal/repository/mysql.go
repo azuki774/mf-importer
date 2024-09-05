@@ -10,6 +10,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const DBConnectRetry = 5
@@ -29,8 +30,9 @@ func NewDBRepository(host, port, user, pass, name string) (dbR *DBClient, err er
 	addr := net.JoinHostPort(host, port)
 	dsn := user + ":" + pass + "@(" + addr + ")/" + name + "?parseTime=true&loc=Local"
 	var gormdb *gorm.DB
+
 	for i := 0; i < DBConnectRetry; i++ {
-		gormdb, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		gormdb, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 		if err == nil {
 			// Success DB connect
 			break
