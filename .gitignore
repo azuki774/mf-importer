@@ -7,4 +7,5 @@ src/__pycache__/*
 build/bin/mf-importer
 build/bin/mf-importer-maw
 build/bin/mf-importer-api
+build/bin/mf-importer-metrics
 .devcontainer/data/*
