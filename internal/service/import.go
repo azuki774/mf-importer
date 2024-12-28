@@ -81,8 +81,7 @@ func (i *Importer) Start(ctx context.Context) (err error) {
 			lf.Info("new data detected, insert to DB", zap.Int("yyyymm_id", d.YYYYMMID))
 			if i.DryRun {
 				lf.Info("however, it works as dry-run. do nothing.")
-			}
-			if err := i.DBClient.RegistDetail(ctx, d); err != nil {
+			} else if err := i.DBClient.RegistDetail(ctx, d); err != nil {
 				lf.Error("failed to insert DB", zap.Error(err))
 				return err
 			}
