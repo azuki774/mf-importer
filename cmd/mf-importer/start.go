@@ -13,7 +13,8 @@ import (
 )
 
 var dryRun bool
-var inputDir string
+var skipDownload bool // true ならば s3からのCSVダウンロードをスキップ
+var inputDir string   // CSVダウンロード時に使うディレクトリを指定
 
 // startCmd represents the regist command
 var startCmd = &cobra.Command{
@@ -43,6 +44,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	startCmd.Flags().BoolVar(&dryRun, "dry-run", false, "dry run")
+	startCmd.Flags().BoolVar(&skipDownload, "skip-download", false, "skip download")
 	startCmd.Flags().StringVarP(&inputDir, "input-dir", "d", "/data/", "input directory")
 }
 
