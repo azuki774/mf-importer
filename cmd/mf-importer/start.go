@@ -57,6 +57,16 @@ func startMain() error {
 	pass := os.Getenv("db_pass")
 	name := os.Getenv("db_name")
 
+	if !skipDownload {
+		l.Info("start download CSV from s3")
+		downloader := repository.NewDownloader(inputDir)
+		if err := downloader.Start(ctx); err != nil {
+			l.Error("failed to download", zap.Error(err))
+			return err
+		}
+		l.Info("complete download CSV from s3", zap.Strings("files", repository.TargetCSVName))
+	}
+
 	if host == "" {
 		host = "127.0.0.1"
 	}
