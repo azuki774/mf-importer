@@ -37,7 +37,7 @@ func NewDBRepository(host, port, user, pass, name string) (dbR *DBClient, err er
 			// Success DB connect
 			break
 		}
-		if i == DBConnectRetry {
+		if i == (DBConnectRetry - 1) {
 			return nil, err
 		}
 

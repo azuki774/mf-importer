@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -13,11 +14,13 @@ import (
 
 // downloader for csv
 type downloader struct {
-	Token      string
-	Region     string
-	BucketName string
-	BucketDir  string
-	SaveDir    string // CSVを保存するローカル側のパス
+	AccessKeyID     string
+	SecretAccessKey string
+	Region          string
+	BucketName      string
+	BucketDir       string
+	Endpoint        string
+	SaveDir         string // CSVを保存するローカル側のパス
 }
 
 // s3 から取得するCSVファイル名
@@ -28,20 +31,23 @@ var TargetCSVName = []string{
 
 func NewDownloader(saveDir string) *downloader {
 	return &downloader{
-		Token:      os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Region:     os.Getenv("AWS_REGION"),
-		BucketName: os.Getenv("BUCKET_NAME"),
-		BucketDir:  os.Getenv("BUCKET_DIR"),
-		SaveDir:    saveDir,
+		AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Region:          os.Getenv("AWS_REGION"),
+		BucketName:      os.Getenv("BUCKET_NAME"),
+		BucketDir:       os.Getenv("BUCKET_DIR"),
+		Endpoint:        os.Getenv("BUCKET_URL"),
+		SaveDir:         saveDir,
 	}
 }
 
-func (d *downloader) Start() error {
-	creds := credentials.NewStaticCredentials("AccessKey", "secret", d.Token)
+func (d *downloader) Start(ctx context.Context) error {
+	creds := credentials.NewStaticCredentials(d.AccessKeyID, d.SecretAccessKey, "")
 
 	sess := session.Must(session.NewSession(&aws.Config{
 		Credentials: creds,
 		Region:      aws.String(d.Region),
+		Endpoint:    aws.String(d.Endpoint),
 	}))
 	svc := s3manager.NewDownloader(sess)
 	objects := []s3manager.BatchDownloadObject{}
