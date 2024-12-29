@@ -13,7 +13,8 @@ import (
 )
 
 var dryRun bool
-var inputDir string
+var withDownload bool // true ならば s3からのCSVダウンロードも
+var inputDir string   // CSVダウンロード時に使うディレクトリを指定
 
 // startCmd represents the regist command
 var startCmd = &cobra.Command{
@@ -43,6 +44,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	startCmd.Flags().BoolVar(&dryRun, "dry-run", false, "dry run")
+	startCmd.Flags().BoolVar(&withDownload, "with-download", false, "download and import")
 	startCmd.Flags().StringVarP(&inputDir, "input-dir", "d", "/data/", "input directory")
 }
 
@@ -54,6 +56,16 @@ func startMain() error {
 	user := os.Getenv("db_user")
 	pass := os.Getenv("db_pass")
 	name := os.Getenv("db_name")
+
+	if withDownload {
+		l.Info("start download CSV from s3")
+		downloader := repository.NewDownloader(inputDir)
+		if err := downloader.Start(ctx); err != nil {
+			l.Error("failed to download", zap.Error(err))
+			return err
+		}
+		l.Info("complete download CSV from s3", zap.Strings("files", repository.TargetCSVName))
+	}
 
 	if host == "" {
 		host = "127.0.0.1"
