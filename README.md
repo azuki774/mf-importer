@@ -1,6 +1,6 @@
 # mf-importer
 - マネーフォワードME のデータをDBに登録する。
-    - ファイルの元ネタは money-forward の 家計簿データのCSV出力を UTF-8にしたもの
+    - ファイルの元ネタは money-forward の 家計簿データのCSV出力
 
 ## mf-importer-api
 - https://azuki774.github.io/mf-importer/api.html
