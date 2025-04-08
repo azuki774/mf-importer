@@ -4,7 +4,6 @@ go 1.22.5
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.1
 	github.com/getkin/kin-openapi v0.127.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/jarcoal/httpmock v1.3.0
@@ -12,13 +11,13 @@ require (
 	github.com/prometheus/client_golang v1.20.2
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/zap v1.24.0
+	golang.org/x/text v0.16.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.4
 )
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
-	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
