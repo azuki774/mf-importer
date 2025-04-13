@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 type DetailCSVOperator struct {
@@ -21,8 +23,11 @@ func (d *DetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details
 	}
 	defer file.Close()
 
-	r := csv.NewReader(file)
-	rows, err := r.ReadAll()
+	// SJIS -> UTF8
+	sjisDecoder := japanese.ShiftJIS.NewDecoder()
+	utf8Reader := transform.NewReader(file, sjisDecoder)
+	reader := csv.NewReader(utf8Reader)
+	rows, err := reader.ReadAll()
 	if err != nil {
 		return []model.Detail{}, err
 	}

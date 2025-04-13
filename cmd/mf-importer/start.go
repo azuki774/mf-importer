@@ -64,7 +64,7 @@ func startMain() error {
 			l.Error("failed to download", zap.Error(err))
 			return err
 		}
-		l.Info("complete download CSV from s3", zap.Strings("files", repository.TargetCSVName))
+		l.Info("complete download CSV from s3")
 	}
 
 	if host == "" {
