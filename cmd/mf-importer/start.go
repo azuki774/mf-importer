@@ -84,10 +84,11 @@ func startMain() error {
 	}
 
 	l.Info("using DB info",
-		zap.String("db_host", host),
-		zap.String("db_port", port),
-		zap.String("db_user", user),
-		zap.String("db_name", name),
+		zap.String("DB_HOST", host),
+		zap.String("DB_PORT", port),
+		zap.String("DB_NAME", name),
+		zap.String("DB_USER", user),
+		zap.String("DB_PASS", pass),
 	)
 	db, err := repository.NewDBRepository(
 		host,
