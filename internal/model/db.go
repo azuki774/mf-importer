@@ -50,16 +50,16 @@ type ImportHistory struct {
 }
 
 type AssetHistory struct {
-	ID          int64     `json:"id" gorm:"primaryKey;autoIncrement"`
-	Date        time.Time `json:"date" gorm:"uniqueIndex"`
-	TotalAmount int       `json:"total_amount"`
-	CashDeposit int       `json:"cash_deposit"`
-	Bonds       int       `json:"bonds"`
-	OtherAssets int       `json:"other_assets"`
-	Points      int       `json:"points"`
-	Details     string    `json:"details"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                int64     `json:"id" gorm:"primaryKey;autoIncrement"`
+	Date              time.Time `json:"date" gorm:"uniqueIndex"`
+	TotalAmount       int       `json:"total_amount"`
+	CashDepositCrypto int       `json:"cash_deposit_crypto"`
+	Stocks            int       `json:"stocks"`
+	InvestmentTrusts  int       `json:"investment_trusts"`
+	Points            int       `json:"points"`
+	Details           string    `json:"details"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // ex: "2024/08/18"
@@ -131,7 +131,7 @@ func ConvCSVtoDetail(csv [][]string) (details []Detail, err error) {
 
 func ConvCSVtoAssetHistory(csv [][]string) (histories []AssetHistory, err error) {
 	// CSV
-	// 日付,総額,現金・預金・投資信託,債券,その他金融資産,ポイント,詳細
+	// 日付,合計,預金・現金・暗号資産,株式(現物),投資信託,ポイント,詳細
 	for i, row := range csv {
 		if len(row) != 7 {
 			return []AssetHistory{}, fmt.Errorf("invalid csv: row: %d", i)
@@ -158,19 +158,19 @@ func ConvCSVtoAssetHistory(csv [][]string) (histories []AssetHistory, err error)
 			return []AssetHistory{}, fmt.Errorf("failed to convert total_amount: %s", row[1])
 		}
 
-		history.CashDeposit, err = convertAmountFromCSV(row[2])
+		history.CashDepositCrypto, err = convertAmountFromCSV(row[2])
 		if err != nil {
-			return []AssetHistory{}, fmt.Errorf("failed to convert cash_deposit: %s", row[2])
+			return []AssetHistory{}, fmt.Errorf("failed to convert cash_deposit_crypto: %s", row[2])
 		}
 
-		history.Bonds, err = convertAmountFromCSV(row[3])
+		history.Stocks, err = convertAmountFromCSV(row[3])
 		if err != nil {
-			return []AssetHistory{}, fmt.Errorf("failed to convert bonds: %s", row[3])
+			return []AssetHistory{}, fmt.Errorf("failed to convert stocks: %s", row[3])
 		}
 
-		history.OtherAssets, err = convertAmountFromCSV(row[4])
+		history.InvestmentTrusts, err = convertAmountFromCSV(row[4])
 		if err != nil {
-			return []AssetHistory{}, fmt.Errorf("failed to convert other_assets: %s", row[4])
+			return []AssetHistory{}, fmt.Errorf("failed to convert investment_trusts: %s", row[4])
 		}
 
 		history.Points, err = convertAmountFromCSV(row[5])

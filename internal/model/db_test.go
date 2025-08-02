@@ -235,29 +235,29 @@ func TestConvCSVtoAssetHistory(t *testing.T) {
 			name: "normal",
 			args: args{
 				csv: [][]string{
-					{"日付", "総額", "現金・預金・投資信託", "債券", "その他金融資産", "ポイント", "詳細"}, // ヘッダー行
+					{"日付", "合計", "預金・現金・暗号資産", "株式(現物)", "投資信託", "ポイント", "詳細"}, // ヘッダー行
 					{"2025-08-02", `"5,000,000"`, `"3,500,000"`, "0", `"1,400,000"`, `"100,000"`, "テスト詳細"},
 					{"2025-08-01", `"4,800,000"`, `"3,200,000"`, "0", `"1,500,000"`, `"100,000"`, "テスト詳細"},
 				},
 			},
 			wantHistories: []AssetHistory{
 				{
-					Date:        time.Date(2025, 8, 2, 0, 0, 0, 0, time.Local),
-					TotalAmount: 5000000,
-					CashDeposit: 3500000,
-					Bonds:       0,
-					OtherAssets: 1400000,
-					Points:      100000,
-					Details:     "テスト詳細",
+					Date:              time.Date(2025, 8, 2, 0, 0, 0, 0, time.Local),
+					TotalAmount:       5000000,
+					CashDepositCrypto: 3500000,
+					Stocks:            0,
+					InvestmentTrusts:  1400000,
+					Points:            100000,
+					Details:           "テスト詳細",
 				},
 				{
-					Date:        time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local),
-					TotalAmount: 4800000,
-					CashDeposit: 3200000,
-					Bonds:       0,
-					OtherAssets: 1500000,
-					Points:      100000,
-					Details:     "テスト詳細",
+					Date:              time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local),
+					TotalAmount:       4800000,
+					CashDepositCrypto: 3200000,
+					Stocks:            0,
+					InvestmentTrusts:  1500000,
+					Points:            100000,
+					Details:           "テスト詳細",
 				},
 			},
 			wantErr: false,
@@ -286,29 +286,29 @@ func TestConvCSVtoAssetHistory(t *testing.T) {
 			name: "month end date format",
 			args: args{
 				csv: [][]string{
-					{"日付", "総額", "現金・預金・投資信託", "債券", "その他金融資産", "ポイント", "詳細"}, // ヘッダー行
+					{"日付", "合計", "預金・現金・暗号資産", "株式(現物)", "投資信託", "ポイント", "詳細"}, // ヘッダー行
 					{"2025-05月末", `"6,000,000"`, `"4,000,000"`, "0", `"1,800,000"`, `"200,000"`, "5月末テスト詳細"},
 					{"2024-02月末", `"5,500,000"`, `"3,800,000"`, "0", `"1,600,000"`, `"100,000"`, "2月末テスト詳細"},
 				},
 			},
 			wantHistories: []AssetHistory{
 				{
-					Date:        time.Date(2025, 5, 31, 0, 0, 0, 0, time.Local), // 2025年5月末
-					TotalAmount: 6000000,
-					CashDeposit: 4000000,
-					Bonds:       0,
-					OtherAssets: 1800000,
-					Points:      200000,
-					Details:     "5月末テスト詳細",
+					Date:              time.Date(2025, 5, 31, 0, 0, 0, 0, time.Local), // 2025年5月末
+					TotalAmount:       6000000,
+					CashDepositCrypto: 4000000,
+					Stocks:            0,
+					InvestmentTrusts:  1800000,
+					Points:            200000,
+					Details:           "5月末テスト詳細",
 				},
 				{
-					Date:        time.Date(2024, 2, 29, 0, 0, 0, 0, time.Local), // 2024年2月末（うるう年）
-					TotalAmount: 5500000,
-					CashDeposit: 3800000,
-					Bonds:       0,
-					OtherAssets: 1600000,
-					Points:      100000,
-					Details:     "2月末テスト詳細",
+					Date:              time.Date(2024, 2, 29, 0, 0, 0, 0, time.Local), // 2024年2月末（うるう年）
+					TotalAmount:       5500000,
+					CashDepositCrypto: 3800000,
+					Stocks:            0,
+					InvestmentTrusts:  1600000,
+					Points:            100000,
+					Details:           "2月末テスト詳細",
 				},
 			},
 			wantErr: false,
