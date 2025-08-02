@@ -48,6 +48,19 @@ type ImportHistory struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type AssetHistory struct {
+	ID          int64     `json:"id" gorm:"primaryKey;autoIncrement"`
+	Date        time.Time `json:"date" gorm:"uniqueIndex"`
+	TotalAmount int       `json:"total_amount"`
+	CashDeposit int       `json:"cash_deposit"`
+	Bonds       int       `json:"bonds"`
+	OtherAssets int       `json:"other_assets"`
+	Points      int       `json:"points"`
+	Details     string    `json:"details"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // ex: "2024/08/18"
 func getDateFromCSV(rawDate string) (date time.Time, err error) {
 	date, err = time.ParseInLocation("2006/01/02", rawDate, time.Local)
@@ -113,6 +126,71 @@ func ConvCSVtoDetail(csv [][]string) (details []Detail, err error) {
 		details = append(details, row)
 	}
 	return details, nil
+}
+
+func ConvCSVtoAssetHistory(csv [][]string) (histories []AssetHistory, err error) {
+	// CSV
+	// 日付,総額,現金・預金・投資信託,債券,その他金融資産,ポイント,詳細
+	for i, row := range csv {
+		if len(row) != 7 {
+			return []AssetHistory{}, fmt.Errorf("invalid csv: row: %d", i)
+		}
+
+		// ヘッダ行はあれば外す
+		if row[0] == "日付" {
+			continue
+		}
+
+		history := AssetHistory{
+			Details: row[6],
+		}
+
+		// 日付の変換
+		history.Date, err = time.ParseInLocation("2006-01-02", row[0], time.Local)
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert date: %s", row[0])
+		}
+
+		// 金額の変換
+		history.TotalAmount, err = convertAmountFromCSV(row[1])
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert total_amount: %s", row[1])
+		}
+
+		history.CashDeposit, err = convertAmountFromCSV(row[2])
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert cash_deposit: %s", row[2])
+		}
+
+		history.Bonds, err = convertAmountFromCSV(row[3])
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert bonds: %s", row[3])
+		}
+
+		history.OtherAssets, err = convertAmountFromCSV(row[4])
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert other_assets: %s", row[4])
+		}
+
+		history.Points, err = convertAmountFromCSV(row[5])
+		if err != nil {
+			return []AssetHistory{}, fmt.Errorf("failed to convert points: %s", row[5])
+		}
+
+		histories = append(histories, history)
+	}
+	return histories, nil
+}
+
+func convertAmountFromCSV(rawAmount string) (amount int, err error) {
+	// カンマと引用符を削除
+	rawAmount = strings.ReplaceAll(rawAmount, ",", "")
+	rawAmount = strings.ReplaceAll(rawAmount, `"`, "")
+	amount, err = strconv.Atoi(rawAmount)
+	if err != nil {
+		return 0, err
+	}
+	return amount, nil
 }
 
 func (e *ExtractRuleDB) ToExtractRule() openapi.Rule {
