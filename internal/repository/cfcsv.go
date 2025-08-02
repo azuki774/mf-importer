@@ -39,6 +39,29 @@ func (d *DetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details
 	return details, nil
 }
 
+func (d *DetailCSVOperator) LoadBsHistoryCSV(ctx context.Context, path string) (histories []model.AssetHistory, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []model.AssetHistory{}, err
+	}
+	defer file.Close()
+
+	// SJIS -> UTF8
+	sjisDecoder := japanese.ShiftJIS.NewDecoder()
+	utf8Reader := transform.NewReader(file, sjisDecoder)
+	reader := csv.NewReader(utf8Reader)
+	rows, err := reader.ReadAll()
+	if err != nil {
+		return []model.AssetHistory{}, err
+	}
+
+	histories, err = model.ConvCSVtoAssetHistory(rows)
+	if err != nil {
+		return []model.AssetHistory{}, err
+	}
+	return histories, nil
+}
+
 // inputDir から読み取り対象のファイルを取得
 func (d *DetailCSVOperator) GetTargetFiles(ctx context.Context, inputDir string) (targetCSVs []string, err error) {
 	files, err := os.ReadDir(inputDir)

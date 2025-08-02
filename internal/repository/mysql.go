@@ -21,6 +21,7 @@ var NULLtimeTime = time.Time{} // mock
 const tableNameDetail = "detail"
 const tableNameExtractRule = "extract_rule"
 const tableNameImportHistory = "import_history"
+const tableNameAssetHistory = "asset_history"
 
 type DBClient struct {
 	Conn *gorm.DB
@@ -206,4 +207,44 @@ func (d *DBClient) DeleteExtractRule(ctx context.Context, id int) (err error) {
 		return result.Error
 	}
 	return nil
+}
+
+// 日付がすでに登録されているかチェック（重複防止）
+func (d *DBClient) CheckAlreadyRegistAssetHistory(ctx context.Context, date time.Time) (exists bool, err error) {
+	var assetHistory model.AssetHistory
+	if err = d.Conn.WithContext(ctx).Table(tableNameAssetHistory).
+		Where("date = ?", date.Format("2006-01-02")).
+		First(&assetHistory).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+// 資産履歴を登録
+func (d *DBClient) RegistAssetHistory(ctx context.Context, assetHistory model.AssetHistory) (err error) {
+	return d.Conn.WithContext(ctx).Table(tableNameAssetHistory).Create(&assetHistory).Error
+}
+
+// 資産履歴を日付の降順で取得（最新から指定件数）
+func (d *DBClient) GetAssetHistories(ctx context.Context, limit int) (histories []model.AssetHistory, err error) {
+	err = d.Conn.WithContext(ctx).Table(tableNameAssetHistory).Order("date desc").Limit(limit).Find(&histories).Error
+	return histories, err
+}
+
+// 特定日付の資産履歴を取得
+func (d *DBClient) GetAssetHistoryByDate(ctx context.Context, date time.Time) (history model.AssetHistory, err error) {
+	err = d.Conn.WithContext(ctx).Table(tableNameAssetHistory).
+		Where("date = ?", date.Format("2006-01-02")).
+		First(&history).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.AssetHistory{}, model.ErrRecordNotFound
+		}
+		return model.AssetHistory{}, err
+	}
+	return history, nil
 }

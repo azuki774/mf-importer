@@ -163,3 +163,167 @@ func TestConvCSVtoDetail(t *testing.T) {
 		})
 	}
 }
+
+func Test_convertAmountFromCSV(t *testing.T) {
+	type args struct {
+		rawAmount string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantAmount int
+		wantErr    bool
+	}{
+		{
+			name: "simple number",
+			args: args{
+				rawAmount: "1000",
+			},
+			wantAmount: 1000,
+			wantErr:    false,
+		},
+		{
+			name: "number with comma",
+			args: args{
+				rawAmount: "1,000,000",
+			},
+			wantAmount: 1000000,
+			wantErr:    false,
+		},
+		{
+			name: "quoted number",
+			args: args{
+				rawAmount: `"8,839,399"`,
+			},
+			wantAmount: 8839399,
+			wantErr:    false,
+		},
+		{
+			name: "invalid number",
+			args: args{
+				rawAmount: "abc",
+			},
+			wantAmount: 0,
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotAmount, err := convertAmountFromCSV(tt.args.rawAmount)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertAmountFromCSV() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotAmount != tt.wantAmount {
+				t.Errorf("convertAmountFromCSV() = %v, want %v", gotAmount, tt.wantAmount)
+			}
+		})
+	}
+}
+
+func TestConvCSVtoAssetHistory(t *testing.T) {
+	type args struct {
+		csv [][]string
+	}
+	tests := []struct {
+		name          string
+		args          args
+		wantHistories []AssetHistory
+		wantErr       bool
+	}{
+		{
+			name: "normal",
+			args: args{
+				csv: [][]string{
+					{"日付", "合計", "預金・現金・暗号資産", "株式(現物)", "投資信託", "ポイント", "詳細"}, // ヘッダー行
+					{"2025-08-02", `"5,000,000"`, `"3,500,000"`, "0", `"1,400,000"`, `"100,000"`, "テスト詳細"},
+					{"2025-08-01", `"4,800,000"`, `"3,200,000"`, "0", `"1,500,000"`, `"100,000"`, "テスト詳細"},
+				},
+			},
+			wantHistories: []AssetHistory{
+				{
+					Date:              time.Date(2025, 8, 2, 0, 0, 0, 0, time.Local),
+					TotalAmount:       5000000,
+					CashDepositCrypto: 3500000,
+					Stocks:            0,
+					InvestmentTrusts:  1400000,
+					Points:            100000,
+					Details:           "テスト詳細",
+				},
+				{
+					Date:              time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local),
+					TotalAmount:       4800000,
+					CashDepositCrypto: 3200000,
+					Stocks:            0,
+					InvestmentTrusts:  1500000,
+					Points:            100000,
+					Details:           "テスト詳細",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid column count",
+			args: args{
+				csv: [][]string{
+					{"2025-08-02", `"8,839,399"`, `"6,960,146"`}, // 列数が足りない
+				},
+			},
+			wantHistories: []AssetHistory{},
+			wantErr:       true,
+		},
+		{
+			name: "invalid date format",
+			args: args{
+				csv: [][]string{
+					{"invalid-date", `"5,000,000"`, `"3,500,000"`, "0", `"1,400,000"`, `"100,000"`, "テスト詳細"},
+				},
+			},
+			wantHistories: []AssetHistory{},
+			wantErr:       true,
+		},
+		{
+			name: "month end date format",
+			args: args{
+				csv: [][]string{
+					{"日付", "合計", "預金・現金・暗号資産", "株式(現物)", "投資信託", "ポイント", "詳細"}, // ヘッダー行
+					{"2025-05月末", `"6,000,000"`, `"4,000,000"`, "0", `"1,800,000"`, `"200,000"`, "5月末テスト詳細"},
+					{"2024-02月末", `"5,500,000"`, `"3,800,000"`, "0", `"1,600,000"`, `"100,000"`, "2月末テスト詳細"},
+				},
+			},
+			wantHistories: []AssetHistory{
+				{
+					Date:              time.Date(2025, 5, 31, 0, 0, 0, 0, time.Local), // 2025年5月末
+					TotalAmount:       6000000,
+					CashDepositCrypto: 4000000,
+					Stocks:            0,
+					InvestmentTrusts:  1800000,
+					Points:            200000,
+					Details:           "5月末テスト詳細",
+				},
+				{
+					Date:              time.Date(2024, 2, 29, 0, 0, 0, 0, time.Local), // 2024年2月末（うるう年）
+					TotalAmount:       5500000,
+					CashDepositCrypto: 3800000,
+					Stocks:            0,
+					InvestmentTrusts:  1600000,
+					Points:            100000,
+					Details:           "2月末テスト詳細",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotHistories, err := ConvCSVtoAssetHistory(tt.args.csv)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ConvCSVtoAssetHistory() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotHistories, tt.wantHistories) {
+				t.Errorf("ConvCSVtoAssetHistory() = %v, want %v", gotHistories, tt.wantHistories)
+			}
+		})
+	}
+}
