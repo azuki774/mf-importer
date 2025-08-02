@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mf-importer/internal/openapi"
 	"mf-importer/internal/util"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -145,8 +146,8 @@ func ConvCSVtoAssetHistory(csv [][]string) (histories []AssetHistory, err error)
 			Details: row[6],
 		}
 
-		// 日付の変換
-		history.Date, err = time.ParseInLocation("2006-01-02", row[0], time.Local)
+		// 日付の変換（月末表記にも対応）
+		history.Date, err = parseMonthEndDate(row[0])
 		if err != nil {
 			return []AssetHistory{}, fmt.Errorf("failed to convert date: %s", row[0])
 		}
@@ -191,6 +192,33 @@ func convertAmountFromCSV(rawAmount string) (amount int, err error) {
 		return 0, err
 	}
 	return amount, nil
+}
+
+// parseMonthEndDate は「2025-05月末」のような表記を実際の月末日付に変換する
+func parseMonthEndDate(dateStr string) (time.Time, error) {
+	// 「YYYY-MM月末」のパターンを正規表現でマッチ
+	monthEndPattern := regexp.MustCompile(`^(\d{4})-(\d{2})月末$`)
+	matches := monthEndPattern.FindStringSubmatch(dateStr)
+
+	if len(matches) == 3 {
+		year, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return time.Time{}, fmt.Errorf("invalid year: %s", matches[1])
+		}
+
+		month, err := strconv.Atoi(matches[2])
+		if err != nil {
+			return time.Time{}, fmt.Errorf("invalid month: %s", matches[2])
+		}
+
+		// 指定された年月の翌月の1日を取得し、1日前に戻すことで月末を取得
+		nextMonth := time.Date(year, time.Month(month+1), 1, 0, 0, 0, 0, time.Local)
+		lastDay := nextMonth.AddDate(0, 0, -1)
+		return lastDay, nil
+	}
+
+	// 月末表記でない場合は通常の日付として解析
+	return time.ParseInLocation("2006-01-02", dateStr, time.Local)
 }
 
 func (e *ExtractRuleDB) ToExtractRule() openapi.Rule {

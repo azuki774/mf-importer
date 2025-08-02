@@ -46,6 +46,25 @@ func (m *mockDBClient) GetLastDetailHistoryWhereSrcFile(ctx context.Context, src
 	return 100, 50, nil
 }
 
+func (m *mockDBClient) CheckAlreadyRegistAssetHistory(ctx context.Context, date time.Time) (exists bool, err error) {
+	if m.err != nil {
+		return false, m.err
+	}
+
+	// 問い合わせがあるたびに、DBに存在するパターンとないパターンを交互に返す
+	m.itr += 1
+	if (m.itr % 2) == 0 {
+		m.exists = false
+	} else {
+		m.exists = true
+	}
+	return m.exists, nil
+}
+
+func (m *mockDBClient) RegistAssetHistory(ctx context.Context, assetHistory model.AssetHistory) (err error) {
+	return m.err
+}
+
 func (m *mockDetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details []model.Detail, err error) {
 	if m.err != nil {
 		return []model.Detail{}, m.err
@@ -97,4 +116,37 @@ func (m *mockDetailCSVOperator) GetTargetFiles(ctx context.Context, inputDir str
 	}
 
 	return []string{"cf.csv", "cf_lastmonth.csv", "asset_histroy.csv", "dummy.csv"}, nil
+}
+
+func (m *mockDetailCSVOperator) LoadBsHistoryCSV(ctx context.Context, path string) (histories []model.AssetHistory, err error) {
+	if m.err != nil {
+		return []model.AssetHistory{}, m.err
+	}
+
+	return []model.AssetHistory{
+		{
+			Date:        time.Date(2024, 7, 1, 0, 0, 0, 0, time.Local),
+			TotalAmount: 1000000,
+			CashDeposit: 500000,
+			Bonds:       300000,
+			OtherAssets: 150000,
+			Points:      50000,
+		},
+		{
+			Date:        time.Date(2024, 7, 2, 0, 0, 0, 0, time.Local),
+			TotalAmount: 1050000,
+			CashDeposit: 520000,
+			Bonds:       300000,
+			OtherAssets: 180000,
+			Points:      50000,
+		},
+		{
+			Date:        time.Date(2024, 7, 3, 0, 0, 0, 0, time.Local),
+			TotalAmount: 980000,
+			CashDeposit: 480000,
+			Bonds:       300000,
+			OtherAssets: 150000,
+			Points:      50000,
+		},
+	}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -17,10 +18,13 @@ type DBClient interface {
 	RegistDetailHistory(ctx context.Context, jobname string, parsedNum int, insertNum int, srcFile string) (err error)
 	// そのソースファイルを取り込んだ、最後の情報をDBから取得する
 	GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile string) (parsedNum, insertedNum int, err error)
+	CheckAlreadyRegistAssetHistory(ctx context.Context, date time.Time) (exists bool, err error)
+	RegistAssetHistory(ctx context.Context, assetHistory model.AssetHistory) (err error)
 }
 
 type DetailCSVOperator interface {
 	LoadCfCSV(ctx context.Context, path string) (details []model.Detail, err error)
+	LoadBsHistoryCSV(ctx context.Context, path string) (histories []model.AssetHistory, err error)
 	GetTargetFiles(ctx context.Context, inputDir string) (targetCSVs []string, err error)
 }
 
@@ -57,6 +61,10 @@ func (i *Importer) Start(ctx context.Context) (err error) {
 		fileName := filepath.Base(path)
 		if strings.Contains(fileName, "cf.csv") || strings.Contains(fileName, "cf_lastmonth.csv") {
 			if err := i.startCFImporter(ctx, path); err != nil {
+				return err
+			}
+		} else if strings.Contains(fileName, "asset_history.csv") {
+			if err := i.startBSHistoryImporter(ctx, path); err != nil {
 				return err
 			}
 		}
@@ -120,5 +128,52 @@ func (i *Importer) startCFImporter(ctx context.Context, path string) (err error)
 	}
 
 	lf.Info("insert detail history sucessfully")
+	return nil
+}
+
+// asset_hisotry.csv を import する
+func (i *Importer) startBSHistoryImporter(ctx context.Context, path string) (err error) {
+	lf := i.Logger.With(zap.String("file", path))
+	histories, err := i.CSVOpe.LoadBsHistoryCSV(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	var parsedNum int
+	var insertedNum int
+
+	for _, h := range histories {
+		exists, err := i.DBClient.CheckAlreadyRegistAssetHistory(ctx, h.Date)
+		if err != nil {
+			return err
+		}
+		parsedNum += 1
+		if exists {
+			// その日付が登録済なら skip
+			continue
+		}
+		lf.Info("new asset history data detected, insert to DB", zap.Time("date", h.Date))
+		if i.DryRun {
+			lf.Info("however, it works as dry-run. do nothing.")
+		} else if err := i.DBClient.RegistAssetHistory(ctx, h); err != nil {
+			lf.Error("failed to insert asset history to DB", zap.Error(err))
+			return err
+		}
+		insertedNum += 1
+	}
+
+	lf.Info("insert asset history sucessfully", zap.Int("parsedNum", parsedNum), zap.Int("insertedNum", insertedNum))
+
+	// history regist
+	fileName := filepath.Base(path)
+	if insertedNum >= 1 {
+		// なにか1件でもDBに登録した場合は、historyテーブルも追加
+		if err := i.DBClient.RegistDetailHistory(ctx, i.JobName, parsedNum, insertedNum, fileName); err != nil {
+			lf.Error("failed to insert import history", zap.Error(err))
+			return err
+		}
+	}
+
+	lf.Info("insert asset history import history sucessfully")
 	return nil
 }

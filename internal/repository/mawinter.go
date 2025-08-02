@@ -58,4 +58,3 @@ func (m *MawinterClient) Regist(ctx context.Context, c model.Detail, catID int) 
 	m.Logger.Info("post records", zap.String("date", rec.Date), zap.Int64("category_id", rec.CategoryID), zap.Int64("price", rec.Price), zap.String("memo", rec.Memo))
 	return nil
 }
-
