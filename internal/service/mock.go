@@ -115,7 +115,7 @@ func (m *mockDetailCSVOperator) GetTargetFiles(ctx context.Context, inputDir str
 		return []string{}, m.err
 	}
 
-	return []string{"cf.csv", "cf_lastmonth.csv", "asset_histroy.csv", "dummy.csv"}, nil
+	return []string{"cf.csv", "cf_lastmonth.csv", "asset_history.csv", "dummy.csv"}, nil
 }
 
 func (m *mockDetailCSVOperator) LoadBsHistoryCSV(ctx context.Context, path string) (histories []model.AssetHistory, err error) {
