@@ -6,6 +6,7 @@ import (
 	"mf-importer/internal/logger"
 	"mf-importer/internal/mawinter"
 	"mf-importer/internal/repository"
+	"mf-importer/internal/telemetry"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -47,6 +48,14 @@ func init() {
 func registMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
+	shutdown, err := telemetry.Setup(ctx, l)
+	if err != nil {
+		l.Error("failed to setup telemetry", zap.Error(err))
+		return err
+	}
+	defer func() {
+		_ = shutdown(context.Background())
+	}()
 	host := os.Getenv("db_host")
 	port := os.Getenv("db_port")
 	user := os.Getenv("db_user")

@@ -7,10 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 const category_train = 270
+
+var tracer = otel.Tracer("mf-importer-maw/mawinter")
 
 type DBClient interface {
 	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error) // mawinter check未チェックのデータを取得
@@ -75,6 +81,11 @@ func (m *Mawinter) getCategoryIDwithExtractCond(c model.Detail) (catID int, ok b
 }
 
 func (m *Mawinter) Regist(ctx context.Context) (err error) {
+	ctx, span := tracer.Start(ctx, "mawinter.Regist", trace.WithAttributes(
+		attribute.Bool("mawinter.dry_run", m.Dryrun),
+	))
+	defer span.End()
+
 	m.Logger.Info("Regist start")
 
 	// Fetch Extract Rule from DB
@@ -82,11 +93,15 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	m.ExtractRule = *model.NewExtractRule()
 	ers, err := m.DBClient.GetExtractRules(ctx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		m.Logger.Error("failed to extract rules from DB", zap.Error(err))
 		return err
 	}
 	err = m.ExtractRule.AddRule(ers)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		m.Logger.Error("failed to add extract rules", zap.Error(err))
 		return err
 	}
@@ -94,6 +109,8 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	// Fetch Details from DB
 	cfDetails, err := m.DBClient.GetCFDetails(ctx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		m.Logger.Error("failed to fetch details from DB", zap.Error(err))
 		return err
 	}
@@ -119,29 +136,64 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 			}
 		}
 
+		recCtx := ctx
+		var recSpan trace.Span
+		endSpan := func() {}
+		if regist {
+			recCtx, recSpan = tracer.Start(ctx, "mawinter.process_detail", trace.WithAttributes(
+				attribute.String("detail.name", c.Name),
+				attribute.Int64("detail.price", c.Price),
+				attribute.String("detail.m_category", c.MCategory),
+				attribute.Bool("detail.regist_candidate", regist),
+				attribute.Int("detail.category_id", catID),
+			))
+			endSpan = func() {
+				recSpan.End()
+			}
+		}
+
+		// suica 判定が true だった場合の属性を span に追加
+		if regist && model.IsSuicaDetail(c) {
+			recSpan.SetAttributes(attribute.Bool("detail.suica_detected", true))
+		}
+
 		// DryRunMode ONのときは何もせず終了
 		if m.Dryrun {
 			cLogger.Info("dryrun: post to mawinter", zap.Bool("regist", regist))
+			if recSpan != nil {
+				recSpan.AddEvent("dryrun")
+			}
+			endSpan()
 			continue
 		}
 
 		if regist {
 			cLogger.Info("post to mawinter")
-			err := m.MawClient.Regist(ctx, c, catID)
+			recSpan.AddEvent("post mawinter API")
+			err := m.MawClient.Regist(recCtx, c, catID)
 			if err != nil {
+				recSpan.RecordError(err)
+				recSpan.SetStatus(codes.Error, err.Error())
 				m.Logger.Error("failed to post mawinter", zap.Error(err))
+				endSpan()
 				return err
 			}
 			cLogger.Info("post to mawinter complete")
 		}
 
 		// detail テーブルを更新する
-		err = m.DBClient.CheckCFDetail(ctx, c, regist)
+		err = m.DBClient.CheckCFDetail(recCtx, c, regist)
 		if err != nil {
+			if recSpan != nil {
+				recSpan.RecordError(err)
+				recSpan.SetStatus(codes.Error, err.Error())
+			}
 			cLogger.Error("failed to insert checked histories", zap.Error(err))
+			endSpan()
 			return err
 		}
 
+		endSpan()
 	}
 
 	m.Logger.Info("Regist end")
