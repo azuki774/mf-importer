@@ -56,7 +56,7 @@ func (d *DBClient) CloseDB() (err error) {
 }
 
 func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, err error) {
-	result := d.Conn.Table(tableNameDetail).Where("maw_check_date IS NULL").Find(&cfRecords)
+	result := d.Conn.WithContext(ctx).Table(tableNameDetail).Where("maw_check_date IS NULL").Find(&cfRecords)
 	if result.Error != nil {
 		return []model.Detail{}, result.Error
 	}
@@ -66,7 +66,7 @@ func (d *DBClient) GetCFDetails(ctx context.Context) (cfRecords []model.Detail, 
 func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error) {
 	id := cfDetail.ID
 	t := time.Now().Format("2006-01-02")
-	err = d.Conn.Transaction(func(tx *gorm.DB) error {
+	err = d.Conn.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Table(tableNameDetail).Where("ID = ?", id).Update("maw_check_date", t)
 		if result.Error != nil {
 			return result.Error
@@ -88,7 +88,7 @@ func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, reg
 	return nil
 }
 func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
-	result := d.Conn.Table(tableNameExtractRule).Find(&er)
+	result := d.Conn.WithContext(ctx).Table(tableNameExtractRule).Find(&er)
 	if result.Error != nil {
 		return []model.ExtractRuleDB{}, result.Error
 	}

@@ -229,6 +229,11 @@ REST APIの詳細仕様は以下で確認できます：
 - RESTful APIでmawinter-serverにデータを送信
 - ドライランモードでの事前確認が可能
 
+### OpenTelemetryトレース（mf-importer-maw）
+- 環境変数 `OTLP_SERVER` を設定すると、`http://<OTLP_SERVER>/v1/traces` に OTLP/HTTP でトレースを送信します（例: `grafana-k8s-monitoring-alloy-receiver.monitor.svc.cluster.local:4318`）。
+- `OTLP_SERVER` が未設定の場合はトレース送信を行わずに通常起動します。
+- mawinter-server への HTTP リクエストには W3C Trace Context を付与します。
+
 ## 技術スタック
 
 ### バックエンド

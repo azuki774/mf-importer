@@ -9,18 +9,95 @@
 		"ghcr.io/devcontainers/features/go:1": {
 			"version": "1.23"
 		},
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "22"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"installDirectlyFromGitHubRelease": true,
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": true,
+			"username": "vscode",
+			"userUid": "automatic",
+			"userGid": "automatic"
+		},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"version": "latest",
+			"moby": true,
+			"dockerDashComposeVersion": "v2"
+		}
 	},
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"golang.go",
 				"Vue.volar",
+				"Vue.vscode-typescript-vue-plugin",
+				"mtxr.sqltools",
+				"mtxr.sqltools-driver-mysql",
 				"dbaeumer.vscode-eslint",
-				"editorconfig.editorconfig"
-			]
+				"esbenp.prettier-vscode",
+				"EditorConfig.EditorConfig",
+				"42Crunch.vscode-openapi",
+				"eamodio.gitlens",
+				"GitHub.vscode-pull-request-github",
+				"usernamehw.errorlens",
+				"streetsidesoftware.code-spell-checker"
+			],
+			"settings": {
+				"go.toolsManagement.autoUpdate": true,
+				"go.useLanguageServer": true,
+				"go.lintTool": "golangci-lint",
+				"go.lintOnSave": "workspace",
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": "explicit"
+				},
+				"[go]": {
+					"editor.defaultFormatter": "golang.go",
+					"editor.codeActionsOnSave": {
+						"source.organizeImports": "explicit"
+					}
+				},
+				"[vue]": {
+					"editor.defaultFormatter": "Vue.volar"
+				},
+				"[typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"[json]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"[yaml]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"sqltools.connections": [
+					{
+						"name": "MySQL - mawinter",
+						"driver": "MySQL",
+						"server": "db",
+						"port": 3306,
+						"database": "mawinter",
+						"username": "root",
+						"password": "password"
+					}
+				],
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"files.watcherExclude": {
+					"**/.git/objects/**": true,
+					"**/.git/subtree-cache/**": true,
+					"**/node_modules/**": true,
+					"**/.nuxt/**": true,
+					"**/dist/**": true
+				}
+			}
 		}
 	},
 	"postCreateCommand": "go mod download && cd frontend && npm install",
-	"forwardPorts": []
+	"forwardPorts": [],
+	"mounts": [
+		"source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,readonly,type=bind,consistency=cached"
+	]
 }
