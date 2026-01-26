@@ -1,0 +1,42 @@
+name: Nix Flake Check
+on:
+  pull_request:
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/nix-check.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+
+jobs:
+  nix-check:
+    name: Nix Flake Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Nix Flake Check
+        run: nix flake check --no-build
+
+      - name: Nix Flake Show
+        run: nix flake show
+
+      - name: Nix Flake Metadata
+        run: nix flake metadata
+
+      - name: Test Dev Shell Build
+        run: nix develop --command echo "Dev shell loaded successfully"

@@ -45,21 +45,75 @@ REST APIサービス
 
 ## 必要な環境
 
-- **Go**: 1.23.0以上
+- **Go**: 1.25.6以上
 - **Node.js**: フロントエンド開発用
 - **Docker & Docker Compose**: コンテナ実行環境
 - **MariaDB**: 10.x（Docker Composeで自動起動）
 
+### Nix開発環境（推奨）
+
+Nixを使用すると、開発に必要なツール（Go、Node.js、GitHub CLI等）を自動的にセットアップできます。
+
+**必要なもの:**
+- **Nix**: 2.4以上（Flakes対応）
+- **Docker**: DBコンテナ実行用
+- **direnv**: （オプション）自動環境切り替え用
+
 ## セットアップ
 
-### 1. リポジトリのクローン
+### 方法1: Nix + direnv（推奨）
+
+direnvを使用すると、ディレクトリに入るだけで自動的にNix環境が有効化されます。
+
 ```bash
+# 1. リポジトリのクローン
 git clone <repository-url>
 cd mf-importer
+
+# 2. direnvの許可（初回のみ）
+direnv allow
+
+# 3. Nix環境が自動的に有効化される
+# Go、Node.js、GitHub CLI等が自動的に利用可能になります
+
+# 4. DBコンテナの起動
+docker-compose -f .devcontainer/docker-compose.yml up -d
+
+# 5. 依存関係のインストール
+go mod download
+cd frontend && npm install && cd ..
 ```
 
-### 2. 依存関係のインストール
+### 方法2: Nix（手動起動）
+
+direnvを使用しない場合は、`nix develop`で環境を起動します。
+
 ```bash
+# 1. リポジトリのクローン
+git clone <repository-url>
+cd mf-importer
+
+# 2. Nix環境の起動
+nix develop
+
+# 3. DBコンテナの起動
+docker-compose -f deployment/compose.yml up -d
+
+# 4. 依存関係のインストール
+go mod download
+cd frontend && npm install && cd ..
+```
+
+### 方法3: 従来の手動セットアップ
+
+Nixを使用しない場合は、各ツールを手動でインストールしてください。
+
+```bash
+# 1. リポジトリのクローン
+git clone <repository-url>
+cd mf-importer
+
+# 2. 依存関係のインストール
 # Go modules
 go mod download
 
@@ -237,7 +291,7 @@ REST APIの詳細仕様は以下で確認できます：
 ## 技術スタック
 
 ### バックエンド
-- **言語**: Go 1.23.0
+- **言語**: Go 1.25.6
 - **フレームワーク**: Chi (HTTP router)
 - **CLI**: Cobra
 - **ORM**: GORM

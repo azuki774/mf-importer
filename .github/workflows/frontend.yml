@@ -18,27 +18,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.5"
+          node-version: "22" # 22.x の最新版
+          cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
-
+      
       - run: node --version
-
-      - name: npm install
-        run: npm install
-        working-directory: frontend
-
-      - name: npm ci
+      
+      # npm install を削除（重複インストールの問題を解決）
+      
+      - name: Clean install dependencies
         run: npm ci
         working-directory: frontend
-
+      
       - name: npm run build
         run: npm run build
         env:
           NODE_OPTIONS: "--max_old_space_size=8192"
         working-directory: frontend
-
+      
       - name: npm run generate
-        run: npm run build
+        run: npm run generate  # ← typo 修正（build → generate）
         working-directory: frontend
 
   frontend-docker:
