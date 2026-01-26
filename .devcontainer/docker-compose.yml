@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: mariadb:10
+    image: mariadb:11
     restart: always
     environment:
       MYSQL_DATABASE: mfimporter

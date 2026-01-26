@@ -10,12 +10,21 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        
+        # Pin Go to specific version 1.25.6
+        go = pkgs.go_1_25.overrideAttrs (oldAttrs: rec {
+          version = "1.25.6";
+          src = pkgs.fetchurl {
+            url = "https://go.dev/dl/go${version}.src.tar.gz";
+            hash = "sha256-WMv3ceRNdt5vVtGeM7d9dFoeSJNAkih15GWFuXXCsFk=";
+          };
+        });
       in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             # Go development
-            go_1_23
+            go  # Use pinned version
             gopls
             gotools
             go-tools # staticcheck
@@ -26,7 +35,7 @@
             nodePackages.npm
             
             # Database tools
-            mariadb-client
+            mariadb.client
             
             # Docker
             docker

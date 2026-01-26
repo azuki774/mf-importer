@@ -45,7 +45,7 @@ REST APIサービス
 
 ## 必要な環境
 
-- **Go**: 1.23.0以上
+- **Go**: 1.25.6以上
 - **Node.js**: フロントエンド開発用
 - **Docker & Docker Compose**: コンテナ実行環境
 - **MariaDB**: 10.x（Docker Composeで自動起動）
@@ -291,7 +291,7 @@ REST APIの詳細仕様は以下で確認できます：
 ## 技術スタック
 
 ### バックエンド
-- **言語**: Go 1.23.0
+- **言語**: Go 1.25.6
 - **フレームワーク**: Chi (HTTP router)
 - **CLI**: Cobra
 - **ORM**: GORM

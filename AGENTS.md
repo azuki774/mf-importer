@@ -11,7 +11,7 @@
 
 ### Nix 開発環境（推奨）
 - direnv を使用する場合、ディレクトリに入ると自動的に Nix 環境が有効化される（`direnv allow` が初回のみ必要）。
-- 手動で Nix 環境を有効化する場合は `nix develop` を実行（Go 1.23、Node 22、gh、docker、golangci-lint 等が利用可能になる）。
+- 手動で Nix 環境を有効化する場合は `nix develop` を実行（Go 1.25、Node 22、gh、docker、golangci-lint 等が利用可能になる）。
 - `flake.nix` を編集した場合は `nix flake update` で依存関係を更新し、`flake.lock` を更新してコミット。
 - DB（MariaDB）は Nix 外で Docker コンテナとして実行。`.devcontainer/docker-compose.yml` で定義され、`docker-compose -f .devcontainer/docker-compose.yml up -d` で起動。
 
