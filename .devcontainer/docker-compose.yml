@@ -1,14 +1,7 @@
 version: '3.8'
 
 services:
-  app:
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
-    volumes:
-      - ../:/workspaces/mf-importer:cached
-    command: sleep infinity
-    network_mode: service:mf-importer-db
-
-  mf-importer-db:
+  db:
     image: mariadb:10
     restart: always
     environment:
@@ -17,6 +10,8 @@ services:
       TZ: Asia/Tokyo
     volumes:
       - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
 
 volumes:
   db-data:
