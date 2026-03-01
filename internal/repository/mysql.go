@@ -161,9 +161,14 @@ func (d *DBClient) GetLastDetailHistoryWhereJobLabel(ctx context.Context, jobLab
 	return ih, nil
 }
 
-func (d *DBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {
-	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Order("ID desc").Limit(limit).Find(&details).Error
+func (d *DBClient) GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error) {
+	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Order("ID desc").Limit(limit).Offset(offset).Find(&details).Error
 	return details, err
+}
+
+func (d *DBClient) CountDetails(ctx context.Context) (count int64, err error) {
+	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Count(&count).Error
+	return count, err
 }
 
 func (d *DBClient) ResetImportDetails(ctx context.Context, id int) (err error) {

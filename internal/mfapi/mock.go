@@ -11,8 +11,8 @@ type mockDBClient struct {
 	err error
 }
 
-// limit は無視な mock
-func (m *mockDBClient) GetDetails(ctx context.Context, limit int) (details []model.Detail, err error) {
+// limit, offset は無視な mock
+func (m *mockDBClient) GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -42,6 +42,13 @@ func (m *mockDBClient) GetDetails(ctx context.Context, limit int) (details []mod
 		},
 	}
 	return details, nil
+}
+
+func (m *mockDBClient) CountDetails(ctx context.Context) (int64, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	return 2, nil
 }
 
 func (m *mockDBClient) ResetImportDetails(ctx context.Context, id int) (err error) {

@@ -16,6 +16,9 @@ type ServerInterface interface {
 	// get details
 	// (GET /details)
 	GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams)
+	// get details total count
+	// (GET /details/count)
+	GetDetailsCount(w http.ResponseWriter, r *http.Request)
 	// [WIP] delete detail
 	// (DELETE /details/{id})
 	DeleteDetailsId(w http.ResponseWriter, r *http.Request, id int)
@@ -52,6 +55,12 @@ type Unimplemented struct{}
 // get details
 // (GET /details)
 func (_ Unimplemented) GetDetails(w http.ResponseWriter, r *http.Request, params GetDetailsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// get details total count
+// (GET /details/count)
+func (_ Unimplemented) GetDetailsCount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -135,8 +144,31 @@ func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetDetails(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetDetailsCount operation middleware
+func (siw *ServerInterfaceWrapper) GetDetailsCount(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDetailsCount(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -469,6 +501,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/details", wrapper.GetDetails)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/details/count", wrapper.GetDetailsCount)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/details/{id}", wrapper.DeleteDetailsId)

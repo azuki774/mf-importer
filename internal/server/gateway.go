@@ -15,7 +15,8 @@ import (
 const patchOpeReset = "reset"
 
 type APIService interface {
-	GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error)
+	GetDetails(ctx context.Context, limit int, offset int) (dets []openapi.Detail, err error)
+	GetDetailsCount(ctx context.Context) (openapi.DetailsCount, error)
 	GetRules(ctx context.Context) ([]openapi.Rule, error)
 	GetRule(ctx context.Context, id int) (openapi.Rule, error)
 	ResetImportDetails(ctx context.Context, id int) (err error)
@@ -33,14 +34,18 @@ func (a *apigateway) GetHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "OK\n")
 }
 
-// (GET /details/{id})
+// (GET /details)
 func (a *apigateway) GetDetails(w http.ResponseWriter, r *http.Request, params openapi.GetDetailsParams) {
-	var defaultLimit = 50
+	var defaultLimit = 20
+	var defaultOffset = 0
 	if params.Limit == nil {
 		params.Limit = &defaultLimit
 	}
+	if params.Offset == nil {
+		params.Offset = &defaultOffset
+	}
 
-	dets, err := a.APIService.GetDetails(r.Context(), *params.Limit)
+	dets, err := a.APIService.GetDetails(r.Context(), *params.Limit, *params.Offset)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err.Error())
@@ -48,6 +53,26 @@ func (a *apigateway) GetDetails(w http.ResponseWriter, r *http.Request, params o
 	}
 
 	outputJson, err := json.Marshal(&dets)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, string(outputJson))
+}
+
+// (GET /details/count)
+func (a *apigateway) GetDetailsCount(w http.ResponseWriter, r *http.Request) {
+	res, err := a.APIService.GetDetailsCount(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	outputJson, err := json.Marshal(&res)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err.Error())

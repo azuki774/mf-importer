@@ -26,8 +26,9 @@ func TestAPIService_GetDetails(t *testing.T) {
 		Repo   DBRepository
 	}
 	type args struct {
-		ctx   context.Context
-		limit int
+		ctx    context.Context
+		limit  int
+		offset int
 	}
 	tests := []struct {
 		name     string
@@ -43,8 +44,9 @@ func TestAPIService_GetDetails(t *testing.T) {
 				Repo:   &mockDBClient{},
 			},
 			args: args{
-				ctx:   context.Background(),
-				limit: 5,
+				ctx:    context.Background(),
+				limit:  5,
+				offset: 0,
 			},
 			wantDets: []openapi.Detail{
 				{
@@ -73,8 +75,9 @@ func TestAPIService_GetDetails(t *testing.T) {
 				Repo:   &mockDBClient{err: errors.New("error")},
 			},
 			args: args{
-				ctx:   context.Background(),
-				limit: 5,
+				ctx:    context.Background(),
+				limit:  5,
+				offset: 0,
 			},
 			wantDets: nil,
 			wantErr:  true,
@@ -86,7 +89,7 @@ func TestAPIService_GetDetails(t *testing.T) {
 				Logger: tt.fields.Logger,
 				Repo:   tt.fields.Repo,
 			}
-			gotDets, err := a.GetDetails(tt.args.ctx, tt.args.limit)
+			gotDets, err := a.GetDetails(tt.args.ctx, tt.args.limit, tt.args.offset)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("APIService.GetDetails() error = %v, wantErr %v", err, tt.wantErr)
 				return
