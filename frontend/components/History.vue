@@ -123,48 +123,36 @@ async function showPatchDialog(id: number): Promise<void> {
       </tbody>
     </table>
 
-    <nav
-      v-if="totalPages > 1"
-      class="mt-3"
-      aria-label="ページネーション"
-    >
-      <ul class="pagination pagination-sm justify-content-center flex-wrap">
-        <li
-          class="page-item"
-          :class="{ disabled: page <= 1 }"
+    <div class="mt-4 p-3 border rounded bg-light" aria-label="ページ切り替え">
+      <p class="mb-2 mb-md-0 small fw-bold text-secondary">
+        ページ切り替え
+      </p>
+      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 gap-md-3">
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm"
+          :disabled="page <= 1"
+          aria-label="前のページ"
+          @click="goToPage(page - 1)"
         >
-          <a
-            class="page-link"
-            href="#"
-            aria-label="前へ"
-            @click.prevent="goToPage(page - 1)"
-          >
-            前へ
-          </a>
-        </li>
-        <li class="page-item disabled">
-          <span class="page-link">{{ page }} / {{ totalPages }}</span>
-        </li>
-        <li
-          class="page-item"
-          :class="{ disabled: page >= totalPages }"
+          前のページ
+        </button>
+        <span class="px-2 text-nowrap small">
+          {{ page }} / {{ totalPages }} ページ
+        </span>
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm"
+          :disabled="page >= totalPages"
+          aria-label="次のページを表示"
+          @click="goToPage(page + 1)"
         >
-          <a
-            class="page-link"
-            href="#"
-            aria-label="次へ"
-            @click.prevent="goToPage(page + 1)"
-          >
-            次へ
-          </a>
-        </li>
-      </ul>
-    </nav>
+          次のページを表示
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.page-item.disabled .page-link {
-  pointer-events: none;
-}
 </style>
