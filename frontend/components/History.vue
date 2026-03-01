@@ -128,31 +128,30 @@ async function showPatchDialog(id: number): Promise<void> {
       </tbody>
     </table>
 
-    <div class="mt-4 p-3 border rounded bg-light" aria-label="ページ切り替え">
-      <p class="mb-2 mb-md-0 small fw-bold text-secondary">
-        ページ切り替え
-      </p>
-      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 gap-md-3">
+    <div class="mt-3 pt-2 border-top" aria-label="ページ切り替え">
+      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 gap-md-3 small text-secondary">
         <button
           type="button"
-          class="btn btn-outline-primary btn-sm"
+          class="btn btn-link btn-sm p-0 text-secondary text-decoration-none"
           :disabled="page <= 1"
+          :class="{ 'opacity-50 pe-none': page <= 1 }"
           aria-label="前のページ"
           @click="goToPage(page - 1)"
         >
           前のページ
         </button>
-        <span class="px-2 text-nowrap small">
-          {{ page }} / {{ totalPages }} ページ
+        <span class="px-2 text-nowrap">
+          {{ page }} / {{ totalPages }}
         </span>
         <button
           type="button"
-          class="btn btn-outline-primary btn-sm"
+          class="btn btn-link btn-sm p-0 text-secondary text-decoration-none"
           :disabled="page >= totalPages"
-          aria-label="次のページを表示"
+          :class="{ 'opacity-50 pe-none': page >= totalPages }"
+          aria-label="次のページ"
           @click="goToPage(page + 1)"
         >
-          次のページを表示
+          次のページ
         </button>
       </div>
     </div>
