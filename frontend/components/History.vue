@@ -13,11 +13,16 @@ const { data: detailsData } = await useFetch<ImportRecord[]>(() => detailsKey.va
   key: () => `details-${page.value}-${perPage.value}`,
 });
 
-const { data: countData } = await useFetch<{ count: number }>("/api/details/count", {
-  key: "details-count",
-});
+const totalCount = ref(0);
 
-const totalCount = computed(() => countData.value?.count ?? 0);
+onMounted(async () => {
+  try {
+    const res = await $fetch<{ count: number }>("/api/details/count");
+    totalCount.value = res.count ?? 0;
+  } catch {
+    totalCount.value = 0;
+  }
+});
 const totalPages = computed(() => Math.ceil(totalCount.value / perPage.value) || 1);
 
 const record_list = computed(() => {
