@@ -20,6 +20,12 @@ type Detail struct {
 	UseDate         openapi_types.Date `json:"useDate"`
 }
 
+// DetailsCount defines model for DetailsCount.
+type DetailsCount struct {
+	// Count total number of details
+	Count int `json:"count"`
+}
+
 // Rule defines model for Rule.
 type Rule struct {
 	CategoryId int    `json:"categoryId"`
@@ -39,7 +45,8 @@ type RuleRequest struct {
 
 // GetDetailsParams defines parameters for GetDetails.
 type GetDetailsParams struct {
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // PatchDetailsIdParams defines parameters for PatchDetailsId.

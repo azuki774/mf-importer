@@ -1,62 +1,98 @@
 <script setup lang="ts">
 import type { ImportRecord } from "@/interfaces";
-const config = useRuntimeConfig(); // nuxt.config.ts に書いてあるコンフィグを読み出す
-const record_list = ref<ImportRecord[]>()
-const asyncData = await useFetch(
-  "/api/details",
-  {
-    key: `/api/details`,
-  }
+
+const page = ref(1);
+const perPage = ref(20);
+const perPageOptions = [10, 20, 50];
+
+const detailsKey = computed(
+  () => `/api/details?limit=${perPage.value}&offset=${(page.value - 1) * perPage.value}`
 );
 
-const data = asyncData.data.value as ImportRecord[];
+const { data: detailsData } = await useFetch<ImportRecord[]>(() => detailsKey.value, {
+  key: () => `details-${page.value}-${perPage.value}`,
+});
 
-// fetchデータを整形
-if (data != undefined) { // 取得済の場合のみ
-  for (let d of data) {
-    d.registDate = d.registDate.slice(0, 19);
-    if (d.importJudgeDate != undefined) { // 2023-09-23T00:00:00+09:00 -> 2023-09-23T00:00:00
-      d.importJudgeDate = d.importJudgeDate.slice(0, 19);
-    }
-    if (d.importDate != undefined) {
-      d.importDate = d.importDate.slice(0, 19);
-    }
+const totalCount = ref(0);
+
+onMounted(async () => {
+  try {
+    const res = await $fetch<{ count: number }>("/api/details/count");
+    totalCount.value = res.count ?? 0;
+  } catch {
+    totalCount.value = 0;
   }
+});
+const totalPages = computed(() => Math.ceil(totalCount.value / perPage.value) || 1);
 
-  record_list.value = data
+const record_list = computed(() => {
+  const data = detailsData.value;
+  if (data == null) return [];
+  return data.map((d) => {
+    const r = { ...d };
+    r.registDate = d.registDate.slice(0, 19);
+    if (d.importJudgeDate != null) r.importJudgeDate = d.importJudgeDate.slice(0, 19);
+    if (d.importDate != null) r.importDate = d.importDate.slice(0, 19);
+    return r;
+  });
+});
+
+function goToPage(p: number) {
+  const next = Math.max(1, Math.min(p, totalPages.value));
+  page.value = next;
+}
+
+function onPerPageChange(ev: Event) {
+  const v = Number((ev.target as HTMLSelectElement).value);
+  if (v > 0) {
+    perPage.value = v;
+    page.value = 1;
+  }
 }
 
 async function showPatchDialog(id: number): Promise<void> {
   const userResponse: boolean = confirm("このデータを再判定対象にしますか");
-  if (userResponse == true) {
-    console.log('patch: id=' + id);
-    const asyncDataDeleteBtn = await useAsyncData(
-      `patchDetail `,
-      (): Promise<any> => {
-        const param = { 'id': id, 'ope': 'reset' };
-        const paramStr = "?id=" + param['id'] + "&ope=" + param['ope'];
-        const localurl = "/api/detail" + paramStr
-        console.log(localurl)
-        const response = $fetch(localurl,
-          {
-            method: "PATCH"
-          }
-        );
-        return response;
-      }
-    );
-    location.reload()
+  if (userResponse === true) {
+    const paramStr = "?id=" + id + "&ope=reset";
+    await $fetch("/api/detail" + paramStr, { method: "PATCH" });
+    location.reload();
   }
-};
-
+}
 </script>
 
 <template>
   <section class="container">
     <h3>取り込み履歴</h3>
     <div class="mb-3 mt-3">
-      <input type="button" class="sendbutton btn btn-primary" onclick="location.href='./rules'" value="ルール設定を表示">
+      <input
+        type="button"
+        class="sendbutton btn btn-primary"
+        onclick="location.href='./rules'"
+        value="ルール設定を表示"
+      >
     </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0">表示件数</label>
+        <select
+          class="form-select form-select-sm"
+          style="width: auto"
+          :value="perPage"
+          @change="onPerPageChange"
+        >
+          <option
+            v-for="n in perPageOptions"
+            :key="n"
+            :value="n"
+          >
+            {{ n }}件
+          </option>
+        </select>
+      </div>
+      <span class="text-muted small">全 {{ totalCount }} 件</span>
+    </div>
+
     <table class="table small bordered striped table-bordered">
       <thead class="table-info">
         <tr>
@@ -70,19 +106,57 @@ async function showPatchDialog(id: number): Promise<void> {
         </tr>
       </thead>
       <tbody>
-        <th scope="row"></th>
-        <tr v-for="record in record_list">
+        <tr
+          v-for="record in record_list"
+          :key="record.id"
+        >
           <td>{{ record.useDate }}</td>
           <td>{{ record.name }}</td>
           <td>{{ record.price }}</td>
           <td>{{ record.registDate }}</td>
           <td>{{ record.importJudgeDate }}</td>
           <td>{{ record.importDate }}</td>
-          <td><button class="btn btn-secondary btn-sm" @click="showPatchDialog(record.id)">再判定</button></td>
+          <td>
+            <button
+              class="btn btn-secondary btn-sm"
+              @click="showPatchDialog(record.id)"
+            >
+              再判定
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
+
+    <div class="mt-3 pt-2 border-top" aria-label="ページ切り替え">
+      <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 gap-md-3 small text-secondary">
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 text-secondary text-decoration-none"
+          :disabled="page <= 1"
+          :class="{ 'opacity-50 pe-none': page <= 1 }"
+          aria-label="前のページ"
+          @click="goToPage(page - 1)"
+        >
+          前のページ
+        </button>
+        <span class="px-2 text-nowrap">
+          {{ page }} / {{ totalPages }}
+        </span>
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 text-secondary text-decoration-none"
+          :disabled="page >= totalPages"
+          :class="{ 'opacity-50 pe-none': page >= totalPages }"
+          aria-label="次のページ"
+          @click="goToPage(page + 1)"
+        >
+          次のページ
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
-<style lang="css"></style>
+<style scoped>
+</style>

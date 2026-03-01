@@ -22,7 +22,8 @@ func init() {
 }
 
 type DBRepository interface {
-	GetDetails(ctx context.Context, limit int) (details []model.Detail, err error)
+	GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error)
+	CountDetails(ctx context.Context) (count int64, err error)
 	ResetImportDetails(ctx context.Context, id int) (err error)
 	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
 	GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error)
@@ -39,8 +40,8 @@ func NewAPIService(l *zap.Logger, db *repository.DBClient) (ap *APIService) {
 	return &APIService{Logger: l, Repo: db}
 }
 
-func (a *APIService) GetDetails(ctx context.Context, limit int) (dets []openapi.Detail, err error) {
-	ds, err := a.Repo.GetDetails(ctx, limit)
+func (a *APIService) GetDetails(ctx context.Context, limit int, offset int) (dets []openapi.Detail, err error) {
+	ds, err := a.Repo.GetDetails(ctx, limit, offset)
 	if err != nil {
 		a.Logger.Error("failed to get Details from DB", zap.Error(err))
 		return nil, err
@@ -61,6 +62,15 @@ func (a *APIService) GetDetails(ctx context.Context, limit int) (dets []openapi.
 	}
 
 	return dets, nil
+}
+
+func (a *APIService) GetDetailsCount(ctx context.Context) (openapi.DetailsCount, error) {
+	count, err := a.Repo.CountDetails(ctx)
+	if err != nil {
+		a.Logger.Error("failed to count Details from DB", zap.Error(err))
+		return openapi.DetailsCount{}, err
+	}
+	return openapi.DetailsCount{Count: int(count)}, nil
 }
 
 func (a *APIService) ResetImportDetails(ctx context.Context, id int) (err error) {
