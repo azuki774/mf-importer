@@ -14,5 +14,8 @@
     "commander": "^13.1.0",
     "nuxt": "^3.12.4",
     "vue": "latest"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.3"
   }
 }
