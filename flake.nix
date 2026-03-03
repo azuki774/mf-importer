@@ -67,7 +67,8 @@
             
             # Set up Go environment
             export GOPATH=$HOME/go
-            export PATH=$GOPATH/bin:$PATH
+            # Keep Nix-provided Go tools (staticcheck, etc.) ahead of GOPATH/bin
+            export PATH=$PATH:$GOPATH/bin
             
             # Set up database connection defaults
             export DB_HOST=localhost
