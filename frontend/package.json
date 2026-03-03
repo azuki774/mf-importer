@@ -12,7 +12,7 @@
   "dependencies": {
     "bootstrap": "^5.3.3",
     "commander": "^13.1.0",
-    "nuxt": "^3.12.4",
+    "nuxt": "^4.3.1",
     "vue": "latest"
   },
   "overrides": {
