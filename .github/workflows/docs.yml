@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tbls.yml
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - uses: k1low/setup-tbls@v1
       - name: Wait for ready DB
         run: |
