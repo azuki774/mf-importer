@@ -1,14 +1,6 @@
-<script setup lang="ts">
-import ShowMfLink from '~/components/ShowMfLink.vue';
-
-</script>
-
 <template>
-  <section>
-    <h1>mf-importer-web</h1>
+  <div class="space-y-6">
     <ShowMfLink />
     <History />
-  </section>
+  </div>
 </template>
-
-<style lang="css"></style>

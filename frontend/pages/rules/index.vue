@@ -1,10 +1,3 @@
-<script setup lang="ts">
-</script>
-
 <template>
-  <section>
-    <Rule />
-  </section>
+  <Rule />
 </template>
-
-<style lang="css"></style>

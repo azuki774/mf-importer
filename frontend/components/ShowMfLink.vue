@@ -1,46 +1,43 @@
 <script setup lang="ts">
-const MonthLinkMove = (lastmonth: boolean): void => {
-  // 現在日付取得
-  const today = new Date();
-  let year = today.getFullYear();
-  let month = today.getMonth() + 1; // 0から11 -> 1から12
-  let lyear = year; // 先月の情報
-  let lmonth = month - 1; // 先月の情報
+function buildMfLink(lastMonth: boolean): string {
+  const today = new Date()
+  let year = today.getFullYear()
+  let month = today.getMonth() + 1
 
-  // xx 年 1月の前月取得の場合
-  if (lmonth == 0) {
-    lmonth = 12;
-    lyear = year - 1;
+  if (lastMonth) {
+    month -= 1
+    if (month === 0) {
+      month = 12
+      year -= 1
+    }
   }
 
-  if (lastmonth) {
-    // 先月のリンク
-    const MonthLink = 'https://moneyforward.com/cf/csv?from=' + lyear + '%2F' + lmonth + '%2F01&month=' + lmonth + '&year=' + lyear
-    console.log(MonthLink)
-    window.location.href = MonthLink;
-  } else {
-    // 今月のリンク
-    const MonthLink = 'https://moneyforward.com/cf/csv?from=' + year + '%2F' + month + '%2F01&month=' + month + '&year=' + year
-    console.log(MonthLink)
-    window.location.href = MonthLink;
-  }
-
+  return `https://moneyforward.com/cf/csv?from=${year}%2F${month}%2F01&month=${month}&year=${year}`
 }
 
-
+function goToMf(lastMonth: boolean) {
+  window.location.href = buildMfLink(lastMonth)
+}
 </script>
 
 <template>
-  <section class="container">
-    <h4>取り込みリンク</h4>
-    <div class="col-6 col-sm-3 mb-2">
-      <input type="button" class="sendbutton btn btn-primary" @click="MonthLinkMove(false)" value="今月分">
+  <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+    <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+      <h2 class="text-base font-semibold text-gray-900">MoneyForward CSV 取り込み</h2>
     </div>
-    <div class="col-6 col-sm-3 mb-2">
-      <input type="button" class="sendbutton btn btn-primary" @click="MonthLinkMove(true)" value="先月分">
+    <div class="px-4 sm:px-6 py-4 flex flex-wrap gap-3">
+      <button
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors"
+        @click="goToMf(false)"
+      >
+        今月分
+      </button>
+      <button
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-md hover:bg-primary-100 transition-colors"
+        @click="goToMf(true)"
+      >
+        先月分
+      </button>
     </div>
-
-  </section>
+  </div>
 </template>
-
-<style lang="css"></style>
