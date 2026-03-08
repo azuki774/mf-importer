@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "nuxt": "^3.12.4",
+    "nuxt": "^4.3.1",
     "vue": "latest"
   },
   "devDependencies": {
