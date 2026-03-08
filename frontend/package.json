@@ -10,10 +10,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "bootstrap": "^5.3.3",
     "commander": "^13.1.0",
     "nuxt": "^3.12.4",
     "vue": "latest"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.13.1"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3"
