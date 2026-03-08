@@ -7,8 +7,6 @@ export default defineNuxtConfig({
     "/": { ssr: false },
   },
   runtimeConfig: {
-    public: {
-      apiBaseEndpoint: "http://127.0.0.1:8080",
-    }
+    apiBaseEndpoint: "http://127.0.0.1:8080",
   }
 })

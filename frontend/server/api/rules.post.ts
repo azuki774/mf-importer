@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const url = config.public.apiBaseEndpoint + "/rules";
+  const url = config.apiBaseEndpoint + "/rules";
   const reqbody = await readBody(event);
   console.log(reqbody)
   const result = await $fetch(url,

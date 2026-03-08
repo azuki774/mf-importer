@@ -1,7 +1,7 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const query = getQuery(event)
-  const url = config.public.apiBaseEndpoint + "/details"
+  const url = config.apiBaseEndpoint + "/details"
   const result = await $fetch(url,
     {
       method: "GET",
