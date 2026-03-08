@@ -3,7 +3,7 @@ module mf-importer
 go 1.25
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/getkin/kin-openapi v0.131.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/jarcoal/httpmock v1.4.0
