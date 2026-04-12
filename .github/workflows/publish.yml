@@ -41,7 +41,7 @@ jobs:
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Docker Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./build/Dockerfile
@@ -85,7 +85,7 @@ jobs:
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Docker Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./build/maw/Dockerfile
@@ -129,7 +129,7 @@ jobs:
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Docker Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./build/api/Dockerfile
@@ -173,7 +173,7 @@ jobs:
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Docker Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./build/metrics/Dockerfile
@@ -217,7 +217,7 @@ jobs:
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Docker Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./build/fe/Dockerfile
