@@ -16,7 +16,7 @@
     "esbuild": true
   },
   "dependencies": {
-    "commander": "^13.1.0",
+    "commander": "^15.0.0",
     "nuxt": "^4.5.2",
     "vue": "latest"
   },
