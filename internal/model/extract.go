@@ -56,10 +56,20 @@ func (e *ExtractRule) AddRule(ers []ExtractRuleDB) (err error) {
 
 // そのレコードが Suica のものかを判定する
 // 内容: '入 XXXX 出 YYYY'
-// 保有金融機関: 'モバイルSuica'
+// 保有金融機関: 'モバイルSuica' or 'モバイルSuica (モバイルSuica ID)'
 func IsSuicaDetail(d Detail) (ok bool) {
-	const mobileSuicaFinIns = "モバイルSuica"
-	if d.FinIns != mobileSuicaFinIns {
+	mobileSuicaFinIns := []string{
+		"モバイルSuica",
+		"モバイルSuica (モバイルSuica ID)",
+	}
+	matched := false
+	for _, s := range mobileSuicaFinIns {
+		if d.FinIns == s {
+			matched = true
+			break
+		}
+	}
+	if !matched {
 		return false
 	}
 	iri_index := strings.Index(d.Name, "入")
