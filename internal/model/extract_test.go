@@ -32,6 +32,16 @@ func TestIsSuicaDetail(t *testing.T) {
 			wantOk: true,
 		},
 		{
+			name: "suica with ID suffix (fullwidth)",
+			args: args{
+				d: Detail{
+					Name:   "入 千住大橋 出 京成日暮",
+					FinIns: "モバイルSuica（モバイルSuica ID）",
+				},
+			},
+			wantOk: true,
+		},
+		{
 			name: "no suica(fin_ins)",
 			args: args{
 				d: Detail{
