@@ -19,6 +19,7 @@
   },
   "overrides": {
     "serialize-javascript": "^7.0.3",
-    "simple-git": "^3.32.3"
+    "simple-git": "^3.32.3",
+    "shell-quote": "^1.8.4"
   }
 }
