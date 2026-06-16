@@ -204,6 +204,8 @@ make stop
 #### AWS S3（--with-downloadオプション使用時）
 - AWS認証情報（AWS CLI設定またはIAMロール）
 
+必要環境変数やローカル保存パスの仕様 (basename でフラット化 / 1000 件超は warn のみ) などの詳細は [`docs/s3-download.md`](docs/s3-download.md) を参照してください。
+
 ## 対応データ形式
 
 ### 家計簿データ（cf.csv, cf_lastmonth.csv）
