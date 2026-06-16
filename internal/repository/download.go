@@ -1,5 +1,7 @@
 package repository
 
+//lint:file-ignore SA1019 // aws-sdk-go v1.55.8 is the latest; v2 migration is tracked separately
+
 import (
 	"context"
 	"errors"
