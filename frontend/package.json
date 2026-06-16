@@ -18,6 +18,7 @@
     "@nuxtjs/tailwindcss": "^6.13.1"
   },
   "overrides": {
-    "serialize-javascript": "^7.0.3"
+    "serialize-javascript": "^7.0.3",
+    "simple-git": "^3.32.3"
   }
 }
