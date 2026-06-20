@@ -7,6 +7,7 @@ import (
 	"mf-importer/internal/repository"
 	"mf-importer/internal/service"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -56,6 +57,7 @@ func startMain() error {
 	user := os.Getenv("db_user")
 	pass := os.Getenv("db_pass")
 	name := os.Getenv("db_name")
+	csvEncoding := strings.ToLower(os.Getenv("csv_encoding"))
 
 	if withDownload {
 		l.Info("start download CSV from s3")
@@ -82,6 +84,12 @@ func startMain() error {
 	if name == "" {
 		name = "mfimporter"
 	}
+	if csvEncoding == "" {
+		csvEncoding = "utf8"
+	}
+	if csvEncoding != "utf8" && csvEncoding != "sjis" {
+		return fmt.Errorf("unsupported csv_encoding: %q (expected utf8 or sjis)", csvEncoding)
+	}
 
 	l.Info("using DB info",
 		zap.String("DB_HOST", host),
@@ -103,7 +111,8 @@ func startMain() error {
 	}
 	defer db.CloseDB()
 
-	importer := service.NewImporter(l, db, inputDir, dryRun)
+	l.Info("using importer config", zap.String("csv_encoding", csvEncoding))
+	importer := service.NewImporter(l, db, inputDir, dryRun, csvEncoding)
 	if err := importer.Start(ctx); err != nil {
 		return err
 	}
