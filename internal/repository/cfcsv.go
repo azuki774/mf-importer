@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"encoding/csv"
+	"io"
 	"mf-importer/internal/model"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding/japanese"
@@ -13,7 +15,15 @@ import (
 )
 
 type DetailCSVOperator struct {
-	Logger *zap.Logger
+	Logger   *zap.Logger
+	Encoding string // "utf8" (default) or "sjis"
+}
+
+func (d *DetailCSVOperator) newCSVReader(r io.Reader) *csv.Reader {
+	if strings.EqualFold(d.Encoding, "sjis") {
+		return csv.NewReader(transform.NewReader(r, japanese.ShiftJIS.NewDecoder()))
+	}
+	return csv.NewReader(r)
 }
 
 func (d *DetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details []model.Detail, err error) {
@@ -23,10 +33,7 @@ func (d *DetailCSVOperator) LoadCfCSV(ctx context.Context, path string) (details
 	}
 	defer file.Close()
 
-	// SJIS -> UTF8
-	sjisDecoder := japanese.ShiftJIS.NewDecoder()
-	utf8Reader := transform.NewReader(file, sjisDecoder)
-	reader := csv.NewReader(utf8Reader)
+	reader := d.newCSVReader(file)
 	rows, err := reader.ReadAll()
 	if err != nil {
 		return []model.Detail{}, err
@@ -46,10 +53,7 @@ func (d *DetailCSVOperator) LoadBsHistoryCSV(ctx context.Context, path string) (
 	}
 	defer file.Close()
 
-	// SJIS -> UTF8
-	sjisDecoder := japanese.ShiftJIS.NewDecoder()
-	utf8Reader := transform.NewReader(file, sjisDecoder)
-	reader := csv.NewReader(utf8Reader)
+	reader := d.newCSVReader(file)
 	rows, err := reader.ReadAll()
 	if err != nil {
 		return []model.AssetHistory{}, err

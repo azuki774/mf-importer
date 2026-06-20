@@ -36,16 +36,18 @@ type Importer struct {
 	InputDir string
 	JobName  string
 	DryRun   bool
+	Encoding string
 }
 
-func NewImporter(l *zap.Logger, DBClient DBClient, inputDir string, dryrun bool) *Importer {
+func NewImporter(l *zap.Logger, DBClient DBClient, inputDir string, dryrun bool, encoding string) *Importer {
 	return &Importer{
 		Logger:   l,
 		DBClient: DBClient,
-		CSVOpe:   &repository.DetailCSVOperator{Logger: l},
+		CSVOpe:   &repository.DetailCSVOperator{Logger: l, Encoding: encoding},
 		InputDir: inputDir,
 		DryRun:   dryrun,
 		JobName:  os.Getenv("jobname"),
+		Encoding: encoding,
 	}
 }
 
