@@ -38,7 +38,7 @@ type ServerInterface interface {
 	GetHistories(w http.ResponseWriter, r *http.Request)
 	// get all extract rules
 	// (GET /rules)
-	GetRules(w http.ResponseWriter, r *http.Request)
+	GetRules(w http.ResponseWriter, r *http.Request, params GetRulesParams)
 	// add extract rule
 	// (POST /rules)
 	PostRules(w http.ResponseWriter, r *http.Request)
@@ -98,7 +98,7 @@ func (_ Unimplemented) GetHistories(w http.ResponseWriter, r *http.Request) {
 
 // get all extract rules
 // (GET /rules)
-func (_ Unimplemented) GetRules(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) GetRules(w http.ResponseWriter, r *http.Request, params GetRulesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -151,6 +151,22 @@ func (siw *ServerInterfaceWrapper) GetDetails(w http.ResponseWriter, r *http.Req
 	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "sort", r.URL.Query(), &params.Sort)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
 		return
 	}
 
@@ -310,8 +326,29 @@ func (siw *ServerInterfaceWrapper) GetHistories(w http.ResponseWriter, r *http.R
 func (siw *ServerInterfaceWrapper) GetRules(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRulesParams
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "sort", r.URL.Query(), &params.Sort)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetRules(w, r)
+		siw.Handler.GetRules(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
