@@ -1,10 +1,13 @@
 import type { Rule } from '@/interfaces'
 
-export function useRules() {
-  const { data: rawRules, refresh } = useFetch<Rule[]>('/api/rules', {
-    key: '/api/rules',
-    default: () => [],
-  })
+export function useRules(sortBy: Ref<string>, sortOrder: Ref<string>) {
+  const { data: rawRules, refresh } = useFetch<Rule[]>(
+    () => `/api/rules?sort=${sortBy.value}&order=${sortOrder.value}`,
+    {
+      key: () => `/api/rules-${sortBy.value}-${sortOrder.value}`,
+      default: () => [],
+    },
+  )
 
   const rules = computed<Rule[]>(() => rawRules.value ?? [])
 

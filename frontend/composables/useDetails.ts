@@ -1,13 +1,14 @@
 import type { ImportRecord } from '@/interfaces'
 
-export function useDetails(perPage: Ref<number>, page: Ref<number>) {
+export function useDetails(perPage: Ref<number>, page: Ref<number>, sortBy: Ref<string>, sortOrder: Ref<string>) {
   const detailsKey = computed(
-    () => `/api/details?limit=${perPage.value}&offset=${(page.value - 1) * perPage.value}`
+    () =>
+      `/api/details?limit=${perPage.value}&offset=${(page.value - 1) * perPage.value}&sort=${sortBy.value}&order=${sortOrder.value}`
   )
 
   const { data: rawData, status, refresh } = useFetch<ImportRecord[]>(
     () => detailsKey.value,
-    { key: () => `details-${page.value}-${perPage.value}` },
+    { key: () => `details-${page.value}-${perPage.value}-${sortBy.value}-${sortOrder.value}` },
   )
 
   const records = computed<ImportRecord[]>(() => {
