@@ -22,7 +22,7 @@ type DBClient interface {
 	GetCFDetails(ctx context.Context) (cfDetails []model.Detail, err error) // mawinter check未チェックのデータを取得
 	// CheckCFDetail: レコードを mawinter check/regist 済とする. regist = true なら registフラグも立てる
 	CheckCFDetail(ctx context.Context, cfDetail model.Detail, regist bool) (err error)
-	GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error)
+	GetExtractRules(ctx context.Context, sort string, order string) (er []model.ExtractRuleDB, err error)
 }
 type MawinterClient interface {
 	Regist(ctx context.Context, c model.Detail, catID int) (err error)
@@ -91,7 +91,7 @@ func (m *Mawinter) Regist(ctx context.Context) (err error) {
 	// Fetch Extract Rule from DB
 	m.Logger.Info("fetch extract rules from DB")
 	m.ExtractRule = *model.NewExtractRule()
-	ers, err := m.DBClient.GetExtractRules(ctx)
+	ers, err := m.DBClient.GetExtractRules(ctx, "id", "asc")
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

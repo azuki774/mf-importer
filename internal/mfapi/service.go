@@ -22,10 +22,10 @@ func init() {
 }
 
 type DBRepository interface {
-	GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error)
+	GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (details []model.Detail, err error)
 	CountDetails(ctx context.Context) (count int64, err error)
 	ResetImportDetails(ctx context.Context, id int) (err error)
-	GetExtractRules(ctx context.Context) (ers []model.ExtractRuleDB, err error)
+	GetExtractRules(ctx context.Context, sort string, order string) (ers []model.ExtractRuleDB, err error)
 	GetExtractRule(ctx context.Context, id int) (er model.ExtractRuleDB, err error)
 	AddExtractRule(ctx context.Context, rule openapi.RuleRequest) (ruleDB model.ExtractRuleDB, err error)
 	DeleteExtractRule(ctx context.Context, id int) (err error)
@@ -40,8 +40,8 @@ func NewAPIService(l *zap.Logger, db *repository.DBClient) (ap *APIService) {
 	return &APIService{Logger: l, Repo: db}
 }
 
-func (a *APIService) GetDetails(ctx context.Context, limit int, offset int) (dets []openapi.Detail, err error) {
-	ds, err := a.Repo.GetDetails(ctx, limit, offset)
+func (a *APIService) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (dets []openapi.Detail, err error) {
+	ds, err := a.Repo.GetDetails(ctx, limit, offset, sort, order)
 	if err != nil {
 		a.Logger.Error("failed to get Details from DB", zap.Error(err))
 		return nil, err
@@ -82,8 +82,8 @@ func (a *APIService) ResetImportDetails(ctx context.Context, id int) (err error)
 	return nil
 }
 
-func (a *APIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {
-	ers, err := a.Repo.GetExtractRules(ctx)
+func (a *APIService) GetRules(ctx context.Context, sort string, order string) ([]openapi.Rule, error) {
+	ers, err := a.Repo.GetExtractRules(ctx, sort, order)
 	if err != nil {
 		a.Logger.Error("failed to get rules from DB", zap.Error(err))
 		return nil, err

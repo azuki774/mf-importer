@@ -15,9 +15,9 @@ import (
 const patchOpeReset = "reset"
 
 type APIService interface {
-	GetDetails(ctx context.Context, limit int, offset int) (dets []openapi.Detail, err error)
+	GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (dets []openapi.Detail, err error)
 	GetDetailsCount(ctx context.Context) (openapi.DetailsCount, error)
-	GetRules(ctx context.Context) ([]openapi.Rule, error)
+	GetRules(ctx context.Context, sort string, order string) ([]openapi.Rule, error)
 	GetRule(ctx context.Context, id int) (openapi.Rule, error)
 	ResetImportDetails(ctx context.Context, id int) (err error)
 	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
@@ -38,14 +38,22 @@ func (a *apigateway) GetHealth(w http.ResponseWriter, r *http.Request) {
 func (a *apigateway) GetDetails(w http.ResponseWriter, r *http.Request, params openapi.GetDetailsParams) {
 	var defaultLimit = 20
 	var defaultOffset = 0
+	var defaultSort = "useDate"
+	var defaultOrder = "desc"
 	if params.Limit == nil {
 		params.Limit = &defaultLimit
 	}
 	if params.Offset == nil {
 		params.Offset = &defaultOffset
 	}
+	if params.Sort == nil || *params.Sort == "" {
+		params.Sort = &defaultSort
+	}
+	if params.Order == nil || *params.Order == "" {
+		params.Order = &defaultOrder
+	}
 
-	dets, err := a.APIService.GetDetails(r.Context(), *params.Limit, *params.Offset)
+	dets, err := a.APIService.GetDetails(r.Context(), *params.Limit, *params.Offset, *params.Sort, *params.Order)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err.Error())
@@ -115,8 +123,16 @@ func (a *apigateway) GetHistories(w http.ResponseWriter, r *http.Request) {
 }
 
 // (GET /rules)
-func (a *apigateway) GetRules(w http.ResponseWriter, r *http.Request) {
-	rules, err := a.APIService.GetRules(r.Context())
+func (a *apigateway) GetRules(w http.ResponseWriter, r *http.Request, params openapi.GetRulesParams) {
+	var defaultSort = "id"
+	var defaultOrder = "asc"
+	if params.Sort == nil || *params.Sort == "" {
+		params.Sort = &defaultSort
+	}
+	if params.Order == nil || *params.Order == "" {
+		params.Order = &defaultOrder
+	}
+	rules, err := a.APIService.GetRules(r.Context(), *params.Sort, *params.Order)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
