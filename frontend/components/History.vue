@@ -3,10 +3,32 @@ const page = ref(1)
 const perPage = ref(20)
 const perPageOptions = [10, 20, 50]
 
-const { records, status, totalCount, totalPages, resetDetail } = useDetails(perPage, page)
+const initialDirections: Record<string, 'asc' | 'desc'> = {
+  useDate: 'desc',
+  name: 'asc',
+  price: 'desc',
+  registDate: 'desc',
+  importJudgeDate: 'desc',
+  importDate: 'desc',
+}
+const { sortBy, sortOrder, toggleSort } = useTableSort('useDate', 'desc', initialDirections)
+const { records, status, totalCount, totalPages, resetDetail } = useDetails(perPage, page, sortBy, sortOrder)
+
+watch([sortBy, sortOrder], () => {
+  page.value = 1
+})
 
 const confirmTarget = ref<number | null>(null)
 const toastState = reactive({ visible: false, message: '', type: 'success' as 'success' | 'error' })
+
+function ariaSort(key: string): 'ascending' | 'descending' | 'none' {
+  if (sortBy.value !== key) return 'none'
+  return sortOrder.value === 'asc' ? 'ascending' : 'descending'
+}
+
+function indicator(key: string): string {
+  return sortBy.value === key ? (sortOrder.value === 'asc' ? '▲' : '▼') : ''
+}
 
 function onPerPageChange(v: number) {
   perPage.value = v
@@ -64,12 +86,48 @@ async function executeReset() {
       <table class="w-full text-sm">
         <thead>
           <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <th class="px-4 py-3">利用日時</th>
-            <th class="px-4 py-3">名前</th>
-            <th class="px-4 py-3 text-right">料金</th>
-            <th class="px-4 py-3">登録日時</th>
-            <th class="px-4 py-3">取り込み判定日時</th>
-            <th class="px-4 py-3">取り込み日時</th>
+            <th
+              class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('useDate')"
+              @click="toggleSort('useDate')"
+            >
+              利用日時 <span v-if="indicator('useDate')" class="text-primary-600">{{ indicator('useDate') }}</span>
+            </th>
+            <th
+              class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('name')"
+              @click="toggleSort('name')"
+            >
+              名前 <span v-if="indicator('name')" class="text-primary-600">{{ indicator('name') }}</span>
+            </th>
+            <th
+              class="px-4 py-3 text-right cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('price')"
+              @click="toggleSort('price')"
+            >
+              料金 <span v-if="indicator('price')" class="text-primary-600">{{ indicator('price') }}</span>
+            </th>
+            <th
+              class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('registDate')"
+              @click="toggleSort('registDate')"
+            >
+              登録日時 <span v-if="indicator('registDate')" class="text-primary-600">{{ indicator('registDate') }}</span>
+            </th>
+            <th
+              class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('importJudgeDate')"
+              @click="toggleSort('importJudgeDate')"
+            >
+              取り込み判定日時 <span v-if="indicator('importJudgeDate')" class="text-primary-600">{{ indicator('importJudgeDate') }}</span>
+            </th>
+            <th
+              class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+              :aria-sort="ariaSort('importDate')"
+              @click="toggleSort('importDate')"
+            >
+              取り込み日時 <span v-if="indicator('importDate')" class="text-primary-600">{{ indicator('importDate') }}</span>
+            </th>
             <th class="px-4 py-3 text-center">操作</th>
           </tr>
         </thead>
