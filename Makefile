@@ -8,8 +8,11 @@ CONTAINER_NAME_DOC=mf-importer-doc
 CONTAINER_NAME_METRICS=mf-importer-metrics
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 pwd := $(shell pwd)
+API_BIN=build/bin/mf-importer-api
+URL ?= http://127.0.0.1:8080
+LATEST ?= 5
 
-.PHONY: bin build start stop test debug migration doc
+.PHONY: bin build start stop test debug migration doc api-bin mock-api local-ui report e2e
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
@@ -53,3 +56,25 @@ doc:
 	docker build -t $(CONTAINER_NAME_DOC) -f docs/Dockerfile .
 	docker run --rm -it -v $(pwd)/internal/openapi/:/data/ $(CONTAINER_NAME_DOC)
 	mv -f internal/openapi/api.html docs/api.html
+
+api-bin:
+	go build -o $(API_BIN) ./cmd/mf-importer-api
+
+# DB 不要のモック API を起動する (test/ 配下の CSV を fixture 化)
+mock-api: api-bin
+	$(API_BIN) mock --input-dir ./test
+
+# モック API + ビルド済みフロントエンドを :8080 の単一プロセスで配信し、ブラウザから確認できるようにする
+local-ui: api-bin
+	cd frontend && npm run generate
+	$(API_BIN) mock --input-dir ./test --static-dir frontend/.output/public
+
+# 取り込み結果を 1 つの JSON サマリとして出力する (AI 向け。curl + jq を利用)
+report:
+	@URL=$(URL) LATEST=$(LATEST) ./scripts/report.sh
+
+# Playwright による画面テストとスクリーンショット取得を実行する (要 cd frontend && npm install 済み)
+e2e: api-bin
+	cd frontend && npm run generate
+	cd frontend && npx playwright install chromium
+	cd frontend && npx playwright test
