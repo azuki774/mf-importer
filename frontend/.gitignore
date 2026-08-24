@@ -6,6 +6,11 @@
 .cache
 dist
 
+# Playwright
+test-results/
+playwright-report/
+e2e/artifacts/
+
 # Node dependencies
 node_modules
 
