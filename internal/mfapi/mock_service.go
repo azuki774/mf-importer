@@ -1,11 +1,14 @@
 package mfapi
 
 import (
+	"cmp"
 	"context"
 	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
 	"mf-importer/internal/repository"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/oapi-codegen/runtime/types"
 	"go.uber.org/zap"
@@ -83,13 +86,119 @@ func initialMockRules() []model.ExtractRuleDB {
 	}
 }
 
-func (m *MockAPIService) GetDetails(ctx context.Context, limit int, offset int) ([]openapi.Detail, error) {
+// ソートキーは internal/repository/sort.go のホワイトリストと一致させること
+var mockDetailSortKeys = map[string]struct{}{
+	"useDate": {}, "name": {}, "price": {},
+	"registDate": {}, "importJudgeDate": {}, "importDate": {},
+}
+
+var mockRuleSortKeys = map[string]struct{}{
+	"id": {}, "fieldName": {}, "value": {}, "exactMatch": {}, "categoryId": {},
+}
+
+// normalizeMockSort: 不明なキーはテーブル既定(キー/方向)へフォールバックする。
+// 有効なキーの場合、方向は order == "desc" のとき降順、それ以外は昇順(SQL の句組み立てと同一)。
+func normalizeMockSort(sort string, order string, known map[string]struct{}, defKey string, defDesc bool) (string, bool) {
+	if _, ok := known[sort]; ok {
+		return sort, order == "desc"
+	}
+	return defKey, defDesc
+}
+
+func compareTimePtr(a *time.Time, b *time.Time) int {
+	switch {
+	case a == nil && b == nil:
+		return 0
+	case a == nil:
+		return -1 // NULL は昇順で先頭(MariaDB 相当)
+	case b == nil:
+		return 1
+	default:
+		return a.Compare(*b)
+	}
+}
+
+func compareDetailBy(a openapi.Detail, b openapi.Detail, key string) int {
+	switch key {
+	case "name":
+		return strings.Compare(a.Name, b.Name)
+	case "price":
+		return cmp.Compare(a.Price, b.Price)
+	case "registDate":
+		return a.RegistDate.Compare(b.RegistDate)
+	case "importJudgeDate":
+		return compareTimePtr(a.ImportJudgeDate, b.ImportJudgeDate)
+	case "importDate":
+		return compareTimePtr(a.ImportDate, b.ImportDate)
+	default: // useDate
+		return a.UseDate.Time.Compare(b.UseDate.Time)
+	}
+}
+
+func compareRuleBy(a openapi.Rule, b openapi.Rule, key string) int {
+	switch key {
+	case "fieldName":
+		return strings.Compare(a.FieldName, b.FieldName)
+	case "value":
+		return strings.Compare(a.Value, b.Value)
+	case "exactMatch":
+		return cmp.Compare(a.ExactMatch, b.ExactMatch)
+	case "categoryId":
+		return cmp.Compare(a.CategoryId, b.CategoryId)
+	default: // id
+		return cmp.Compare(a.Id, b.Id)
+	}
+}
+
+func (m *MockAPIService) sortedDetails(key string, desc bool) []openapi.Detail {
+	out := make([]openapi.Detail, len(m.details))
+	copy(out, m.details)
+	sort.SliceStable(out, func(i, j int) bool {
+		c := compareDetailBy(out[i], out[j], key)
+		if c == 0 {
+			c = cmp.Compare(out[i].Id, out[j].Id)
+		}
+		if desc {
+			return c > 0
+		}
+		return c < 0
+	})
+	return out
+}
+
+func (m *MockAPIService) sortedRules(key string, desc bool) []openapi.Rule {
+	out := make([]openapi.Rule, 0, len(m.rules))
+	for i := range m.rules {
+		out = append(out, m.rules[i].ToExtractRule())
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		c := compareRuleBy(out[i], out[j], key)
+		if c == 0 {
+			c = cmp.Compare(out[i].Id, out[j].Id)
+		}
+		if desc {
+			return c > 0
+		}
+		return c < 0
+	})
+	return out
+}
+
+func (m *MockAPIService) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) ([]openapi.Detail, error) {
+	key, desc := normalizeMockSort(sort, order, mockDetailSortKeys, "useDate", true)
+	sorted := m.sortedDetails(key, desc)
+
+	start := offset
+	if start < 0 {
+		start = 0
+	}
+
 	out := []openapi.Detail{}
-	for i := len(m.details) - 1 - offset; i >= 0; i-- {
+	for i := start; i < len(sorted); i++ {
 		if limit > 0 && len(out) >= limit {
 			break
 		}
-		out = append(out, m.details[i])
+		out = append(out, sorted[i])
 	}
 	return out, nil
 }
@@ -108,12 +217,9 @@ func (m *MockAPIService) ResetImportDetails(ctx context.Context, id int) error {
 	return nil
 }
 
-func (m *MockAPIService) GetRules(ctx context.Context) ([]openapi.Rule, error) {
-	out := make([]openapi.Rule, 0, len(m.rules))
-	for i := range m.rules {
-		out = append(out, m.rules[i].ToExtractRule())
-	}
-	return out, nil
+func (m *MockAPIService) GetRules(ctx context.Context, sort string, order string) ([]openapi.Rule, error) {
+	key, desc := normalizeMockSort(sort, order, mockRuleSortKeys, "id", false)
+	return m.sortedRules(key, desc), nil
 }
 
 func (m *MockAPIService) GetRule(ctx context.Context, id int) (openapi.Rule, error) {
