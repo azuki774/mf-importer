@@ -5,9 +5,12 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:host": "nuxt dev --host 0.0.0.0",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "e2e": "playwright test",
+    "e2e:setup": "playwright install chromium"
   },
   "dependencies": {
     "commander": "^13.1.0",
@@ -15,7 +18,8 @@
     "vue": "latest"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.13.1"
+    "@nuxtjs/tailwindcss": "^6.13.1",
+    "@playwright/test": "^1.49.0"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3",
