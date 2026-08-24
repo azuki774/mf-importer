@@ -52,11 +52,11 @@ func init() {
 func startMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
-	host := os.Getenv("db_host")
-	port := os.Getenv("db_port")
-	user := os.Getenv("db_user")
-	pass := os.Getenv("db_pass")
-	name := os.Getenv("db_name")
+	host := envOr("DB_HOST", "db_host")
+	port := envOr("DB_PORT", "db_port")
+	user := envOr("DB_USER", "db_user")
+	pass := envOr("DB_PASS", "db_pass")
+	name := envOr("DB_NAME", "db_name")
 	csvEncoding := strings.ToLower(os.Getenv("csv_encoding"))
 
 	if withDownload {
@@ -118,4 +118,14 @@ func startMain() error {
 	}
 
 	return nil
+}
+
+// envOr は大文字優先で環境変数を取得する (旧小文字名にも後方互換で対応)
+func envOr(names ...string) string {
+	for _, n := range names {
+		if v := os.Getenv(n); v != "" {
+			return v
+		}
+	}
+	return ""
 }
