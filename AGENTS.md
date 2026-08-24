@@ -22,6 +22,14 @@
 - `make migration` で MariaDB へローカルマイグレーション、`make generate` で OpenAPI コード再生成、`make doc` で HTML ドキュメント更新。
 - フロントエンドは `cd frontend && npm install` 後、`npm run dev` で開発、`npm run build` / `npm run generate` / `npm run preview` でビルド・静的生成・プレビュー。
 
+### ローカルでのインポート結果確認
+- モック API とフロントエンドを別々に立てて確認するのが基本の流れ（DB 不要）:
+  1. `make mock-api` — モック API を `:8080` で起動
+  2. `cd frontend && npm install && npm run dev`（install は初回のみ）— UI を `:3000` で起動
+  3. 人間はブラウザで `http://localhost:3000`、AI は `curl http://127.0.0.1:8080/...` または `make report` で確認
+- `make e2e`: Playwright で画面テストを実行し `frontend/e2e/artifacts/` にスクリーンショット保存。
+- 詳細は `docs/local-verify.md` を参照。
+
 ## Coding Style & Naming Conventions
 - Go は gofmt / go vet / staticcheck 準拠。小文字パッケージ名、受け渡しが必要な型のみエクスポート。
 - テストデータや環境変数名は snake_case、構造体フィールドは Go の慣例に合わせる。
