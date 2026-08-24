@@ -27,7 +27,7 @@ export function useRules() {
   }
 
   async function deleteRule(id: number): Promise<void> {
-    await $fetch(`/api/rules?id=${id}`, { method: 'DELETE' })
+    await $fetch(`/api/rules/${id}`, { method: 'DELETE' })
     await refresh()
   }
 

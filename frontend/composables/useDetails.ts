@@ -34,7 +34,7 @@ export function useDetails(perPage: Ref<number>, page: Ref<number>) {
   const totalPages = computed(() => Math.ceil(totalCount.value / perPage.value) || 1)
 
   async function resetDetail(id: number): Promise<void> {
-    await $fetch(`/api/detail?id=${id}&ope=reset`, { method: 'PATCH' })
+    await $fetch(`/api/details/${id}?ope=reset`, { method: 'PATCH' })
     await refresh()
   }
 
