@@ -53,3 +53,33 @@ test('ルールを削除できる', async ({ page }) => {
   await expect(page.getByText('ルールを削除しました')).toBeVisible()
   await expect(page.locator('tbody tr')).toHaveCount(before - 1)
 })
+
+test('列ヘッダーで並び替えできる', async ({ page }) => {
+  await page.goto('/rules')
+  const rows = page.locator('tbody tr')
+  // モックサーバーはテスト間で状態を共有するため、件数と相対順序だけで検証する。
+  // 空状態は tbody に 1 行(「ルールがありません」)のみなので、2 行以上でロード完了とみなす
+  await expect.poll(async () => rows.count(), { timeout: 5_000 }).toBeGreaterThan(1)
+  await expect(page.getByRole('columnheader', { name: /^ID/ })).toHaveAttribute('aria-sort', 'ascending')
+
+  const valueHeader = page.getByRole('columnheader', { name: /^値/ })
+
+  const ascRequest = page.waitForRequest(
+    (req) => req.url().includes('/api/rules?') && req.url().includes('sort=value') && req.url().includes('order=asc')
+  )
+  await valueHeader.click()
+  await ascRequest
+  await expect(valueHeader).toHaveAttribute('aria-sort', 'ascending')
+  const ascFirst = await rows.first().textContent()
+
+  const descRequest = page.waitForRequest(
+    (req) => req.url().includes('/api/rules?') && req.url().includes('sort=value') && req.url().includes('order=desc')
+  )
+  await valueHeader.click()
+  await descRequest
+  await expect(valueHeader).toHaveAttribute('aria-sort', 'descending')
+
+  // 値の重複がないフィクスチャなので、昇順と降順で先頭行が入れ替わる
+  // (textContents の生読みは再取得前に競合するため、リトライ付きで検証する)
+  await expect(rows.first()).not.toHaveText(ascFirst ?? '', { timeout: 10_000 })
+})
