@@ -12,7 +12,7 @@ type mockDBClient struct {
 }
 
 // limit, offset は無視な mock
-func (m *mockDBClient) GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error) {
+func (m *mockDBClient) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (details []model.Detail, err error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -59,7 +59,7 @@ func (m *mockDBClient) ResetImportDetails(ctx context.Context, id int) (err erro
 	return nil
 }
 
-func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
+func (m *mockDBClient) GetExtractRules(ctx context.Context, sort string, order string) (er []model.ExtractRuleDB, err error) {
 	if m.err != nil {
 		return nil, m.err
 	}

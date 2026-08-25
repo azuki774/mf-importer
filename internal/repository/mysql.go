@@ -87,8 +87,8 @@ func (d *DBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail, reg
 
 	return nil
 }
-func (d *DBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
-	result := d.Conn.WithContext(ctx).Table(tableNameExtractRule).Find(&er)
+func (d *DBClient) GetExtractRules(ctx context.Context, sort string, order string) (er []model.ExtractRuleDB, err error) {
+	result := d.Conn.WithContext(ctx).Table(tableNameExtractRule).Order(buildRuleOrderClause(sort, order)).Find(&er)
 	if result.Error != nil {
 		return []model.ExtractRuleDB{}, result.Error
 	}
@@ -161,8 +161,10 @@ func (d *DBClient) GetLastDetailHistoryWhereJobLabel(ctx context.Context, jobLab
 	return ih, nil
 }
 
-func (d *DBClient) GetDetails(ctx context.Context, limit int, offset int) (details []model.Detail, err error) {
-	err = d.Conn.WithContext(ctx).Table(tableNameDetail).Order("ID desc").Limit(limit).Offset(offset).Find(&details).Error
+func (d *DBClient) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (details []model.Detail, err error) {
+	err = d.Conn.WithContext(ctx).Table(tableNameDetail).
+		Order(buildDetailOrderClause(sort, order)).
+		Limit(limit).Offset(offset).Find(&details).Error
 	return details, err
 }
 

@@ -29,6 +29,8 @@ func TestAPIService_GetDetails(t *testing.T) {
 		ctx    context.Context
 		limit  int
 		offset int
+		sort   string
+		order  string
 	}
 	tests := []struct {
 		name     string
@@ -47,6 +49,8 @@ func TestAPIService_GetDetails(t *testing.T) {
 				ctx:    context.Background(),
 				limit:  5,
 				offset: 0,
+				sort:   "useDate",
+				order:  "desc",
 			},
 			wantDets: []openapi.Detail{
 				{
@@ -78,6 +82,8 @@ func TestAPIService_GetDetails(t *testing.T) {
 				ctx:    context.Background(),
 				limit:  5,
 				offset: 0,
+				sort:   "useDate",
+				order:  "desc",
 			},
 			wantDets: nil,
 			wantErr:  true,
@@ -89,7 +95,7 @@ func TestAPIService_GetDetails(t *testing.T) {
 				Logger: tt.fields.Logger,
 				Repo:   tt.fields.Repo,
 			}
-			gotDets, err := a.GetDetails(tt.args.ctx, tt.args.limit, tt.args.offset)
+			gotDets, err := a.GetDetails(tt.args.ctx, tt.args.limit, tt.args.offset, tt.args.sort, tt.args.order)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("APIService.GetDetails() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -107,7 +113,9 @@ func TestAPIService_GetRules(t *testing.T) {
 		Repo   DBRepository
 	}
 	type args struct {
-		ctx context.Context
+		ctx   context.Context
+		sort  string
+		order string
 	}
 	tests := []struct {
 		name    string
@@ -122,7 +130,11 @@ func TestAPIService_GetRules(t *testing.T) {
 				Logger: l,
 				Repo:   &mockDBClient{},
 			},
-			args: args{ctx: context.Background()},
+			args: args{
+				ctx:   context.Background(),
+				sort:  "id",
+				order: "asc",
+			},
 			want: []openapi.Rule{
 				{
 					Id:         1,
@@ -146,7 +158,11 @@ func TestAPIService_GetRules(t *testing.T) {
 				Logger: l,
 				Repo:   &mockDBClient{err: errors.New("error")},
 			},
-			args:    args{ctx: context.Background()},
+			args: args{
+				ctx:   context.Background(),
+				sort:  "id",
+				order: "asc",
+			},
 			want:    nil,
 			wantErr: true,
 		},
@@ -157,7 +173,7 @@ func TestAPIService_GetRules(t *testing.T) {
 				Logger: tt.fields.Logger,
 				Repo:   tt.fields.Repo,
 			}
-			got, err := a.GetRules(tt.args.ctx)
+			got, err := a.GetRules(tt.args.ctx, tt.args.sort, tt.args.order)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("APIService.GetRules() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -114,7 +114,7 @@ func (m *mockDBClient) CheckCFDetail(ctx context.Context, cfDetail model.Detail,
 	return nil
 }
 
-func (m *mockDBClient) GetExtractRules(ctx context.Context) (er []model.ExtractRuleDB, err error) {
+func (m *mockDBClient) GetExtractRules(ctx context.Context, sort string, order string) (er []model.ExtractRuleDB, err error) {
 	return []model.ExtractRuleDB{
 		{
 			ID:         1,

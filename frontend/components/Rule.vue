@@ -1,5 +1,22 @@
 <script setup lang="ts">
-const { rules, addRule, deleteRule } = useRules()
+const initialDirections: Record<string, 'asc' | 'desc'> = {
+  id: 'asc',
+  fieldName: 'asc',
+  value: 'asc',
+  exactMatch: 'asc',
+  categoryId: 'asc',
+}
+const { sortBy, sortOrder, toggleSort } = useTableSort('id', 'asc', initialDirections)
+const { rules, addRule, deleteRule } = useRules(sortBy, sortOrder)
+
+function ariaSort(key: string): 'ascending' | 'descending' | 'none' {
+  if (sortBy.value !== key) return 'none'
+  return sortOrder.value === 'asc' ? 'ascending' : 'descending'
+}
+
+function indicator(key: string): string {
+  return sortBy.value === key ? (sortOrder.value === 'asc' ? '▲' : '▼') : ''
+}
 
 const form = reactive({
   fieldName: 'name',
@@ -128,11 +145,41 @@ async function executeDelete() {
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <th class="px-4 py-3">ID</th>
-              <th class="px-4 py-3">判定フィールド名</th>
-              <th class="px-4 py-3">値</th>
-              <th class="px-4 py-3 text-center">完全一致</th>
-              <th class="px-4 py-3">カテゴリID</th>
+              <th
+                class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+                :aria-sort="ariaSort('id')"
+                @click="toggleSort('id')"
+              >
+                ID <span v-if="indicator('id')" class="text-primary-600">{{ indicator('id') }}</span>
+              </th>
+              <th
+                class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+                :aria-sort="ariaSort('fieldName')"
+                @click="toggleSort('fieldName')"
+              >
+                判定フィールド名 <span v-if="indicator('fieldName')" class="text-primary-600">{{ indicator('fieldName') }}</span>
+              </th>
+              <th
+                class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+                :aria-sort="ariaSort('value')"
+                @click="toggleSort('value')"
+              >
+                値 <span v-if="indicator('value')" class="text-primary-600">{{ indicator('value') }}</span>
+              </th>
+              <th
+                class="px-4 py-3 text-center cursor-pointer select-none hover:text-gray-900"
+                :aria-sort="ariaSort('exactMatch')"
+                @click="toggleSort('exactMatch')"
+              >
+                完全一致 <span v-if="indicator('exactMatch')" class="text-primary-600">{{ indicator('exactMatch') }}</span>
+              </th>
+              <th
+                class="px-4 py-3 cursor-pointer select-none hover:text-gray-900"
+                :aria-sort="ariaSort('categoryId')"
+                @click="toggleSort('categoryId')"
+              >
+                カテゴリID <span v-if="indicator('categoryId')" class="text-primary-600">{{ indicator('categoryId') }}</span>
+              </th>
               <th class="px-4 py-3 text-center">操作</th>
             </tr>
           </thead>

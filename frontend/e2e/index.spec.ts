@@ -89,3 +89,63 @@ test('再判定操作で import 日付がクリアされる', async ({ page }) =
   await expect(page.getByText('再判定対象に設定しました')).toBeVisible()
   await expect(judgedRow.locator('td').nth(4)).toHaveText('—', { timeout: 10_000 })
 })
+
+test('列ヘッダークリックで並び替えとトグルができる', async ({ page }) => {
+  await page.goto('/')
+  const rows = page.locator('tbody tr')
+  await expect(rows).toHaveCount(20)
+
+  const dateHeader = page.getByRole('columnheader', { name: /^利用日時/ })
+  const priceHeader = page.getByRole('columnheader', { name: /^料金/ })
+
+  // 既定: 利用日時 降順
+  await expect(dateHeader).toHaveAttribute('aria-sort', 'descending')
+  await expect(dateHeader).toContainText('▼')
+  await expect(rows.first()).toContainText('テスト明細 200')
+
+  // 別列クリック: 料金の初期方向は降順(最大料金は最新明細)
+  const descRequest = page.waitForRequest(
+    (req) => req.url().includes('/api/details?') && req.url().includes('sort=price') && req.url().includes('order=desc')
+  )
+  await priceHeader.click()
+  await descRequest
+  await expect(priceHeader).toHaveAttribute('aria-sort', 'descending')
+  await expect(dateHeader).toHaveAttribute('aria-sort', 'none')
+  await expect(rows.first()).toContainText('テスト明細 200')
+
+  // 再クリック: 昇順 → 先頭は最小料金の明細
+  const ascRequest = page.waitForRequest(
+    (req) => req.url().includes('/api/details?') && req.url().includes('sort=price') && req.url().includes('order=asc')
+  )
+  await priceHeader.click()
+  await ascRequest
+  await expect(priceHeader).toHaveAttribute('aria-sort', 'ascending')
+  await expect(rows.first()).toContainText('テスト明細 001')
+
+  // 現在ページ内でも料金が昇順に並んでいること
+  const prices = await rows.evaluateAll((trs) =>
+    trs.map((tr) => Number((tr.querySelectorAll('td')[2]?.textContent ?? '0').replace(/,/g, '')))
+  )
+  const sorted = [...prices].sort((a, b) => a - b)
+  expect(prices).toEqual(sorted)
+})
+
+test('ソート変更時はページが 1 に戻る', async ({ page }) => {
+  await page.goto('/')
+  const rows = page.locator('tbody tr')
+  await expect(rows).toHaveCount(20)
+
+  await page.getByRole('button', { name: '次 →' }).click()
+  await expect(page.getByText('2 / 10')).toBeVisible()
+
+  // 名前の初期方向は昇順。名前はゼロ埋め連番なので昇順先頭ページは 001..020
+  const sortRequest = page.waitForRequest(
+    (req) => req.url().includes('/api/details?') && req.url().includes('offset=0') && req.url().includes('sort=name')
+  )
+  await page.getByRole('columnheader', { name: /^名前/ }).click()
+  await sortRequest
+
+  await expect(page.getByText('1 / 10')).toBeVisible()
+  await expect(rows.first()).toContainText('テスト明細 001')
+  await expect(rows.nth(19)).toContainText('テスト明細 020')
+})

@@ -20,6 +20,18 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: sort
+          in: query
+          description: 'sort key (useDate|name|price|registDate|importJudgeDate|importDate)'
+          schema:
+            type: string
+            default: useDate
+        - name: order
+          in: query
+          description: 'sort order (asc|desc)'
+          schema:
+            type: string
+            default: desc
       responses:
         '200':
           description: ''
@@ -131,6 +143,19 @@ paths:
     get:
       summary: get all extract rules
       operationId: get-rules
+      parameters:
+        - name: sort
+          in: query
+          description: 'sort key (id|fieldName|value|exactMatch|categoryId)'
+          schema:
+            type: string
+            default: id
+        - name: order
+          in: query
+          description: 'sort order (asc|desc)'
+          schema:
+            type: string
+            default: asc
       responses:
         '200':
           description: OK

@@ -47,6 +47,12 @@ type RuleRequest struct {
 type GetDetailsParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Sort sort key (useDate|name|price|registDate|importJudgeDate|importDate)
+	Sort *string `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order sort order (asc|desc)
+	Order *string `form:"order,omitempty" json:"order,omitempty"`
 }
 
 // PatchDetailsIdParams defines parameters for PatchDetailsId.
@@ -57,6 +63,15 @@ type PatchDetailsIdParams struct {
 
 // GetHealthTextBody defines parameters for GetHealth.
 type GetHealthTextBody = string
+
+// GetRulesParams defines parameters for GetRules.
+type GetRulesParams struct {
+	// Sort sort key (id|fieldName|value|exactMatch|categoryId)
+	Sort *string `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order sort order (asc|desc)
+	Order *string `form:"order,omitempty" json:"order,omitempty"`
+}
 
 // GetHealthTextRequestBody defines body for GetHealth for text/plain ContentType.
 type GetHealthTextRequestBody = GetHealthTextBody
