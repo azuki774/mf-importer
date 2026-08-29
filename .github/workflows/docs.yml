@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Checkout tbls.yml
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: k1LoW/setup-tbls@f25e3d013a596865b2db90dac7ee19e9f15b5780 # v1.4.0
+      - uses: k1LoW/setup-tbls@5e8e69748c0bb15fdb5e51a0ecdb84f1ecd0e3a1 # v1.4.1
       - name: Wait for ready DB
         run: |
           until mysql -u root -ppassword -h 127.0.0.1 -e '\q'; do sleep 1; done
