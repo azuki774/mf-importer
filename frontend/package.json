@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "nuxt": "^3.12.4",
+    "nuxt": "^3.21.11",
     "vue": "latest"
   },
   "devDependencies": {
@@ -22,8 +22,9 @@
     "@playwright/test": "^1.49.0"
   },
   "overrides": {
-    "serialize-javascript": "^7.0.3",
-    "simple-git": "^3.32.3",
-    "shell-quote": "^1.8.4"
+    "@bomb.sh/tab": "^0.0.22",
+    "serialize-javascript": "^7.1.1",
+    "simple-git": "^3.36.0",
+    "shell-quote": "^1.10.0"
   }
 }
