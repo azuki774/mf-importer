@@ -12,9 +12,12 @@
     "e2e": "playwright test",
     "e2e:setup": "playwright install chromium"
   },
+  "allowScripts": {
+    "esbuild": true
+  },
   "dependencies": {
     "commander": "^13.1.0",
-    "nuxt": "^3.21.11",
+    "nuxt": "^4.5.2",
     "vue": "latest"
   },
   "devDependencies": {

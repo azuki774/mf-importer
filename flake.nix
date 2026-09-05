@@ -31,7 +31,7 @@
             golangci-lint
             
             # Node.js development
-            nodejs_22
+            nodejs_24
             nodePackages.npm
             
             # Database tools
