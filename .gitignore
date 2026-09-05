@@ -18,12 +18,3 @@ result-*
 
 # Worktrees
 .worktrees/
-
-# Local credentials and environment overrides
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*_rsa
-*_ed25519

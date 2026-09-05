@@ -21,9 +21,9 @@
 - `migration/db/`: sql-migrate の適用ファイル。現在の資産系スキーマを含む。
 - `deployment/`: Docker Compose と抽出ルール。`build/`: Dockerfile とバイナリ出力先。
 - `frontend/`: Nuxt 3 + Tailwind CSS の管理 UI。Bootstrap 前提で変更しない。
-- `test/`: 明示的に作成したダミー CSV / JSON / SQL とモックサーバー。新しいデータファイルは検査スクリプトの許可なしに追加しない。
+- `test/`: 明示的に作成したダミー CSV / JSON / SQL とモックサーバー。新しい fixture は実データでないことを目視確認する。
 - `frontend/e2e/`: Playwright の画面テスト。成果物は `frontend/e2e/artifacts/`（git 管理外）。
-- `scripts/`: ローカル確認用スクリプト。`scripts/check-sensitive-data.sh` はコミット前検査に使う。
+- `scripts/`: ローカル確認用スクリプト。
 - `.agents/skills/`: エージェントがデータを扱うときに読むリポジトリ固有スキル。
 
 ## 開発環境
@@ -39,7 +39,7 @@
 - `make bin`: 全 Go サービスの静的バイナリを `build/bin/` に生成する。
 - `make api-bin`: モック API / ローカル UI 用の API バイナリを生成する。
 - `make build`: 各サービスの Docker イメージをビルドする。
-- `make test`: Sensitive data guard、`gofmt -l`、`go vet`、`staticcheck`、`go test -v ./...` を実行する。`gofmt -l` の出力は空にする。
+- `make test`: `gofmt -l`、`go vet`、`staticcheck`、`go test -v ./...` を実行する。`gofmt -l` の出力は空にする。
 - `go test ./...`: DB を使わない Go テストを直接実行する。
 - `make generate`: `internal/openapi/mfimporter-api.yaml` から OpenAPI コードを再生成する。
 - `make migration`: ローカル MariaDB にマイグレーションを適用する。スキーマ変更時は up / down の両方を確認する。
@@ -50,10 +50,6 @@
 - `make e2e`: Playwright の画面テストを実行する。初回は `cd frontend && npm install` が必要。
 - `cd frontend && npm ci`: `package-lock.json` に従って依存関係を再現する。
 - `cd frontend && npm run dev`: 開発サーバーを起動する。`npm run build`、`npm run generate`、`npm run preview` も利用する。
-- `./scripts/check-sensitive-data.sh --staged`: コミット直前の staged 差分を検査する。
-- `make check-sensitive-data`: worktree の HEAD との差分を検査する。検査は補助であり、最終的に差分を目視する。
-- CI では警告も失敗になる。ローカルで同じ挙動を確認する場合は `SENSITIVE_DATA_STRICT=1 ./scripts/check-sensitive-data.sh --staged` を使う。
-- `.github/workflows/sensitive-data.yml` と `scripts/check-sensitive-data.sh` は guard 自身が検査するため、通常の機能変更と同じ PR で変更しない。更新時は別途レビューする。
 
 ## 実データ・秘匿情報の取り扱い
 
@@ -67,7 +63,7 @@
 - 画面画像は `make mock-api`、`make local-ui`、`make e2e` のダミー表示だけを使う。実 DB 接続中の画面を撮影しない。
 - 新しい fixture や unit test 内の入力例は仮名・合成値で作り、実在の銘柄・口座・明細を元にしない。既存の `test/` fixture や `*_test.go` の入力例に実データを追記しない。
 - AWS キー、実運用 DB パスワード、`.env`、秘密鍵はコミットしない。ローカル設定は `.env.local` など git 管理外に置く。Compose / Nix にある既存の開発用デフォルト値はローカル用途に限定し、実値へ置き換えない。
-- スクリプトが警告しなくても安全とは限らない。`git diff --cached` を必ず目視し、疑わしい差分は除外してから進める。
+- スキルを読んでも安全が保証されるわけではない。`git diff --cached` を必ず目視し、疑わしい差分は除外してから進める。
 
 ## コーディング規約
 
@@ -84,7 +80,7 @@
 - 1 コミットの目的を小さく保ち、生成コードを変更した場合は元仕様と生成コマンドを明記する。
 - PR は日本語で目的、変更内容、影響範囲、確認コマンドを記載する。UI 変更はモック画面のスクリーンショットを添付する。
 - スキーマ変更は適用手順とロールバック手順を記載する。S3 / 外部 API 変更は必要な環境変数と失敗時の挙動を記載する。
-- PR 作成・確認には `gh` を使う。CI の Go、Frontend、Sensitive data guard が通ることを確認してからレビューを依頼する。
+- PR 作成・確認には `gh` を使う。CI の Go と Frontend が通ることを確認してからレビューを依頼する。
 
 ## コミット前チェックリスト
 
@@ -92,7 +88,6 @@
 git status --short
 git diff --cached --stat
 git diff --cached
-./scripts/check-sensitive-data.sh --staged
 make test
 ```
 

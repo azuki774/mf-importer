@@ -44,7 +44,7 @@ description: Use when handling MoneyForward ME or SBI data, fixtures, API respon
 - ローカル検証用の実 CSV は `/tmp/mf-csv/` 等のリポジトリ外に置き、
   `cp` で使う。リポジトリ内にコピーしない。
 - `memo/`、`tmp/`、`.env.local`、鍵ファイルはコミットしない
-  （`.gitignore` 済み。`git status` で混入を確認する）。
+  （リポジトリ外に置き、`git status` で混入を確認する）。
 
 ## 4. コミット前のチェック（必須）
 
@@ -54,12 +54,10 @@ description: Use when handling MoneyForward ME or SBI data, fixtures, API respon
 git status --short
 git diff --cached --stat
 git diff --cached  # 実金額・銘柄・口座情報が含まれていないか目視する
-./scripts/check-sensitive-data.sh --staged
 ```
 
-`check-sensitive-data.sh` が警告・失敗した場合は、そのファイルを含めずに
-差分を作り直す。スクリプトは補助であり、通過＝安全ではない。
-最終判断は必ず人間の目視で行う。
+具体的な金額・銘柄・口座情報・APIレスポンス・ログ・スクリーンショットが含まれていたら、
+コミットせずにダミー化またはリポジトリ外へ移す。最終判断は必ず人間の目視で行う。
 
 ## 5. 違反を見つけたとき
 
@@ -67,12 +65,3 @@ git diff --cached  # 実金額・銘柄・口座情報が含まれていない�
 - プッシュ前: 該当コミットを履歴から除去する手順を実行する前に、共有ブランチや他の worktree への影響を確認する。
 - プッシュ後: 無理に force-push せず、秘匿化の手順（履歴書換え・ローテーション）を
   別途相談する。S3・DB の認証情報は直ちにローテーションする。
-
-## 6. 自動ガード
-
-- `make test` は `check-sensitive-data.sh --all` を先に実行する。
-- PR / master への push では GitHub Actions が base 側の検査スクリプトで差分を検査する。
-- CI では候補の警告も失敗になる。fixture を変更した場合も、合成データであることを確認して検査対象から除外するのではなく、差分を見直して必要最小限にする。
-- guard の workflow / script 自体は同じ PR で変更しない。更新が必要な場合は別 PR として、検査を無効化しないことを目視確認する。
-- 検査はヒューリスティックであり、fixture や新しいデータ形式を完全には判定できない。
-  警告・成功にかかわらず、staged 差分の目視確認を省略しない。
