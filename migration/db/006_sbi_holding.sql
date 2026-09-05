@@ -1,7 +1,7 @@
 -- +migrate Up
 CREATE TABLE `sbi_holding` (
     `id` INT NOT NULL AUTO_INCREMENT,
-    `snapshot_id` INT NOT NULL COMMENT 'FK -> sbi_snapshot.id',
+    `snapshot_id` INT NOT NULL COMMENT 'FK -> sbi_snapshot.id (no DB FK, enforced at app layer)',
     `section` VARCHAR(32) NOT NULL COMMENT 'nisa_domestic|nisa_us|nisa_funds|old_nisa_funds',
     `name` TEXT NOT NULL COMMENT 'Holding.name (銘柄名)',
     `quantity` DECIMAL(18,6) NOT NULL COMMENT 'Holding.quantity (口数/株数)',
@@ -16,9 +16,7 @@ CREATE TABLE `sbi_holding` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_snapshot_id` (`snapshot_id`),
-    INDEX `idx_snapshot_section` (`snapshot_id`, `section`),
-    INDEX `idx_section` (`section`),
-    CONSTRAINT `fk_sbi_holding_snapshot` FOREIGN KEY (`snapshot_id`) REFERENCES `sbi_snapshot` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    INDEX `idx_snapshot_section` (`snapshot_id`, `section`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- +migrate Down

@@ -2,7 +2,7 @@
 CREATE TABLE `sbi_snapshot` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `fetched_at` DATETIME(6) NOT NULL COMMENT 'Assets.fetched_at (UTC, nanoseconds preserved)',
-    `status` VARCHAR(16) NOT NULL COMMENT 'ok|maintenance',
+    `status` VARCHAR(16) NOT NULL COMMENT 'OK|MAINTENANCE|ERROR (normalized to uppercase on ingest; scraper emits ok/maintenance)',
     `schema_version` INT NOT NULL COMMENT 'Assets.schema_version (CurrentSchemaVersion)',
     `grand_total_jpy` DECIMAL(14,2) NOT NULL COMMENT 'grand_total_jpy = nisa+old_nisa+cash+others',
     -- NISA summary (new NISA)
@@ -54,9 +54,7 @@ CREATE TABLE `sbi_snapshot` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_fetched_at` (`fetched_at`),
-    INDEX `idx_status` (`status`),
-    INDEX `idx_fetched_at_desc` (`fetched_at` DESC)
+    UNIQUE KEY `uq_fetched_at` (`fetched_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- +migrate Down
