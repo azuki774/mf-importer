@@ -11,12 +11,12 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         
-        # Pin Go to specific version 1.25.6
+        # Pin Go to specific version 1.25.14
         go = pkgs.go_1_25.overrideAttrs (oldAttrs: rec {
-          version = "1.25.6";
+          version = "1.25.14";
           src = pkgs.fetchurl {
             url = "https://go.dev/dl/go${version}.src.tar.gz";
-            hash = "sha256-WMv3ceRNdt5vVtGeM7d9dFoeSJNAkih15GWFuXXCsFk=";
+            hash = "sha256-noP0T1/ClzeIYbThbMaqEUvordeZP7POssUSOAqk1YI=";
           };
         });
       in
