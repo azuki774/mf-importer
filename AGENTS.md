@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `cmd/` に各サービスのエントリポイント、`internal/` に共通ロジックと OpenAPI 生成物（`internal/openapi/*.gen.go` は手編集しない）を配置。
 - `build/` は Dockerfile 群と生成バイナリ出力先 `build/bin/`、`deployment/compose.yml` で開発用スタックを起動。
-- `migration/` は SQL マイグレーション、`vendor_ci/sql-migrate` 経由で適用。`docs/` は API ドキュメント、`frontend/` は Nuxt 3 + Bootstrap UI。`test/` は共通テストリソース。
+- `migration/` は SQL マイグレーション、`vendor_ci/sql-migrate` 経由で適用。`docs/` は API ドキュメント、DB スキーマ説明書、ローカル確認手順、S3 取り込み詳細などの手管理 Markdown 文書。`frontend/` は Nuxt 3 + Bootstrap UI。`test/` は共通テストリソース。
 - 生成物やログはリポジトリ外に置き、`git status` がクリーンになるよう `.gitignore` に従う。
 - `flake.nix` は Nix 開発環境の定義。`.envrc` で direnv 連携。`.direnv/` / `result*` は自動生成なので `.gitignore` に登録済み。
 
@@ -19,7 +19,7 @@
 - `make bin` 静的リンクの Go バイナリを `build/bin/` に生成（タグ・リビジョンを埋め込み）。
 - `make build` 各サービスの Docker イメージを構築。CI と同じ環境で確認したいときに使用。
 - `make start` / `make debug` / `make stop` で docker compose による全サービス起動・前景実行・停止。
-- `make migration` で MariaDB へローカルマイグレーション、`make generate` で OpenAPI コード再生成、`make doc` で HTML ドキュメント更新。
+- `make migration` で MariaDB へローカルマイグレーション、`make generate` で OpenAPI コード再生成。`docs/api.md` は `internal/openapi/mfimporter-api.yaml`、`docs/schema.md` は `migration/db/*.sql` をそれぞれ正本とする手管理文書。
 - フロントエンドは `cd frontend && npm install` 後、`npm run dev` で開発、`npm run build` / `npm run generate` / `npm run preview` でビルド・静的生成・プレビュー。
 
 ### ローカルでのインポート結果確認

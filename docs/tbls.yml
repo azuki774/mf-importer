@@ -1,2 +1,0 @@
-dsn: mariadb://root:password@localhost:3306/mfimporter
-docPath: schema

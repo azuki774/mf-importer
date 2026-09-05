@@ -94,4 +94,4 @@ mkdir -p /tmp/mf-csv && cp test/cf.csv /tmp/mf-csv/
 ./build/bin/mf-importer-api start                  # :8080
 ```
 
-接続先は `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASS` / `DB_NAME`（旧小文字名 `db_host` 等も利用可）。API 仕様は `internal/openapi/mfimporter-api.yaml` または https://azuki774.github.io/mf-importer/api.html を参照。
+接続先は `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASS` / `DB_NAME`（旧小文字名 `db_host` 等も利用可）。API 仕様は [docs/api.md](api.md)（仕様の正本: `internal/openapi/mfimporter-api.yaml`）を参照。

@@ -32,10 +32,12 @@ make migration # DB マイグレーション（初回のみ）
 make test # gofmt / vet / staticcheck / go test
 ```
 
-フロントエンドの開発・動作確認（DB 不要のモック起動含む）は `docs/local-verify.md` を参照してください。
+フロントエンドの開発・動作確認（DB 不要のモック起動含む）は [docs/local-verify.md](docs/local-verify.md) を参照してください。
 
 ## Docs
 
-- API ドキュメント: https://azuki774.github.io/mf-importer/api.html（仕様: `internal/openapi/mfimporter-api.yaml`）
-- S3 取り込みの詳細: `docs/s3-download.md`
+- API ドキュメント: [docs/api.md](docs/api.md)（仕様の正本: `internal/openapi/mfimporter-api.yaml`）
+- DB スキーマの説明: [docs/schema.md](docs/schema.md)
+- S3 取り込みの詳細: [docs/s3-download.md](docs/s3-download.md)
+- ローカル確認: [docs/local-verify.md](docs/local-verify.md)
 - 各サービスのコマンド詳細は `--help` を参照してください。
