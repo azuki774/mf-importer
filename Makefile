@@ -12,7 +12,7 @@ API_BIN=build/bin/mf-importer-api
 URL ?= http://127.0.0.1:8080
 LATEST ?= 5
 
-.PHONY: bin build start stop test debug migration doc api-bin mock-api local-ui report e2e
+.PHONY: bin build start stop test check-sensitive-data debug migration doc api-bin mock-api local-ui report e2e
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
@@ -36,11 +36,15 @@ stop:
 debug:
 	docker compose -f deployment/compose.yml up
 
-test: 
+test: check-sensitive-data
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...
 	go test -v ./...
+
+# コミット前の実データ・秘密情報の混入チェック（staged 差分は --staged を使う）
+check-sensitive-data:
+	./scripts/check-sensitive-data.sh --all
 
 migration:
 	cd migration && \

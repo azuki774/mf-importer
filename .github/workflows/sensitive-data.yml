@@ -1,0 +1,59 @@
+name: Sensitive data guard
+
+on:
+  pull_request:
+    branches:
+      - "**"
+  pull_request_target:
+    branches:
+      - "**"
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # base 側の workflow / script を優先し、PR のコードを実行しない。
+      - name: Run sensitive data guard
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SENSITIVE_DATA_STRICT: "1"
+        run: |
+          if [[ "${EVENT_NAME}" == "pull_request_target" ]]; then
+            git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/origin/pr/${PR_NUMBER}"
+          elif [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/origin/pr/${PR_NUMBER}"
+          elif [[ "${BASE_SHA}" == "0000000000000000000000000000000000000000" ]]; then
+            BASE_SHA="$(git rev-parse "${HEAD_SHA}^1")"
+          fi
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git cat-file -e "${HEAD_SHA}^{commit}"
+          if [[ "${EVENT_NAME}" == "pull_request_target" ]] && ! git diff --quiet --no-ext-diff --no-color "${BASE_SHA}...${HEAD_SHA}" -- .github/workflows/sensitive-data.yml scripts/check-sensitive-data.sh; then
+            echo "trusted sensitive-data guard files cannot be changed in the same PR" >&2
+            exit 1
+          fi
+          if git cat-file -e "${BASE_SHA}:scripts/check-sensitive-data.sh"; then
+            bash scripts/check-sensitive-data.sh --range "${BASE_SHA}...${HEAD_SHA}"
+          elif [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            # 初回導入だけは base にスクリプトがないため、PR版を実行する。
+            git show "${HEAD_SHA}:scripts/check-sensitive-data.sh" > /tmp/check-sensitive-data.sh
+            bash /tmp/check-sensitive-data.sh --range "${BASE_SHA}...${HEAD_SHA}"
+          else
+            echo "base commit does not contain scripts/check-sensitive-data.sh" >&2
+            exit 2
+          fi
