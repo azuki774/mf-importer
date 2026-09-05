@@ -4,7 +4,7 @@ FROM node:24-alpine AS builder
 WORKDIR /frontend
 
 COPY ./frontend/package.json ./frontend/package-lock.json /frontend/
-RUN npm install
+RUN npm ci
 COPY ./frontend /frontend
 RUN npm run build
 
