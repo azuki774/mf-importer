@@ -36,11 +36,12 @@ stop:
 debug:
 	docker compose -f deployment/compose.yml up
 
-test:
+test: 
 	gofmt -l .
 	go vet -composites=false ./...
 	staticcheck ./...
 	go test -v ./...
+
 migration:
 	cd migration && \
 	${SQL_MIGRATE_BIN} up -env=local && \
