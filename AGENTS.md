@@ -18,7 +18,7 @@
 - `cmd/mf-importer-metrics/`: Prometheus メトリクス。
 - `internal/`: サービス共通のモデル、リポジトリ、サービス、HTTP サーバー、SBI 資産処理など。
 - `internal/openapi/mfimporter-api.yaml`: API の入力仕様。`*.gen.go` は `make generate` の生成物で手編集しない。
-- `migration/db/`: sql-migrate の適用ファイル。現在の資産系スキーマを含む。
+- `migration/db/`: sql-migrate の適用ファイル。現在の資産系スキーマを含む。`docs/schema.md` はこのディレクトリを正本とする手管理文書。
 - `deployment/`: Docker Compose と抽出ルール。`build/`: Dockerfile とバイナリ出力先。
 - `frontend/`: Nuxt 3 + Tailwind CSS の管理 UI。Bootstrap 前提で変更しない。
 - `test/`: 明示的に作成したダミー CSV / JSON / SQL とモックサーバー。新しい fixture は実データでないことを目視確認する。
@@ -41,7 +41,7 @@
 - `make build`: 各サービスの Docker イメージをビルドする。
 - `make test`: `gofmt -l`、`go vet`、`staticcheck`、`go test -v ./...` を実行する。`gofmt -l` の出力は空にする。
 - `go test ./...`: DB を使わない Go テストを直接実行する。
-- `make generate`: `internal/openapi/mfimporter-api.yaml` から OpenAPI コードを再生成する。
+- `make generate`: `internal/openapi/mfimporter-api.yaml` から OpenAPI コードを再生成する。`docs/api.md` はこの YAML を正本とする手管理文書。
 - `make migration`: ローカル MariaDB にマイグレーションを適用する。スキーマ変更時は up / down の両方を確認する。
 - `make start` / `make debug` / `make stop`: Docker Compose の全サービスを起動、前景起動、停止する。
 - `make mock-api`: `test/` のダミー CSV を使う DB 不要の API を起動する。
