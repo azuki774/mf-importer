@@ -4,7 +4,6 @@ CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-fe
 CONTAINER_NAME_API=mf-importer-api
-CONTAINER_NAME_DOC=mf-importer-doc
 CONTAINER_NAME_METRICS=mf-importer-metrics
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 pwd := $(shell pwd)
@@ -12,7 +11,7 @@ API_BIN=build/bin/mf-importer-api
 URL ?= http://127.0.0.1:8080
 LATEST ?= 5
 
-.PHONY: bin build start stop test debug migration doc api-bin mock-api local-ui report e2e
+.PHONY: bin build start stop test debug migration api-bin mock-api local-ui report e2e
 bin:
 	go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
 	-X main.version=$(git describe --tag --abbrev=0) \
@@ -51,11 +50,6 @@ generate:
 	oapi-codegen -package "openapi" -generate "chi-server" ${OPENAPI_YAML} > internal/openapi/server.gen.go
 	oapi-codegen -package "openapi" -generate "spec"       ${OPENAPI_YAML} > internal/openapi/spec.gen.go
 	oapi-codegen -package "openapi" -generate "types"      ${OPENAPI_YAML} > internal/openapi/types.gen.go
-
-doc:
-	docker build -t $(CONTAINER_NAME_DOC) -f docs/Dockerfile .
-	docker run --rm -it -v $(pwd)/internal/openapi/:/data/ $(CONTAINER_NAME_DOC)
-	mv -f internal/openapi/api.html docs/api.html
 
 api-bin:
 	go build -o $(API_BIN) ./cmd/mf-importer-api
