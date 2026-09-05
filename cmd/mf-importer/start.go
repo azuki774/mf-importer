@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/repository"
@@ -60,13 +61,30 @@ func startMain() error {
 	csvEncoding := strings.ToLower(os.Getenv("csv_encoding"))
 
 	if withDownload {
-		l.Info("start download CSV from s3")
+		// 両方のダウンロードを試行するが、失敗は保持して DB 投入前に返却する。
+		// 失敗を握りつぶすと stale なローカルファイルを取り込む恐れがあるため。
+		var mfErr, sbiErr error
+
+		l.Info("start s3 download: mf csv")
 		downloader := repository.NewDownloader(inputDir)
-		if err := downloader.Start(ctx); err != nil {
-			l.Error("failed to download", zap.Error(err))
+		if mfErr = downloader.Start(ctx); mfErr != nil {
+			l.Warn("s3 download failed: mf csv, continue to sbi", zap.Error(mfErr))
+		} else {
+			l.Info("complete s3 download: mf csv")
+		}
+
+		l.Info("start s3 download: sbi json")
+		sbiDownloader := repository.NewSbiDownloader(inputDir)
+		if sbiErr = sbiDownloader.Start(ctx); sbiErr != nil {
+			l.Warn("s3 download failed: sbi json", zap.Error(sbiErr))
+		} else {
+			l.Info("complete s3 download: sbi json")
+		}
+
+		if err := errors.Join(mfErr, sbiErr); err != nil {
+			l.Error("s3 download failed", zap.Error(err))
 			return err
 		}
-		l.Info("complete download CSV from s3")
 	}
 
 	if host == "" {
