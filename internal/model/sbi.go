@@ -160,6 +160,14 @@ type sbiAssets struct {
 	GrandTotalJPY float64          `json:"grand_total_jpy"`
 }
 
+var sbiTokyo = time.FixedZone("Asia/Tokyo", 9*60*60)
+
+// NormalizeSbiFetchedAt converts a scraper timestamp to the precision stored by
+// the sbi_snapshot DATETIME(6) column and gives it a canonical Tokyo location.
+func NormalizeSbiFetchedAt(t time.Time) time.Time {
+	return t.In(sbiTokyo).Truncate(time.Microsecond)
+}
+
 func ParseSbiJSON(data []byte) (*SbiSnapshot, []SbiHolding, error) {
 	var dto sbiAssets
 	if err := json.Unmarshal(data, &dto); err != nil {
@@ -193,7 +201,7 @@ func ParseSbiJSON(data []byte) (*SbiSnapshot, []SbiHolding, error) {
 	}
 
 	snap := &SbiSnapshot{
-		FetchedAt:     dto.FetchedAt,
+		FetchedAt:     NormalizeSbiFetchedAt(dto.FetchedAt),
 		Status:        status,
 		SchemaVersion: dto.SchemaVersion,
 		GrandTotalJPY: dto.GrandTotalJPY,

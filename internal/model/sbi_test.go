@@ -106,6 +106,19 @@ func TestSbiHolding_Sections(t *testing.T) {
 	_ = time.Now()
 }
 
+func TestParseSbiJSON_NormalizesFetchedAtToDatabasePrecision(t *testing.T) {
+	snap, _, err := ParseSbiJSON([]byte(`{"fetched_at":"2026-08-16T11:46:51.908856153+09:00","status":"ok"}`))
+	if err != nil {
+		t.Fatalf("ParseSbiJSON: %v", err)
+	}
+	if got, want := snap.FetchedAt.Location().String(), "Asia/Tokyo"; got != want {
+		t.Fatalf("location = %v, want %v", got, want)
+	}
+	if got, want := snap.FetchedAt.Nanosecond(), 908856000; got != want {
+		t.Fatalf("nanosecond = %d, want %d", got, want)
+	}
+}
+
 func TestParseSbiJSON_ExampleNewFixture(t *testing.T) {
 	// Ensure the new format fixture (if present) roundtrips
 	data, err := os.ReadFile("../../test/sbi_example_new.json")
