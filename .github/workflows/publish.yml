@@ -2,8 +2,12 @@ name: Build and Publish
 
 on:
   push:
+    branches:
+      - master
     tags:
       - v*
+    paths-ignore:
+      - docs/**
 
 jobs:
   build_and_push:
@@ -26,6 +30,7 @@ jobs:
             ghcr.io/azuki774/mf-importer
           # generate Docker tags based on the following events/attributes
           tags: |
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -69,6 +74,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-maw
           # generate Docker tags based on the following events/attributes
           tags: |
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -113,6 +119,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-api
           # generate Docker tags based on the following events/attributes
           tags: |
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -157,6 +164,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-metrics
           # generate Docker tags based on the following events/attributes
           tags: |
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -201,6 +209,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-fe
           # generate Docker tags based on the following events/attributes
           tags: |
+            type=sha,format=short,prefix=
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
