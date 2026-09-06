@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"mf-importer/internal/logger"
 	"mf-importer/internal/repository"
@@ -15,7 +14,7 @@ import (
 )
 
 var dryRun bool
-var withDownload bool // true ならば s3からのCSVダウンロードも
+var withDownload bool // true ならば s3からCSVをダウンロードする
 var inputDir string   // CSVダウンロード時に使うディレクトリを指定
 
 // startCmd represents the regist command
@@ -46,7 +45,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	startCmd.Flags().BoolVar(&dryRun, "dry-run", false, "dry run")
-	startCmd.Flags().BoolVar(&withDownload, "with-download", false, "download and import")
+	startCmd.Flags().BoolVar(&withDownload, "with-download", false, "download CSV and import")
 	startCmd.Flags().StringVarP(&inputDir, "input-dir", "d", "/data/", "input directory")
 }
 
@@ -61,30 +60,13 @@ func startMain() error {
 	csvEncoding := strings.ToLower(os.Getenv("csv_encoding"))
 
 	if withDownload {
-		// 両方のダウンロードを試行するが、失敗は保持して DB 投入前に返却する。
-		// 失敗を握りつぶすと stale なローカルファイルを取り込む恐れがあるため。
-		var mfErr, sbiErr error
-
 		l.Info("start s3 download: mf csv")
 		downloader := repository.NewDownloader(inputDir)
-		if mfErr = downloader.Start(ctx); mfErr != nil {
-			l.Warn("s3 download failed: mf csv, continue to sbi", zap.Error(mfErr))
-		} else {
-			l.Info("complete s3 download: mf csv")
-		}
-
-		l.Info("start s3 download: sbi json")
-		sbiDownloader := repository.NewSbiDownloader(inputDir)
-		if sbiErr = sbiDownloader.Start(ctx); sbiErr != nil {
-			l.Warn("s3 download failed: sbi json", zap.Error(sbiErr))
-		} else {
-			l.Info("complete s3 download: sbi json")
-		}
-
-		if err := errors.Join(mfErr, sbiErr); err != nil {
+		if err := downloader.Start(ctx); err != nil {
 			l.Error("s3 download failed", zap.Error(err))
 			return err
 		}
+		l.Info("complete s3 download: mf csv")
 	}
 
 	if host == "" {

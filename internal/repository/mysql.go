@@ -10,6 +10,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -22,14 +23,22 @@ const tableNameDetail = "detail"
 const tableNameExtractRule = "extract_rule"
 const tableNameImportHistory = "import_history"
 const tableNameAssetHistory = "asset_history"
+const tableNameSbiSnapshot = "sbi_snapshot"
+const tableNameSbiHolding = "sbi_holding"
 
 type DBClient struct {
 	Conn *gorm.DB
 }
 
-func NewDBRepository(host, port, user, pass, name string) (dbR *DBClient, err error) {
+// buildMySQLDSN fixes the connection location because DATETIME has no timezone.
+// SBI fetched_at values are stored as canonical Asia/Tokyo wall-clock values.
+func buildMySQLDSN(host, port, user, pass, name string) string {
 	addr := net.JoinHostPort(host, port)
-	dsn := user + ":" + pass + "@(" + addr + ")/" + name + "?parseTime=true&loc=Local"
+	return user + ":" + pass + "@(" + addr + ")/" + name + "?parseTime=true&loc=Asia%2FTokyo"
+}
+
+func NewDBRepository(host, port, user, pass, name string) (dbR *DBClient, err error) {
+	dsn := buildMySQLDSN(host, port, user, pass, name)
 	var gormdb *gorm.DB
 
 	for i := 0; i < DBConnectRetry; i++ {
@@ -234,6 +243,36 @@ func (d *DBClient) CheckAlreadyRegistAssetHistory(ctx context.Context, date time
 // 資産履歴を登録
 func (d *DBClient) RegistAssetHistory(ctx context.Context, assetHistory model.AssetHistory) (err error) {
 	return d.Conn.WithContext(ctx).Table(tableNameAssetHistory).Create(&assetHistory).Error
+}
+
+// ImportSbiSnapshot atomically creates a snapshot and its holdings. A snapshot
+// with an existing fetched_at is treated as an idempotent no-op.
+func (d *DBClient) ImportSbiSnapshot(ctx context.Context, snapshot *model.SbiSnapshot, holdings []model.SbiHolding) (inserted bool, err error) {
+	err = d.Conn.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.WithContext(ctx).Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "fetched_at"}},
+			DoNothing: true,
+		}).Table(tableNameSbiSnapshot).Create(snapshot)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return nil
+		}
+		inserted = true
+
+		for index := range holdings {
+			holdings[index].SnapshotID = snapshot.ID
+		}
+		if len(holdings) == 0 {
+			return nil
+		}
+		return tx.WithContext(ctx).Table(tableNameSbiHolding).Create(&holdings).Error
+	})
+	if err != nil {
+		return false, err
+	}
+	return inserted, nil
 }
 
 // 資産履歴を日付の降順で取得（最新から指定件数）

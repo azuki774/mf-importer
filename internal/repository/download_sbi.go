@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -52,6 +53,40 @@ func (d *sbiDownloader) isSbiBucketConfigured() bool {
 }
 
 func (d *sbiDownloader) Start(ctx context.Context) error {
+	bucketDirPrefix := strings.TrimSuffix(d.BucketDir, "/") + "/"
+	return d.start(ctx, bucketDirPrefix)
+}
+
+// StartMonth downloads objects below the configured bucket directory for one
+// calendar month in YYYYMM form.
+func (d *sbiDownloader) StartMonth(ctx context.Context, month string) error {
+	bucketDirPrefix, err := sbiMonthPrefix(d.BucketDir, month)
+	if err != nil {
+		return err
+	}
+	return d.start(ctx, bucketDirPrefix)
+}
+
+func sbiMonthPrefix(bucketDir, month string) (string, error) {
+	if len(month) != 6 {
+		return "", fmt.Errorf("invalid SBI month %q: want YYYYMM", month)
+	}
+	for _, r := range month {
+		if r < '0' || r > '9' {
+			return "", fmt.Errorf("invalid SBI month %q: want YYYYMM", month)
+		}
+	}
+	if _, err := time.Parse("200601", month); err != nil {
+		return "", fmt.Errorf("invalid SBI month %q: want YYYYMM: %w", month, err)
+	}
+	base := strings.TrimSuffix(bucketDir, "/")
+	if base == "" {
+		return month[:4] + "/" + month[4:] + "/", nil
+	}
+	return base + "/" + month[:4] + "/" + month[4:] + "/", nil
+}
+
+func (d *sbiDownloader) start(ctx context.Context, bucketDirPrefix string) error {
 	if !d.isSbiBucketConfigured() {
 		l.Info("sbi downloader skipped: SBI bucket not configured")
 		return nil
@@ -79,37 +114,37 @@ func (d *sbiDownloader) Start(ctx context.Context) error {
 		}
 	})
 
-	bucketDirPrefix := strings.TrimSuffix(d.BucketDir, "/") + "/"
-
 	if err := os.MkdirAll(d.SaveDir, 0755); err != nil {
 		return fmt.Errorf("failed to create sbi save directory %s: %w", d.SaveDir, err)
 	}
 
-	listOutput, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+	paginator := s3.NewListObjectsV2Paginator(s3Client, &s3.ListObjectsV2Input{
 		Bucket: aws.String(d.BucketName),
 		Prefix: aws.String(bucketDirPrefix),
 	})
-	if err != nil {
-		return fmt.Errorf("failed to list sbi objects in s3://%s/%s: %w", d.BucketName, bucketDirPrefix, err)
-	}
 
-	if listOutput.IsTruncated != nil && *listOutput.IsTruncated {
-		l.Warn("sbi list is truncated (>1000 objects)", zap.String("bucketDirPrefix", bucketDirPrefix))
-	}
-
-	l.Info("get sbi download file list complete", zap.Int("count", len(listOutput.Contents)))
-
-	for _, obj := range listOutput.Contents {
-		objectKey := *obj.Key
-		if objectKey == d.BucketDir || strings.HasSuffix(objectKey, "/") {
-			continue
+	count := 0
+	for paginator.HasMorePages() {
+		listOutput, err := paginator.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to list sbi objects in s3://%s/%s: %w", d.BucketName, bucketDirPrefix, err)
 		}
-		if err := d.downloadOne(ctx, s3Client, bucketDirPrefix, objectKey); err != nil {
-			return err
+		for _, obj := range listOutput.Contents {
+			if obj.Key == nil {
+				continue
+			}
+			objectKey := *obj.Key
+			if objectKey == strings.TrimSuffix(bucketDirPrefix, "/") || strings.HasSuffix(objectKey, "/") {
+				continue
+			}
+			if err := d.downloadOne(ctx, s3Client, bucketDirPrefix, objectKey); err != nil {
+				return err
+			}
+			count++
 		}
 	}
 
-	l.Info("download sbi files complete", zap.Int("count", len(listOutput.Contents)))
+	l.Info("download sbi files complete", zap.Int("count", count))
 	return nil
 }
 
