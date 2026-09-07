@@ -10,7 +10,72 @@ on:
       - docs/**
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      importer: ${{ steps.filter.outputs.importer }}
+      maw: ${{ steps.filter.outputs.maw }}
+      api: ${{ steps.filter.outputs.api }}
+      metrics: ${{ steps.filter.outputs.metrics }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: checkout
+        if: github.ref_type == 'branch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect image changes
+        id: filter
+        if: github.ref_type == 'branch'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          base: ${{ github.event.before }}
+          ref: ${{ github.sha }}
+          filters: |
+            importer:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/Dockerfile'
+              - 'cmd/mf-importer/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            maw:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/maw/Dockerfile'
+              - 'cmd/mf-importer-maw/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            api:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/api/Dockerfile'
+              - 'cmd/mf-importer-api/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            metrics:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/metrics/Dockerfile'
+              - 'cmd/mf-importer-metrics/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            frontend:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/fe/Dockerfile'
+              - 'frontend/**'
+
   build_and_push:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.importer == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,7 +95,7 @@ jobs:
             ghcr.io/azuki774/mf-importer
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -56,6 +121,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build_and_push_maw:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.maw == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,7 +141,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-maw
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -101,6 +168,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build_and_push_api:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,7 +188,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-api
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -146,6 +215,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build_and_push_metrics:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.metrics == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,7 +235,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-metrics
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -191,6 +262,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build_and_push_fe:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -209,7 +282,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-fe
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
