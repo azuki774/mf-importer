@@ -1,80 +1,158 @@
-# Docker Publish on Master Implementation Plan
+# Selective Docker Publish Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publish all five existing Docker images to GHCR for non-docs changes pushed to `master`, using the short commit hash as the image tag while preserving v* release publishing.
+**Goal:** Publish only Docker images affected by a `master` push under a bare short-SHA tag, while preserving full semver publishing for `v*` tags.
 
-**Architecture:** Extend the existing `.github/workflows/publish.yml` rather than creating a second workflow. Add a `master` push trigger with `docs/**` ignored, and add one SHA metadata rule to each existing image job; the current build, login, permissions, Dockerfiles, and release tags remain unchanged.
+**Architecture:** Add one change-detection job to the existing workflow and expose one output per image. Keep the five build jobs, gate each with its corresponding output or a tag-event override, and restrict the SHA metadata tag to branch events.
 
-**Tech Stack:** GitHub Actions, `docker/metadata-action`, `docker/build-push-action`, GitHub Container Registry, existing Go/Node Docker build definitions.
+**Tech Stack:** GitHub Actions, `dorny/paths-filter` v4.0.3, Docker metadata/build actions, GHCR.
 
 ---
 
-### Task 1: Extend the publish trigger and image tags
+### Task 1: Add image-level change detection
 
 **Files:**
-- Modify: `.github/workflows/publish.yml:3-7` for the push filters
-- Modify: `.github/workflows/publish.yml:28-32,71-75,115-119,159-163,203-207` for the five metadata tag lists
+- Modify: `.github/workflows/publish.yml`
 
-- [ ] **Step 1: Add the master push trigger while retaining v* tags**
+- [ ] **Step 1: Add the change-detection job**
 
-Change the workflow trigger to include both the existing release tags and master branch pushes, with docs-only filtering:
-
-```yaml
-on:
-  push:
-    branches:
-      - master
-    tags:
-      - v*
-    paths-ignore:
-      - docs/**
-```
-
-The `paths-ignore` filter must be `docs/**`, so a push containing both a docs change and a non-docs change still runs the workflow.
-
-- [ ] **Step 2: Add a bare short-SHA metadata tag to every image job**
-
-Prepend this rule to each of the five existing `tags:` blocks, preserving all existing semver and `latest` rules:
+Insert this job before the existing build jobs:
 
 ```yaml
-            type=sha,format=short,prefix=
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      importer: ${{ steps.filter.outputs.importer }}
+      maw: ${{ steps.filter.outputs.maw }}
+      api: ${{ steps.filter.outputs.api }}
+      metrics: ${{ steps.filter.outputs.metrics }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: checkout
+        if: github.ref_type == 'branch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect image changes
+        id: filter
+        if: github.ref_type == 'branch'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          base: ${{ github.event.before }}
+          ref: ${{ github.sha }}
+          filters: |
+            importer:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/Dockerfile'
+              - 'cmd/mf-importer/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            maw:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/maw/Dockerfile'
+              - 'cmd/mf-importer-maw/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            api:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/api/Dockerfile'
+              - 'cmd/mf-importer-api/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            metrics:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/metrics/Dockerfile'
+              - 'cmd/mf-importer-metrics/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+            frontend:
+              - '.dockerignore'
+              - '.github/workflows/publish.yml'
+              - 'build/fe/Dockerfile'
+              - 'frontend/**'
 ```
 
-The resulting metadata configuration for each job must retain these rules after the new line:
+- [ ] **Step 2: Gate every build job**
+
+Add the matching dependency and condition directly below each build job name:
 
 ```yaml
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=semver,pattern=latest
+  build_and_push:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.importer == 'true' }}
+
+  build_and_push_maw:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.maw == 'true' }}
+
+  build_and_push_api:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.api == 'true' }}
+
+  build_and_push_metrics:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.metrics == 'true' }}
+
+  build_and_push_fe:
+    needs: changes
+    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.frontend == 'true' }}
 ```
 
-`type=sha,format=short,prefix=` produces the short commit hash without the metadata action's default `sha-` prefix. The rule is available for master pushes; semver rules continue to apply to v* tag pushes.
+Do not change the five image names, Dockerfiles, registry credentials, platforms, or push settings.
 
-- [ ] **Step 3: Inspect the workflow diff and verify the five jobs are consistent**
+- [ ] **Step 3: Restrict short-SHA tags to master builds**
+
+Replace the SHA rule in every metadata `tags:` block with:
+
+```yaml
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+```
+
+Keep all four existing semver rules unchanged. Branch events therefore produce the bare short SHA, while tag events produce only the existing semver tags.
+
+- [ ] **Step 4: Inspect the implementation diff**
 
 Run:
 
 ```bash
+git diff --check
 git diff -- .github/workflows/publish.yml
-rg -n "type=sha|type=semver|paths-ignore|branches:|tags:" .github/workflows/publish.yml
+rg -c "dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d" .github/workflows/publish.yml
+rg -c "needs: changes" .github/workflows/publish.yml
+rg -c "type=sha,format=short,prefix=,enable=" .github/workflows/publish.yml
 ```
 
-Expected results:
+Expected: no whitespace errors; the three counts are `1`, `5`, and `5`.
 
-- `master`, `v*`, and `docs/**` appear in the trigger.
-- `type=sha,format=short,prefix=` appears exactly five times.
-- All five image names, Dockerfiles, `push: true`, GHCR login, and existing release tag rules remain present.
-- No unrelated workflow or repository files are modified.
+- [ ] **Step 5: Commit the workflow**
 
-### Task 2: Validate the workflow and repository
+```bash
+git add .github/workflows/publish.yml
+git diff --cached --stat
+git diff --cached
+git commit -m "ci: publish only affected images"
+```
+
+Expected: only `.github/workflows/publish.yml` is included in this commit.
+
+### Task 2: Validate the completed branch
 
 **Files:**
 - Verify: `.github/workflows/publish.yml`
-- Verify: all repository files through the existing test command
 
-- [ ] **Step 1: Run YAML and workflow checks available in the development shell**
+- [ ] **Step 1: Validate GitHub Actions syntax and expressions**
 
 Run:
 
@@ -82,9 +160,25 @@ Run:
 nix develop -c actionlint .github/workflows/publish.yml
 ```
 
-Expected: `actionlint` exits with status 0 and reports no diagnostics. If the development shell does not provide `actionlint`, parse the file with the repository's available YAML checker and record that limitation; do not alter workflow semantics to accommodate a missing local tool.
+Expected: exit status 0 with no diagnostics. If `actionlint` is not provided by the development shell, report the missing tool and continue with the static checks below.
 
-- [ ] **Step 2: Run the repository test suite**
+- [ ] **Step 2: Verify all change-to-image mappings**
+
+Run:
+
+```bash
+rg -n "^  changes:|^  build_and_push|needs: changes|if:.*github.ref_type|type=sha|type=semver|build/.+Dockerfile|cmd/mf-importer|frontend/|internal/|go.mod|go.sum|\.dockerignore" .github/workflows/publish.yml
+```
+
+Expected:
+
+- Each of the five build jobs has one `needs: changes` and the matching output condition.
+- All five conditions allow tag events, so `v*` builds every image.
+- All five SHA rules are enabled only for branch events.
+- Shared Go paths appear in all four Go filters and never in the frontend-only filter.
+- `.dockerignore` and the workflow path appear in all five filters.
+
+- [ ] **Step 3: Run the repository suite**
 
 Run:
 
@@ -92,27 +186,15 @@ Run:
 env -u GOROOT -u GOTOOLDIR make test
 ```
 
-Expected: `gofmt -l` emits no files, static checks succeed, and `go test -v ./...` passes. The environment cleanup avoids the documented Nix/mise Go toolchain mismatch.
+Expected: `gofmt -l` emits no files, vet and staticcheck succeed, and all Go tests pass.
 
-- [ ] **Step 3: Review the complete staged diff before committing**
+- [ ] **Step 4: Review branch state**
 
 Run:
 
 ```bash
 git status --short
-git diff --cached --stat
-git diff --cached
+git log --oneline --decorate -8
 ```
 
-Expected: only `.github/workflows/publish.yml` is staged for the implementation commit, and the diff contains no credentials, real financial data, generated files, or unrelated edits.
-
-- [ ] **Step 4: Commit the implementation**
-
-Run:
-
-```bash
-git add .github/workflows/publish.yml
-git commit -m "ci: publish images on master changes"
-```
-
-Expected: a new Conventional Commit on the feature branch `ci/publish-on-master`; do not merge or commit directly to `master`.
+Expected: the worktree is clean, the implementation commit is on `ci/publish-on-master`, and no commit was made directly to `master`.
