@@ -1,38 +1,56 @@
-# Docker イメージの master マージ時公開設計
+# Docker イメージの選択的公開設計
 
 ## 目的
 
-`master` にマージされた変更のうち、`docs/` 配下だけの変更を除き、既存の 5 つの Docker イメージを GitHub Container Registry へ公開する。公開イメージはコミットを特定できる短縮コミットハッシュでタグ付けする。
+`master` への push で、変更の影響を受ける Docker イメージだけを GitHub Container Registry へ公開する。master 用のタグは短縮コミット SHA とし、既存の `v*` タグ push による semver / `latest` 公開は維持する。
 
-## 対象範囲
+## 対象イメージ
 
-- 対象ブランチは `master`。
-- `docs/**` のみが変更された push は対象外とする。
-- `docs/**` とコードなどが同時に変更された push は対象とする。
-- 対象イメージは既存の次の 5 つとする。
-  - `ghcr.io/azuki774/mf-importer`
-  - `ghcr.io/azuki774/mf-importer-maw`
-  - `ghcr.io/azuki774/mf-importer-api`
-  - `ghcr.io/azuki774/mf-importer-metrics`
-  - `ghcr.io/azuki774/mf-importer-fe`
-- 既存の `v*` タグ push による semver / `latest` 公開は維持する。
+- `ghcr.io/azuki774/mf-importer`
+- `ghcr.io/azuki774/mf-importer-maw`
+- `ghcr.io/azuki774/mf-importer-api`
+- `ghcr.io/azuki774/mf-importer-metrics`
+- `ghcr.io/azuki774/mf-importer-fe`
 
-## 設計
+## イベント別の動作
 
-既存の `.github/workflows/publish.yml` を拡張する。`push` トリガーに `master` ブランチと `paths-ignore: ['docs/**']` を加え、現在の `v*` タグトリガーを残す。GitHub Actions のパスフィルターは変更された全パスが除外対象の場合だけ workflow をスキップするため、`docs/` と他のパスが混在する変更は実行される。
+### master push
 
-Docker metadata のタグ生成に短縮 SHA タグを追加する。master push では各イメージに短縮コミットハッシュを付与し、既存の v* タグ push では従来どおり semver と `latest` を生成する。タグ生成は既存の `docker/metadata-action` に集約し、5 ジョブで同じ方式を利用する。
+workflow の先頭に変更検出ジョブを置き、各イメージ用の真偽値を job output として公開する。後続の5つの build-and-push job は対応する output が `true` の場合だけ実行する。
 
-各ジョブの build context、Dockerfile、`linux/amd64`、GHCR ログイン、`packages: write` 権限は変更しない。
+`docker/metadata-action` は `type=sha,format=short,prefix=` を master push のときだけ有効にする。これにより、master から公開されるタグは `sha-` prefix のない短縮 SHA になる。
 
-## エラー処理と権限
+### v* タグ push
 
-- build、registry login、push のいずれかが失敗した場合は Actions job を失敗させる。
-- GitHub token は既存どおり `secrets.GITHUB_TOKEN` を使用し、workflow に新しい秘密情報を追加しない。
-- workflow の実行対象を `master` と v* に限定し、docs-only push では不要な publish を行わない。
+変更検出結果にかかわらず5イメージをすべて公開する。既存の version、major.minor、major、`latest` タグを維持し、短縮 SHA タグは追加しない。
 
-## 確認方法
+## 変更検出
 
-- YAML の構文と差分を確認する。
-- 変更内容が master push、docs-only 除外、docs 混在、v* タグ維持、短縮 SHA タグの要件を満たすことを静的に確認する。
-- 既存の `make test` を実行し、workflow 変更によるリポジトリ側の回帰がないことを確認する。
+`dorny/paths-filter` v4.0.3 をコミット SHA `ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d` に固定して利用する。master push の `before` と現在の SHA を比較し、次のルールで対象を判定する。
+
+| 変更パス | 再ビルド対象 |
+| --- | --- |
+| `frontend/**`, `build/fe/Dockerfile` | frontend |
+| `cmd/mf-importer/**`, `build/Dockerfile` | importer |
+| `cmd/mf-importer-maw/**`, `build/maw/Dockerfile` | maw |
+| `cmd/mf-importer-api/**`, `build/api/Dockerfile` | api |
+| `cmd/mf-importer-metrics/**`, `build/metrics/Dockerfile` | metrics |
+| `internal/**`, `go.mod`, `go.sum` | Go 4イメージ |
+| `.dockerignore`, `.github/workflows/publish.yml` | 5イメージすべて |
+
+`internal/**` は複数コマンドから利用される共有コードである。import graph を workflow 内で動的解析すると削除・移動・依存追加時の判定が複雑になるため、安全側に倒して Go 4イメージを再ビルドする。ドキュメント、テスト fixture、deployment 設定など、Docker build context の成果物に影響しない変更では build-and-push job を起動しない。
+
+## 構成と権限
+
+- 変更検出ジョブは checkout と path filter のみを実行する。
+- 既存5ジョブの build context、Dockerfile、`linux/amd64`、GHCR login、`packages: write` は維持する。
+- secrets は既存の `GITHUB_TOKEN` だけを利用する。
+- build、login、push の失敗は従来どおり該当 job の失敗として扱う。
+
+## 検証
+
+- `actionlint` で workflow の YAML、式、job dependency を検証する。
+- 差分を目視し、各フィルターと各 build job の対応、master と v* のタグ動作を確認する。
+- `make test` を実行してリポジトリ全体の回帰がないことを確認する。
+
+workflow YAML の構成変更であり、実行環境そのものをローカル単体テストで再現できないため、TDD の configuration-file 例外を適用する。代わりに `actionlint` と静的な対応関係の確認を完了条件とする。
