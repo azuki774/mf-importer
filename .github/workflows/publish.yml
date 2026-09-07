@@ -95,7 +95,7 @@ jobs:
             ghcr.io/azuki774/mf-importer
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -141,7 +141,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-maw
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -188,7 +188,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-api
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -235,7 +235,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-metrics
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -282,7 +282,7 @@ jobs:
             ghcr.io/azuki774/mf-importer-fe
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}

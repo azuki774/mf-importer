@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publish only Docker images affected by a `master` push under a bare short-SHA tag, while preserving full semver publishing for `v*` tags.
+**Goal:** Publish only Docker images affected by a `master` push, tagging both `master` and `v*` tag events with a bare short SHA while preserving full semver and `latest` publishing for `v*` tags.
 
-**Architecture:** Add one change-detection job to the existing workflow and expose one output per image. Keep the five build jobs, gate each with its corresponding output or a tag-event override, and restrict the SHA metadata tag to branch events.
+**Architecture:** Add one change-detection job to the existing workflow and expose one output per image. Keep the five build jobs, gate each with its corresponding output or a tag-event override, and enable the bare short-SHA metadata tag for both branch and tag events.
 
 **Tech Stack:** GitHub Actions, `dorny/paths-filter` v4.0.3, Docker metadata/build actions, GHCR.
 
@@ -112,15 +112,15 @@ Add the matching dependency and condition directly below each build job name:
 
 Do not change the five image names, Dockerfiles, registry credentials, platforms, or push settings.
 
-- [ ] **Step 3: Restrict short-SHA tags to master builds**
+- [ ] **Step 3: Enable short-SHA tags for branch and tag builds**
 
 Replace the SHA rule in every metadata `tags:` block with:
 
 ```yaml
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' }}
+            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
 ```
 
-Keep all four existing semver rules unchanged. Branch events therefore produce the bare short SHA, while tag events produce only the existing semver tags.
+Keep all four existing semver rules unchanged. Both branch and tag events therefore produce the bare short SHA; `v*` tag events also produce the existing version, major.minor, major, and `latest` tags.
 
 - [ ] **Step 4: Inspect the implementation diff**
 
@@ -174,7 +174,7 @@ Expected:
 
 - Each of the five build jobs has one `needs: changes` and the matching output condition.
 - All five conditions allow tag events, so `v*` builds every image.
-- All five SHA rules are enabled only for branch events.
+- All five SHA rules are enabled for both branch and tag events.
 - Shared Go paths appear in all four Go filters and never in the frontend-only filter.
 - `.dockerignore` and the workflow path appear in all five filters.
 
