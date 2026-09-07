@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.25.6 AS builder
+FROM golang:1.25.14 AS builder
 
 WORKDIR /src
 
@@ -16,7 +16,7 @@ RUN --mount=type=bind,target=. \
     -X main.build=$(git describe --tags)" \
     -o /bin/ ./...
 
-FROM gcr.io/distroless/base-debian12 AS runner
+FROM gcr.io/distroless/static-debian13 AS runner
 ENV TZ=Asia/Tokyo
 COPY --from=builder /bin/mf-importer-metrics /bin/mf-importer-metrics
 CMD ["start"]
