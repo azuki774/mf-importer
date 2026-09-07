@@ -2,7 +2,7 @@
 
 ## 目的
 
-`master` への push で、変更の影響を受ける Docker イメージだけを GitHub Container Registry へ公開する。master 用のタグは短縮コミット SHA とし、既存の `v*` タグ push による semver / `latest` 公開は維持する。
+`master` への push で、変更の影響を受ける Docker イメージだけを GitHub Container Registry へ公開する。`master` と `v*` タグ push のいずれにも短縮コミット SHA タグを付け、`v*` タグ push では既存の semver / `latest` タグも維持する。
 
 ## 対象イメージ
 
@@ -18,11 +18,11 @@
 
 workflow の先頭に変更検出ジョブを置き、各イメージ用の真偽値を job output として公開する。後続の5つの build-and-push job は対応する output が `true` の場合だけ実行する。
 
-`docker/metadata-action` は `type=sha,format=short,prefix=` を master push のときだけ有効にする。これにより、master から公開されるタグは `sha-` prefix のない短縮 SHA になる。
+`docker/metadata-action` は `type=sha,format=short,prefix=` を master と `v*` タグ push の両方で有効にする。これにより、両イベントから公開されるタグは `sha-` prefix のない短縮 SHA になる。
 
 ### v* タグ push
 
-変更検出結果にかかわらず5イメージをすべて公開する。既存の version、major.minor、major、`latest` タグを維持し、短縮 SHA タグは追加しない。
+変更検出結果にかかわらず5イメージをすべて公開する。短縮 SHA タグに加えて、既存の version、major.minor、major、`latest` タグを維持する。
 
 ## 変更検出
 
