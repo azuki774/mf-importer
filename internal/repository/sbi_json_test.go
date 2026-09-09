@@ -63,7 +63,7 @@ func TestSbiJSONOperator_LoadSbiJSON(t *testing.T) {
 	if len(holdings) != 4 {
 		t.Errorf("holdings = %d, want 4", len(holdings))
 	}
-	if snap.GrandTotalJPY != 1160000 {
+	if snap.GrandTotalJPY == nil || *snap.GrandTotalJPY != 1160000 {
 		t.Errorf("grand = %v", snap.GrandTotalJPY)
 	}
 	if holdings[0].Name != "ダミー銘柄A" {
