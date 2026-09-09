@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     go mod download -x
 
 RUN --mount=type=bind,target=. \
-    go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
+    CGO_ENABLED=0 go build -a -tags "netgo" -installsuffix netgo  -ldflags="-s -w -extldflags \"-static\" \
     -X main.version=$(git describe --tag --abbrev=0) \
     -X main.revision=$(git rev-list -1 HEAD) \
     -X main.build=$(git describe --tags)" \
