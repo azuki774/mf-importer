@@ -24,12 +24,8 @@ func TestParseSbiJSON_NewFormat(t *testing.T) {
 	if snap.SchemaVersion != 1 {
 		t.Errorf("schema_version = %d, want 1", snap.SchemaVersion)
 	}
-	if math.Abs(snap.GrandTotalJPY-1160000) > 0.01 {
-		t.Errorf("grand_total = %v, want 1160000", snap.GrandTotalJPY)
-	}
-	if snap.NisaTotalJPY != 600000 {
-		t.Errorf("nisa total = %v", snap.NisaTotalJPY)
-	}
+	requireFloat64Value(t, "grand_total", snap.GrandTotalJPY, 1160000)
+	requireFloat64Value(t, "nisa total", snap.NisaTotalJPY, 600000)
 	if len(holdings) != 4 {
 		t.Fatalf("holdings = %d, want 4", len(holdings))
 	}
@@ -119,6 +115,62 @@ func TestParseSbiJSON_NormalizesFetchedAtToDatabasePrecision(t *testing.T) {
 	}
 }
 
+func TestParseSbiJSON_DistinguishesMissingValuesFromZero(t *testing.T) {
+	raw := `{
+		"fetched_at":"2026-08-16T12:00:00Z",
+		"status":"ok",
+		"nisa":{
+			"total_jpy":0,
+			"domestic_stocks":{"holdings":[{"name":"ダミー銘柄A","prev_day_jpy":0,"prev_day_pct":0}]},
+			"us_stocks":{"holdings":[{"name":"ダミー米国株B","prev_day_jpy":0,"prev_day_pct":0}]}
+		},
+		"cash":{"jpy":{"amount":0}}
+	}`
+	snap, holdings, err := ParseSbiJSON([]byte(raw))
+	if err != nil {
+		t.Fatalf("ParseSbiJSON: %v", err)
+	}
+
+	requireFloat64Value(t, "nisa total", snap.NisaTotalJPY, 0)
+	if snap.NisaPrevDayJPY != nil {
+		t.Errorf("missing nisa prev-day = %v, want nil", *snap.NisaPrevDayJPY)
+	}
+	requireFloat64Value(t, "cash JPY amount", snap.CashJpyAmount, 0)
+	if snap.CashJpyValueJpy != nil {
+		t.Errorf("missing cash JPY value = %v, want nil", *snap.CashJpyValueJpy)
+	}
+	if snap.CashUsdAmount != nil || snap.OtherFundsAmount != nil {
+		t.Error("missing cash USD and other funds must remain nil")
+	}
+
+	if len(holdings) != 2 {
+		t.Fatalf("holdings = %d, want 2", len(holdings))
+	}
+	requireFloat64Value(t, "domestic prev-day", holdings[0].PrevDayJPY, 0)
+	if holdings[1].PrevDayJPY != nil || holdings[1].PrevDayPct != nil {
+		t.Error("US holding prev-day values must be nil when unavailable")
+	}
+}
+
+func TestParseSbiJSON_MaintenanceMarksNISAUnavailable(t *testing.T) {
+	raw := `{
+		"fetched_at":"2026-08-16T12:00:00Z",
+		"status":"maintenance",
+		"nisa":{"total_jpy":0},
+		"old_nisa":{"total_jpy":0},
+		"grand_total_jpy":0
+	}`
+	snap, _, err := ParseSbiJSON([]byte(raw))
+	if err != nil {
+		t.Fatalf("ParseSbiJSON: %v", err)
+	}
+
+	if snap.NisaTotalJPY != nil || snap.GrandTotalJPY != nil {
+		t.Error("maintenance NISA and incomplete grand total must be nil")
+	}
+	requireFloat64Value(t, "old NISA total", snap.OldNisaTotalJPY, 0)
+}
+
 func TestParseSbiJSON_ExampleNewFixture(t *testing.T) {
 	// Ensure the new format fixture (if present) roundtrips
 	data, err := os.ReadFile("../../test/sbi_example_new.json")
@@ -132,5 +184,15 @@ func TestParseSbiJSON_ExampleNewFixture(t *testing.T) {
 	_, _, err = ParseSbiJSON(data)
 	if err != nil {
 		t.Fatalf("parse new fixture: %v", err)
+	}
+}
+
+func requireFloat64Value(t *testing.T, name string, got *float64, want float64) {
+	t.Helper()
+	if got == nil {
+		t.Fatalf("%s = nil, want %v", name, want)
+	}
+	if math.Abs(*got-want) > 0.01 {
+		t.Errorf("%s = %v, want %v", name, *got, want)
 	}
 }

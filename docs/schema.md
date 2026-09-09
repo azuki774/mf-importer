@@ -165,13 +165,15 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`（照合�
 
 ## sbi_snapshot
 
-由来 migration: `005_sbi_snapshot.sql`
+由来 migration: `005_sbi_snapshot.sql`、nullable化と時刻COMMENT修正: `007_nullable_sbi_values.sql`
 
 用途: SBI から取得した資産サマリーを、取得時刻ごとのスナップショットとして保持する。
 
 SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 
-`fetched_at` は `DATETIME(6)` で、DB上は microsecond（マイクロ秒）精度です。`Assets.fetched_at (UTC, nanoseconds preserved)` は SQL COMMENT の転記であり、DB型がナノ秒精度を保証するという説明ではありません。
+`fetched_at` は `Asia/Tokyo` の壁時計時刻へ変換してから `DATETIME(6)` に保存するため、DB上は microsecond（マイクロ秒）精度です。
+
+`sbi_snapshot` の資産数値は、JSONに値が存在しない場合と実際のゼロを区別するためnullableです。`MAINTENANCE` / `ERROR` のNISA値と完全でない総額、および取得できない保有米国株の前日比は `NULL` として扱います。
 
 `status` の `scraper emits ...` や `schema_version` の `CurrentSchemaVersion` などは migration SQL の COMMENT を転記したものです。このリポジトリ内では、これらの外部契約を定義・説明しておらず、外部契約として断定しません。
 
@@ -182,79 +184,79 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
 | `id` | `INT AUTO_INCREMENT` | No | `—` | `—` |
-| `fetched_at` | `DATETIME(6)` | No | `—` | Assets.fetched_at (UTC, nanoseconds preserved) |
+| `fetched_at` | `DATETIME(6)` | No | `—` | Assets.fetched_at (Asia/Tokyo wall-clock, truncated to microseconds) |
 | `status` | `VARCHAR(16)` | No | `—` | OK\|MAINTENANCE\|ERROR (normalized to uppercase on ingest; scraper emits ok/maintenance) |
 | `schema_version` | `INT` | No | `—` | Assets.schema_version (CurrentSchemaVersion) |
-| `grand_total_jpy` | `DECIMAL(14,2)` | No | `—` | grand_total_jpy = nisa+old_nisa+cash+others |
+| `grand_total_jpy` | `DECIMAL(14,2)` | Yes | `—` | grand_total_jpy = nisa+old_nisa+cash+others; NULL when incomplete |
 
 #### NISA summary
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `nisa_total_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.total_jpy |
-| `nisa_prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.prev_day_jpy |
-| `nisa_prev_day_pct` | `DECIMAL(10,4)` | No | `—` | nisa.prev_day_pct |
-| `nisa_prev_month_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.prev_month_jpy |
-| `nisa_prev_month_pct` | `DECIMAL(10,4)` | No | `—` | nisa.prev_month_pct |
-| `nisa_pnl_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.pnl_jpy (評価損益) |
-| `nisa_pnl_pct` | `DECIMAL(10,4)` | No | `—` | nisa.pnl_pct |
+| `nisa_total_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.total_jpy |
+| `nisa_prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.prev_day_jpy |
+| `nisa_prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.prev_day_pct |
+| `nisa_prev_month_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.prev_month_jpy |
+| `nisa_prev_month_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.prev_month_pct |
+| `nisa_pnl_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.pnl_jpy (評価損益) |
+| `nisa_pnl_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.pnl_pct |
 
 #### NISA domestic stocks
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `nisa_domestic_value_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.domestic_stocks.value_jpy |
-| `nisa_domestic_pnl_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.domestic_stocks.pnl_jpy |
-| `nisa_domestic_pnl_pct` | `DECIMAL(10,4)` | No | `—` | nisa.domestic_stocks.pnl_pct |
-| `nisa_domestic_prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.domestic_stocks.prev_day_jpy |
-| `nisa_domestic_prev_day_pct` | `DECIMAL(10,4)` | No | `—` | nisa.domestic_stocks.prev_day_pct |
-| `nisa_domestic_prev_month_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.domestic_stocks.prev_month_jpy |
-| `nisa_domestic_prev_month_pct` | `DECIMAL(10,4)` | No | `—` | nisa.domestic_stocks.prev_month_pct |
+| `nisa_domestic_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.domestic_stocks.value_jpy |
+| `nisa_domestic_pnl_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.domestic_stocks.pnl_jpy |
+| `nisa_domestic_pnl_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.domestic_stocks.pnl_pct |
+| `nisa_domestic_prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.domestic_stocks.prev_day_jpy |
+| `nisa_domestic_prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.domestic_stocks.prev_day_pct |
+| `nisa_domestic_prev_month_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.domestic_stocks.prev_month_jpy |
+| `nisa_domestic_prev_month_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.domestic_stocks.prev_month_pct |
 
 #### NISA US stocks
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `nisa_us_value_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.us_stocks.value_jpy |
-| `nisa_us_pnl_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.us_stocks.pnl_jpy |
-| `nisa_us_pnl_pct` | `DECIMAL(10,4)` | No | `—` | nisa.us_stocks.pnl_pct |
-| `nisa_us_prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.us_stocks.prev_day_jpy (0 for US, no prev-day on foreign page) |
-| `nisa_us_prev_day_pct` | `DECIMAL(10,4)` | No | `—` | nisa.us_stocks.prev_day_pct |
-| `nisa_us_prev_month_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.us_stocks.prev_month_jpy |
-| `nisa_us_prev_month_pct` | `DECIMAL(10,4)` | No | `—` | nisa.us_stocks.prev_month_pct |
+| `nisa_us_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.us_stocks.value_jpy |
+| `nisa_us_pnl_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.us_stocks.pnl_jpy |
+| `nisa_us_pnl_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.us_stocks.pnl_pct |
+| `nisa_us_prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.us_stocks.prev_day_jpy |
+| `nisa_us_prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.us_stocks.prev_day_pct |
+| `nisa_us_prev_month_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.us_stocks.prev_month_jpy |
+| `nisa_us_prev_month_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.us_stocks.prev_month_pct |
 
 #### NISA funds
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `nisa_funds_value_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.funds.value_jpy |
-| `nisa_funds_pnl_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.funds.pnl_jpy |
-| `nisa_funds_pnl_pct` | `DECIMAL(10,4)` | No | `—` | nisa.funds.pnl_pct |
-| `nisa_funds_prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.funds.prev_day_jpy |
-| `nisa_funds_prev_day_pct` | `DECIMAL(10,4)` | No | `—` | nisa.funds.prev_day_pct |
-| `nisa_funds_prev_month_jpy` | `DECIMAL(14,2)` | No | `—` | nisa.funds.prev_month_jpy |
-| `nisa_funds_prev_month_pct` | `DECIMAL(10,4)` | No | `—` | nisa.funds.prev_month_pct |
+| `nisa_funds_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.funds.value_jpy |
+| `nisa_funds_pnl_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.funds.pnl_jpy |
+| `nisa_funds_pnl_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.funds.pnl_pct |
+| `nisa_funds_prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.funds.prev_day_jpy |
+| `nisa_funds_prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.funds.prev_day_pct |
+| `nisa_funds_prev_month_jpy` | `DECIMAL(14,2)` | Yes | `—` | nisa.funds.prev_month_jpy |
+| `nisa_funds_prev_month_pct` | `DECIMAL(10,4)` | Yes | `—` | nisa.funds.prev_month_pct |
 
 #### Old NISA
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `old_nisa_total_jpy` | `DECIMAL(14,2)` | No | `—` | old_nisa.total_jpy |
-| `old_nisa_prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | old_nisa.prev_day_jpy |
-| `old_nisa_prev_day_pct` | `DECIMAL(10,4)` | No | `—` | old_nisa.prev_day_pct |
-| `old_nisa_pnl_jpy` | `DECIMAL(14,2)` | No | `—` | old_nisa.pnl_jpy |
-| `old_nisa_pnl_pct` | `DECIMAL(10,4)` | No | `—` | old_nisa.pnl_pct |
+| `old_nisa_total_jpy` | `DECIMAL(14,2)` | Yes | `—` | old_nisa.total_jpy |
+| `old_nisa_prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | old_nisa.prev_day_jpy |
+| `old_nisa_prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | old_nisa.prev_day_pct |
+| `old_nisa_pnl_jpy` | `DECIMAL(14,2)` | Yes | `—` | old_nisa.pnl_jpy |
+| `old_nisa_pnl_pct` | `DECIMAL(10,4)` | Yes | `—` | old_nisa.pnl_pct |
 
 #### Cash / others
 
 | Column | Type | Null | Default | Description (COMMENT) |
 | --- | --- | --- | --- | --- |
-| `cash_jpy_amount` | `DECIMAL(14,2)` | No | `—` | cash.jpy.amount (== value_jpy for JPY) |
-| `cash_jpy_value_jpy` | `DECIMAL(14,2)` | No | `—` | cash.jpy.value_jpy |
-| `cash_usd_amount` | `DECIMAL(14,4)` | No | `—` | cash.usd.amount (USD) |
-| `cash_usd_value_jpy` | `DECIMAL(14,2)` | No | `—` | cash.usd.value_jpy (JPY converted) |
-| `other_funds_amount` | `DECIMAL(14,2)` | No | `—` | others.funds.amount |
-| `other_funds_value_jpy` | `DECIMAL(14,2)` | No | `—` | others.funds.value_jpy |
+| `cash_jpy_amount` | `DECIMAL(14,2)` | Yes | `—` | cash.jpy.amount (== value_jpy for JPY) |
+| `cash_jpy_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | cash.jpy.value_jpy |
+| `cash_usd_amount` | `DECIMAL(14,4)` | Yes | `—` | cash.usd.amount (USD) |
+| `cash_usd_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | cash.usd.value_jpy (JPY converted) |
+| `other_funds_amount` | `DECIMAL(14,2)` | Yes | `—` | others.funds.amount |
+| `other_funds_value_jpy` | `DECIMAL(14,2)` | Yes | `—` | others.funds.value_jpy |
 
 #### Timestamps
 
@@ -273,7 +275,7 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 
 ## sbi_holding
 
-由来 migration: `006_sbi_holding.sql`
+由来 migration: `006_sbi_holding.sql`、前日比nullable化: `007_nullable_sbi_values.sql`
 
 用途: SBI の各スナップショットに含まれる保有銘柄・商品の数量、単価、評価額および損益を保持する。
 
@@ -292,8 +294,8 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | `quantity` | `DECIMAL(18,6)` | No | `—` | Holding.quantity (口数/株数) |
 | `unit_cost` | `DECIMAL(18,6)` | No | `—` | Holding.unit_cost (取得単価, USD for US stocks, JPY for others) |
 | `unit_price` | `DECIMAL(18,6)` | No | `—` | Holding.unit_price (現在値) |
-| `prev_day_jpy` | `DECIMAL(14,2)` | No | `—` | Holding.prev_day_jpy (前日比円, 0 if unavailable for US) |
-| `prev_day_pct` | `DECIMAL(10,4)` | No | `—` | Holding.prev_day_pct (前日比%) |
+| `prev_day_jpy` | `DECIMAL(14,2)` | Yes | `—` | Holding.prev_day_jpy (per-unit JPY change; per 10k units for funds; NULL when unavailable) |
+| `prev_day_pct` | `DECIMAL(10,4)` | Yes | `—` | Holding.prev_day_pct (NULL when unavailable) |
 | `pnl_jpy` | `DECIMAL(14,2)` | No | `—` | Holding.pnl_jpy (評価損益 円) |
 | `pnl_pct` | `DECIMAL(10,4)` | No | `—` | Holding.pnl_pct (評価損益%) |
 | `value_jpy` | `DECIMAL(14,2)` | No | `—` | Holding.value_jpy (評価額 円) |
