@@ -173,7 +173,11 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 
 `fetched_at` は `Asia/Tokyo` の壁時計時刻へ変換してから `DATETIME(6)` に保存するため、DB上は microsecond（マイクロ秒）精度です。
 
-`sbi_snapshot` の資産数値は、JSONに値が存在しない場合と実際のゼロを区別するためnullableです。`MAINTENANCE` / `ERROR` のNISA値と完全でない総額、および取得できない保有米国株の前日比は `NULL` として扱います。
+資産値の `NULL` は、次の規則で取得不能を表します。
+
+- `OK` のスナップショットではすべての資産値が必須です。欠損時は取り込みエラーとなり、行を保存しません。明示的なゼロはゼロとして保存します。
+- `MAINTENANCE` / `ERROR` のスナップショットは取得試行の記録として行を保存しますが、すべての資産値を `NULL` とし、`sbi_holding` は保存しません。
+- 保有米国株の前日比は、`OK` でも仕様上取得できないため `sbi_holding.prev_day_jpy` と `sbi_holding.prev_day_pct` を `NULL` とします。
 
 `status` の `scraper emits ...` や `schema_version` の `CurrentSchemaVersion` などは migration SQL の COMMENT を転記したものです。このリポジトリ内では、これらの外部契約を定義・説明しておらず、外部契約として断定しません。
 

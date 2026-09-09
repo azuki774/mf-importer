@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,10 +47,10 @@ func TestParseSbiJSON_StatusNormalization(t *testing.T) {
 		want  SbiStatus
 		isErr bool
 	}{
-		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"ok","nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"us_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"funds":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]}},"old_nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[]},"cash":{"jpy":{"amount":0,"value_jpy":0},"usd":{"amount":0,"value_jpy":0}},"others":{"funds":{"amount":0,"value_jpy":0}},"grand_total_jpy":0}`, SbiStatusOK, false},
-		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"maintenance","nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"us_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"funds":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]}},"old_nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[]},"cash":{"jpy":{"amount":0,"value_jpy":0},"usd":{"amount":0,"value_jpy":0}},"others":{"funds":{"amount":0,"value_jpy":0}},"grand_total_jpy":0}`, SbiStatusMaintenance, false},
-		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"ERROR","nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"us_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"funds":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]}},"old_nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[]},"cash":{"jpy":{"amount":0,"value_jpy":0},"usd":{"amount":0,"value_jpy":0}},"others":{"funds":{"amount":0,"value_jpy":0}},"grand_total_jpy":0}`, SbiStatusError, false},
-		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"invalid","nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"us_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"funds":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]}},"old_nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[]},"cash":{"jpy":{"amount":0,"value_jpy":0},"usd":{"amount":0,"value_jpy":0}},"others":{"funds":{"amount":0,"value_jpy":0}},"grand_total_jpy":0}`, "", true},
+		{validSbiOKJSON(), SbiStatusOK, false},
+		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"maintenance"}`, SbiStatusMaintenance, false},
+		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"ERROR"}`, SbiStatusError, false},
+		{`{"fetched_at":"2026-08-16T12:00:00Z","status":"invalid"}`, "", true},
 	}
 	for _, tt := range tests {
 		snap, _, err := ParseSbiJSON([]byte(tt.in))
@@ -72,7 +73,7 @@ func TestParseSbiJSON_MissingFetchedAt(t *testing.T) {
 
 func TestSbiHolding_Sections(t *testing.T) {
 	// Verify holdings are correctly sectioned and serializable
-	raw := `{"fetched_at":"2026-08-16T12:00:00Z","status":"ok","schema_version":1,"nisa":{"total_jpy":100,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":10,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"A","quantity":1,"unit_cost":1,"unit_price":1,"value_jpy":10}]},"us_stocks":{"value_jpy":20,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"B","quantity":2,"unit_cost":2,"unit_price":2,"value_jpy":20}]},"funds":{"value_jpy":30,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"C","quantity":3,"unit_cost":3,"unit_price":3,"value_jpy":30}]}},"old_nisa":{"total_jpy":40,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[{"name":"D","quantity":4,"unit_cost":4,"unit_price":4,"value_jpy":40}]},"cash":{"jpy":{"amount":5,"value_jpy":5},"usd":{"amount":6,"value_jpy":6}},"others":{"funds":{"amount":7,"value_jpy":7}},"grand_total_jpy":158}`
+	raw := `{"fetched_at":"2026-08-16T12:00:00Z","status":"ok","schema_version":1,"nisa":{"total_jpy":100,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":10,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"ダミー国内株A","quantity":1,"unit_cost":1,"unit_price":1,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"value_jpy":10}]},"us_stocks":{"value_jpy":20,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"ダミー米国株B","quantity":2,"unit_cost":2,"unit_price":2,"prev_day_jpy":99,"prev_day_pct":99,"pnl_jpy":0,"pnl_pct":0,"value_jpy":20}]},"funds":{"value_jpy":30,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[{"name":"ダミー投信C","quantity":3,"unit_cost":3,"unit_price":3,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"value_jpy":30}]}},"old_nisa":{"total_jpy":40,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[{"name":"ダミー旧NISA投信D","quantity":4,"unit_cost":4,"unit_price":4,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"value_jpy":40}]},"cash":{"jpy":{"amount":5,"value_jpy":5},"usd":{"amount":6,"value_jpy":6}},"others":{"funds":{"amount":7,"value_jpy":7}},"grand_total_jpy":158}`
 	snap, holdings, err := ParseSbiJSON([]byte(raw))
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -92,6 +93,14 @@ func TestSbiHolding_Sections(t *testing.T) {
 			t.Errorf("missing section %s", s)
 		}
 	}
+	for _, holding := range holdings {
+		if holding.Section == "nisa_us" && (holding.PrevDayJPY != nil || holding.PrevDayPct != nil) {
+			t.Error("US holding prev-day values must always be nil")
+		}
+		if holding.Section != "nisa_us" && (holding.PrevDayJPY == nil || holding.PrevDayPct == nil) {
+			t.Errorf("%s holding prev-day values must be present", holding.Section)
+		}
+	}
 	// json roundtrip
 	b, _ := json.Marshal(snap)
 	var m map[string]interface{}
@@ -103,7 +112,7 @@ func TestSbiHolding_Sections(t *testing.T) {
 }
 
 func TestParseSbiJSON_NormalizesFetchedAtToDatabasePrecision(t *testing.T) {
-	snap, _, err := ParseSbiJSON([]byte(`{"fetched_at":"2026-08-16T11:46:51.908856153+09:00","status":"ok"}`))
+	snap, _, err := ParseSbiJSON([]byte(`{"fetched_at":"2026-08-16T11:46:51.908856153+09:00","status":"maintenance"}`))
 	if err != nil {
 		t.Fatalf("ParseSbiJSON: %v", err)
 	}
@@ -115,60 +124,62 @@ func TestParseSbiJSON_NormalizesFetchedAtToDatabasePrecision(t *testing.T) {
 	}
 }
 
-func TestParseSbiJSON_DistinguishesMissingValuesFromZero(t *testing.T) {
-	raw := `{
-		"fetched_at":"2026-08-16T12:00:00Z",
-		"status":"ok",
-		"nisa":{
-			"total_jpy":0,
-			"domestic_stocks":{"holdings":[{"name":"ダミー銘柄A","prev_day_jpy":0,"prev_day_pct":0}]},
-			"us_stocks":{"holdings":[{"name":"ダミー米国株B","prev_day_jpy":0,"prev_day_pct":0}]}
-		},
-		"cash":{"jpy":{"amount":0}}
-	}`
-	snap, holdings, err := ParseSbiJSON([]byte(raw))
-	if err != nil {
-		t.Fatalf("ParseSbiJSON: %v", err)
+func TestParseSbiJSON_OKRejectsMissingRequiredValues(t *testing.T) {
+	_, _, err := ParseSbiJSON([]byte(`{"fetched_at":"2026-08-16T12:00:00Z","status":"ok","grand_total_jpy":0}`))
+	if err == nil {
+		t.Fatal("expected error for missing required OK values")
 	}
-
-	requireFloat64Value(t, "nisa total", snap.NisaTotalJPY, 0)
-	if snap.NisaPrevDayJPY != nil {
-		t.Errorf("missing nisa prev-day = %v, want nil", *snap.NisaPrevDayJPY)
-	}
-	requireFloat64Value(t, "cash JPY amount", snap.CashJpyAmount, 0)
-	if snap.CashJpyValueJpy != nil {
-		t.Errorf("missing cash JPY value = %v, want nil", *snap.CashJpyValueJpy)
-	}
-	if snap.CashUsdAmount != nil || snap.OtherFundsAmount != nil {
-		t.Error("missing cash USD and other funds must remain nil")
-	}
-
-	if len(holdings) != 2 {
-		t.Fatalf("holdings = %d, want 2", len(holdings))
-	}
-	requireFloat64Value(t, "domestic prev-day", holdings[0].PrevDayJPY, 0)
-	if holdings[1].PrevDayJPY != nil || holdings[1].PrevDayPct != nil {
-		t.Error("US holding prev-day values must be nil when unavailable")
+	if !strings.Contains(err.Error(), "nisa") || !strings.Contains(err.Error(), "cash") {
+		t.Fatalf("error = %q, want missing field paths", err)
 	}
 }
 
-func TestParseSbiJSON_MaintenanceMarksNISAUnavailable(t *testing.T) {
-	raw := `{
-		"fetched_at":"2026-08-16T12:00:00Z",
-		"status":"maintenance",
-		"nisa":{"total_jpy":0},
-		"old_nisa":{"total_jpy":0},
-		"grand_total_jpy":0
-	}`
-	snap, _, err := ParseSbiJSON([]byte(raw))
+func TestParseSbiJSON_OKAcceptsExplicitZeroValues(t *testing.T) {
+	snap, holdings, err := ParseSbiJSON([]byte(validSbiOKJSON()))
 	if err != nil {
 		t.Fatalf("ParseSbiJSON: %v", err)
 	}
-
-	if snap.NisaTotalJPY != nil || snap.GrandTotalJPY != nil {
-		t.Error("maintenance NISA and incomplete grand total must be nil")
+	requireFloat64Value(t, "grand total", snap.GrandTotalJPY, 0)
+	requireFloat64Value(t, "nisa total", snap.NisaTotalJPY, 0)
+	requireFloat64Value(t, "cash JPY amount", snap.CashJpyAmount, 0)
+	if len(holdings) != 0 {
+		t.Fatalf("holdings = %d, want 0", len(holdings))
 	}
-	requireFloat64Value(t, "old NISA total", snap.OldNisaTotalJPY, 0)
+}
+
+func TestParseSbiJSON_OKRejectsMissingHoldingValues(t *testing.T) {
+	raw := strings.Replace(validSbiOKJSON(), `"holdings":[]`, `"holdings":[{"name":"ダミー国内株A"}]`, 1)
+	_, _, err := ParseSbiJSON([]byte(raw))
+	if err == nil {
+		t.Fatal("expected error for missing required holding values")
+	}
+	if !strings.Contains(err.Error(), "nisa.domestic_stocks.holdings[0]") || !strings.Contains(err.Error(), "quantity") {
+		t.Fatalf("error = %q, want holding path and missing field", err)
+	}
+}
+
+func TestParseSbiJSON_NonOKMarksAllValuesUnavailable(t *testing.T) {
+	for _, status := range []string{"maintenance", "error"} {
+		t.Run(status, func(t *testing.T) {
+			raw := strings.Replace(validSbiOKJSON(), `"status":"ok"`, `"status":"`+status+`"`, 1)
+			snap, holdings, err := ParseSbiJSON([]byte(raw))
+			if err != nil {
+				t.Fatalf("ParseSbiJSON: %v", err)
+			}
+
+			snapshotValue := reflect.ValueOf(snap).Elem()
+			snapshotType := snapshotValue.Type()
+			float64PointerType := reflect.TypeOf((*float64)(nil))
+			for index := 0; index < snapshotValue.NumField(); index++ {
+				if snapshotType.Field(index).Type == float64PointerType && !snapshotValue.Field(index).IsNil() {
+					t.Errorf("%s must be nil for %s", snapshotType.Field(index).Name, status)
+				}
+			}
+			if len(holdings) != 0 {
+				t.Fatalf("holdings = %d, want 0", len(holdings))
+			}
+		})
+	}
 }
 
 func TestParseSbiJSON_ExampleNewFixture(t *testing.T) {
@@ -195,4 +206,8 @@ func requireFloat64Value(t *testing.T, name string, got *float64, want float64) 
 	if math.Abs(*got-want) > 0.01 {
 		t.Errorf("%s = %v, want %v", name, *got, want)
 	}
+}
+
+func validSbiOKJSON() string {
+	return `{"fetched_at":"2026-08-16T12:00:00Z","status":"ok","schema_version":1,"nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"pnl_jpy":0,"pnl_pct":0,"domestic_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"us_stocks":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]},"funds":{"value_jpy":0,"pnl_jpy":0,"pnl_pct":0,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":0,"prev_month_pct":0,"holdings":[]}},"old_nisa":{"total_jpy":0,"prev_day_jpy":0,"prev_day_pct":0,"pnl_jpy":0,"pnl_pct":0,"funds":[]},"cash":{"jpy":{"amount":0,"value_jpy":0},"usd":{"amount":0,"value_jpy":0}},"others":{"funds":{"amount":0,"value_jpy":0}},"grand_total_jpy":0}`
 }

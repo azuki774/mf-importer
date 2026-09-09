@@ -75,7 +75,18 @@ SET `grand_total_jpy` = NULL,
     `nisa_funds_prev_day_jpy` = NULL,
     `nisa_funds_prev_day_pct` = NULL,
     `nisa_funds_prev_month_jpy` = NULL,
-    `nisa_funds_prev_month_pct` = NULL
+    `nisa_funds_prev_month_pct` = NULL,
+    `old_nisa_total_jpy` = NULL,
+    `old_nisa_prev_day_jpy` = NULL,
+    `old_nisa_prev_day_pct` = NULL,
+    `old_nisa_pnl_jpy` = NULL,
+    `old_nisa_pnl_pct` = NULL,
+    `cash_jpy_amount` = NULL,
+    `cash_jpy_value_jpy` = NULL,
+    `cash_usd_amount` = NULL,
+    `cash_usd_value_jpy` = NULL,
+    `other_funds_amount` = NULL,
+    `other_funds_value_jpy` = NULL
 WHERE `status` IN ('MAINTENANCE', 'ERROR');
 
 UPDATE `sbi_holding`
