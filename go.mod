@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.110.0
 	github.com/getkin/kin-openapi v0.147.0
-	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-chi/chi/v5 v5.3.2
 	github.com/jarcoal/httpmock v1.4.2
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/prometheus/client_golang v1.24.1
