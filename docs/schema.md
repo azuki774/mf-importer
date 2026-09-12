@@ -2,7 +2,7 @@
 
 ## 正本と適用
 
-DB スキーマの正本は `migration/db/*.sql` です。マイグレーションの適用は sql-migrate の `make migration` で行います。この文書は、AI または人間がマイグレーションと同じ変更で手更新する手管理の説明書です。
+DB スキーマの正本は `migration/db/*.sql` です。マイグレーションは importer 起動時、または `make migration` / `mf-importer migrate up` で、埋め込み SQL を sql-migrate の Go API から適用します。この文書は、AI または人間がマイグレーションと同じ変更で手更新する手管理の説明書です。
 
 ## テーブル一覧
 
@@ -332,3 +332,25 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 1. スキーマ変更では新しい migration を `migration/db/*.sql` に追加し、適用済み migration は変更しない。
 2. 未適用の作業中変更であれば、SQL とこの文書を同期する。
 3. 文書更新後、`make migration` などでマイグレーションの適用を確認する。
+
+
+## マイグレーションの運用
+
+- `start` と `sbi-import` だけが処理前に未適用の Up を適用する。`start --dry-run`、API・metrics・maw は適用しない。API 等を先に更新する場合は、対応する新しい importer の `migrate up` を先に実行する。
+- `migration/db/*.sql` のファイル名は履歴 ID である。既存 SQL と `gorp_migrations` は変更・初期化しない。SQL の追加後はバイナリを再ビルドする。バイナリにない履歴を持つ DB への適用はエラーとし、自動ダウングレードしない。
+- DB 名に対応する名前付きロックを、履歴確認・SQL 適用・履歴更新の全体で保持する。取得待ちは60秒。接続が失われた場合は、ロックを失ったまま再接続して処理を続けない。
+- MariaDB の DDL は暗黙コミットされるため、複数ステートメントの途中失敗ではスキーマだけ一部変更され、失敗した migration の履歴が未登録になり得る。自動 Down やアプリ内での適用再試行は行わない。再起動時は未適用分を再確認するため、障害時は Job 等の再試行を止めてから復旧する。
+- 失敗時は安全なログの migration ID・MySQL エラー番号・失敗段階を確認し、管理者がスキーマと履歴を照合する。必要に応じてバックアップから戻すか部分適用を修復し、整合が取れてから `migrate up` を再実行する。履歴だけを自動で適用済みにしない。
+- 手動ロールバックは `mf-importer migrate down`（既定1件）、件数指定は `--limit N`、全件は `--limit 0`。Down にはテーブル削除や nullable から NOT NULL への変更があるため、実行前にバックアップ・データ条件・アプリ互換性を確認する。アプリの旧版への切替だけで自動 Down はしない。
+- 既存の外部マイグレーション Job はこのロックに参加しない。ashley-infra の切替は別作業とし、旧 Job と importer が同時にマイグレーションしないよう調整する。
+
+### 統合テスト
+
+`MF_MIGRATION_TEST_DSN` に明示的に指定した使い捨て MariaDB サーバーでのみ実行する。テストは専用 DB を新規作成・削除するので、テスト用ユーザーにはその権限が必要。実 DB の接続設定は指定しない。
+
+```bash
+MF_MIGRATION_TEST_DSN='root:password@tcp(127.0.0.1:3306)/?parseTime=true' \
+  go test -v ./internal/migration ./cmd/mf-importer
+```
+
+CI は専用 MariaDB コンテナーを使用し、既存履歴からの更新、再実行、Up / Down、排他制御、途中失敗、importer の起動順序を確認する。

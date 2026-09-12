@@ -1,5 +1,4 @@
 SHELL=/bin/bash
-SQL_MIGRATE_BIN=../vendor_ci/sql-migrate # based by 'migration' Dir
 CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-fe
@@ -42,9 +41,7 @@ test:
 	go test -v ./...
 
 migration:
-	cd migration && \
-	${SQL_MIGRATE_BIN} up -env=local && \
-	cd ../
+	go run ./cmd/mf-importer migrate up
 
 generate:
 	oapi-codegen -package "openapi" -generate "chi-server" ${OPENAPI_YAML} > internal/openapi/server.gen.go

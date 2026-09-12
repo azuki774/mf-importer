@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	migrate "github.com/rubenv/sql-migrate"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -79,55 +80,37 @@ func runSbiImport() error {
 	}
 
 	targetDir := sbiInputDir
+	var month string
 	if mode == sbiS3Mode {
-		month, err := resolveSbiMonth(sbiMonth, time.Now())
+		month, err = resolveSbiMonth(sbiMonth, time.Now())
 		if err != nil {
 			return err
 		}
+	} else {
+		targetDir, err = filepath.Abs(targetDir)
+		if err != nil {
+			return fmt.Errorf("resolve SBI input directory: %w", err)
+		}
+	}
+	db, err := openImporterDatabase()
+	if err != nil {
+		return err
+	}
+	defer db.CloseDB()
+	if err := applyMigrations(ctx, l, db, migrate.Up, 0); err != nil {
+		return err
+	}
+	if mode == sbiS3Mode {
 		targetDir, err = os.MkdirTemp("", "mf-importer-sbi-")
 		if err != nil {
 			return fmt.Errorf("create SBI staging directory: %w", err)
 		}
 		defer os.RemoveAll(targetDir)
-
 		l.Info("start SBI S3 download", zap.String("month", month))
 		if err := repository.NewSbiDownloader(targetDir).StartMonth(ctx, month); err != nil {
 			return err
 		}
-	} else {
-		abs, err := filepath.Abs(targetDir)
-		if err != nil {
-			return fmt.Errorf("resolve SBI input directory: %w", err)
-		}
-		targetDir = abs
 	}
-
-	host := envOr("DB_HOST", "db_host")
-	port := envOr("DB_PORT", "db_port")
-	user := envOr("DB_USER", "db_user")
-	pass := envOr("DB_PASS", "db_pass")
-	name := envOr("DB_NAME", "db_name")
-	if host == "" {
-		host = "127.0.0.1"
-	}
-	if port == "" {
-		port = "3306"
-	}
-	if user == "" {
-		user = "root"
-	}
-	if pass == "" {
-		pass = "password"
-	}
-	if name == "" {
-		name = "mfimporter"
-	}
-
-	db, err := repository.NewDBRepository(host, port, user, pass, name)
-	if err != nil {
-		return fmt.Errorf("connect DB for SBI import: %w", err)
-	}
-	defer db.CloseDB()
 
 	operator := &repository.SbiJSONOperator{Logger: l}
 	importer := service.NewSbiImporter(l, db, operator)
