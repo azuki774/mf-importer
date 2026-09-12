@@ -22,22 +22,40 @@ jobs:
       - name: Build
         run: make bin
 
-      - name: Ready for MariaDB
-        run: until mysql -u root -ppassword -h 127.0.0.1 -e '\q'; do sleep 1; done  # DBが起動して応答できるまで待つ
-
-      - name: Migration
-        run: make migration
-
-      - name: Migration Down
-        run: |
-          cd migration; \
-          ${SQL_MIGRATE_BIN} down -limit=0 -env=local;
+      - name: Migration integration tests
+        run: go test -v ./internal/migration ./cmd/mf-importer
         env:
-          SQL_MIGRATE_BIN: "../vendor_ci/sql-migrate"
+          MF_MIGRATION_TEST_DSN: "root:password@tcp(127.0.0.1:3306)/?parseTime=true"
+
+      - name: Embedded CLI outside the source directory
+        run: |
+          cd /tmp
+          "$GITHUB_WORKSPACE/build/bin/mf-importer" migrate up
+          "$GITHUB_WORKSPACE/build/bin/mf-importer" migrate up
+          "$GITHUB_WORKSPACE/build/bin/mf-importer" migrate down --limit 0
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          DB_NAME: mfimporter
+          DB_USER: root
+          DB_PASS: password
+
+      - name: Embedded SQL in the final image
+        run: |
+          docker build -t mf-importer-migration-test -f build/Dockerfile .
+          docker run --rm --network host \
+            -e DB_HOST=127.0.0.1 -e DB_PORT=3306 \
+            -e DB_NAME=mfimporter -e DB_USER=root -e DB_PASS=password \
+            mf-importer-migration-test migrate up
 
     services:
       mariadb:
         image: mariadb:11
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=2s
+          --health-timeout=5s
+          --health-retries=30
         ports:
           - "3306:3306"
         env:

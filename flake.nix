@@ -51,8 +51,6 @@
             # Build tools
             gnumake
             
-            # SQL migration tool
-            # Note: sql-migrate is in vendor_ci/, so we don't need it from nixpkgs
           ];
 
           shellHook = ''
