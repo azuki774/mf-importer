@@ -1,8 +1,8 @@
 # DB スキーマ説明書
 
-## 正本と適用
+## スキーマ定義
 
-DB スキーマの正本は `migration/db/*.sql` です。マイグレーションの適用は sql-migrate の `make migration` で行います。この文書は、AI または人間がマイグレーションと同じ変更で手更新する手管理の説明書です。
+DB スキーマは `migration/db/*.sql` に定義されています。マイグレーションは importer 起動時、または `make migration` / `mf-importer migrate up` で、埋め込み SQL を sql-migrate の Go API から適用します。
 
 ## テーブル一覧
 
@@ -326,9 +326,3 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | UNIQUE KEY | — | なし |
 | INDEX | `idx_snapshot_id` | `snapshot_id` |
 | INDEX | `idx_snapshot_section` | `snapshot_id`, `section` |
-
-## 更新手順
-
-1. スキーマ変更では新しい migration を `migration/db/*.sql` に追加し、適用済み migration は変更しない。
-2. 未適用の作業中変更であれば、SQL とこの文書を同期する。
-3. 文書更新後、`make migration` などでマイグレーションの適用を確認する。

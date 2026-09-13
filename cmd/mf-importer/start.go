@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	migrate "github.com/rubenv/sql-migrate"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -52,38 +53,8 @@ func init() {
 func startMain() error {
 	l := logger.NewLogger()
 	ctx := context.Background()
-	host := envOr("DB_HOST", "db_host")
-	port := envOr("DB_PORT", "db_port")
-	user := envOr("DB_USER", "db_user")
-	pass := envOr("DB_PASS", "db_pass")
-	name := envOr("DB_NAME", "db_name")
 	csvEncoding := strings.ToLower(os.Getenv("csv_encoding"))
 
-	if withDownload {
-		l.Info("start s3 download: mf csv")
-		downloader := repository.NewDownloader(inputDir)
-		if err := downloader.Start(ctx); err != nil {
-			l.Error("s3 download failed", zap.Error(err))
-			return err
-		}
-		l.Info("complete s3 download: mf csv")
-	}
-
-	if host == "" {
-		host = "127.0.0.1"
-	}
-	if port == "" {
-		port = "3306"
-	}
-	if user == "" {
-		user = "root"
-	}
-	if pass == "" {
-		pass = "password"
-	}
-	if name == "" {
-		name = "mfimporter"
-	}
 	if csvEncoding == "" {
 		csvEncoding = "utf8"
 	}
@@ -91,25 +62,24 @@ func startMain() error {
 		return fmt.Errorf("unsupported csv_encoding: %q (expected utf8 or sjis)", csvEncoding)
 	}
 
-	l.Info("using DB info",
-		zap.String("DB_HOST", host),
-		zap.String("DB_PORT", port),
-		zap.String("DB_NAME", name),
-		zap.String("DB_USER", user),
-		zap.String("DB_PASS", pass),
-	)
-	db, err := repository.NewDBRepository(
-		host,
-		port,
-		user,
-		pass,
-		name,
-	)
+	db, err := openImporterDatabase()
 	if err != nil {
-		l.Error("failed to connect DB", zap.Error(err))
 		return err
 	}
 	defer db.CloseDB()
+
+	if !dryRun {
+		if err := applyMigrations(ctx, l, db, migrate.Up, 0); err != nil {
+			return err
+		}
+	}
+	if withDownload {
+		l.Info("start s3 download: mf csv")
+		if err := repository.NewDownloader(inputDir).Start(ctx); err != nil {
+			return err
+		}
+		l.Info("complete s3 download: mf csv")
+	}
 
 	l.Info("using importer config", zap.String("csv_encoding", csvEncoding))
 	importer := service.NewImporter(l, db, inputDir, dryRun, csvEncoding)
