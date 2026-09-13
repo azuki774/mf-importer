@@ -1,10 +1,10 @@
 # API ドキュメント
 
-## 正本と確認方法
+## API 仕様
 
-API の正本は `internal/openapi/mfimporter-api.yaml` です。
+API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 
-生成コードは `make generate` で `internal/openapi/*.gen.go` に生成されます。生成コードは手編集しません。
+生成コードは `make generate` で `internal/openapi/*.gen.go` に生成されます。
 
 モック API の確認方法は [`docs/local-verify.md`](local-verify.md) を参照してください。`make mock-api` でモック API を起動し、curl で各エンドポイントを確認できます。`make report` では一覧・件数・ルールを集約したサマリを確認できます。
 
@@ -34,9 +34,3 @@ API の正本は `internal/openapi/mfimporter-api.yaml` です。
 - `DetailsCount`: `count` (integer)。必須: `count`。
 - `Rule`: `id` (integer)、`fieldName` (string)、`value` (string)、`categoryId` (integer)、`exactMatch` (integer, 0-1)。必須: `id`, `fieldName`, `value`, `categoryId`, `exactMatch`。
 - `RuleRequest`: `fieldName` (string)、`value` (string)、`categoryId` (integer)、`exactMatch` (integer, 0-1)。必須: `fieldName`, `value`, `categoryId`, `exactMatch`。
-
-## 更新手順
-
-1. `internal/openapi/mfimporter-api.yaml` を編集する。
-2. `make generate` を実行して `internal/openapi/*.gen.go` を生成する。生成コードは手編集しない。
-3. この案内表とスキーマ概要を YAML に合わせて更新する。

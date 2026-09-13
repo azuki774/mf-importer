@@ -39,9 +39,9 @@ mf-importer migrate down # 直前の1件を戻す（手動操作のみ）
 mf-importer migrate down --limit 0 # 全件を戻す。空の検証 DB 用
 ```
 
-接続には `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASS` / `DB_NAME` を使い、旧小文字名も引き続き利用できます（大文字優先）。未指定時の値は従来のローカル開発用設定です。DB とユーザーは事前作成し、対象 DB の DDL と履歴の読み書きに必要な権限を付与してください。
+接続には `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASS` / `DB_NAME` を使い、旧小文字名も引き続き利用できます（大文字優先）。未指定時の値は従来のローカル開発用設定です。
 
-同じ DB への適用は MariaDB の名前付きロックで直列化し、取得待ちは60秒です。失敗時は非ゼロ終了し、取り込みに進みません。復旧と運用切替は [DB スキーマ文書](docs/schema.md#マイグレーションの運用) を参照してください。
+同じ DB への適用は MariaDB の名前付きロックで直列化し、取得待ちは60秒です。失敗時は非ゼロ終了し、取り込みに進みません。
 
 ## 開発
 
@@ -53,7 +53,7 @@ make test # gofmt / vet / staticcheck / go test
 
 ## Docs
 
-- API ドキュメント: [docs/api.md](docs/api.md)（仕様の正本: `internal/openapi/mfimporter-api.yaml`）
+- API ドキュメント: [docs/api.md](docs/api.md)（OpenAPI 定義: `internal/openapi/mfimporter-api.yaml`）
 - DB スキーマの説明: [docs/schema.md](docs/schema.md)
 - S3 取り込みの詳細: [docs/s3-download.md](docs/s3-download.md)
 - SBI JSON取り込み: [docs/sbi-import.md](docs/sbi-import.md)
