@@ -31,6 +31,16 @@ func newSbiSQLMock(t *testing.T) (*DBClient, sqlmock.Sqlmock) {
 	return &DBClient{Conn: gormDB}, mock
 }
 
+func expectSbiSnapshotLookup(mock sqlmock.Sqlmock, exists bool) {
+	rows := sqlmock.NewRows([]string{"id"})
+	if exists {
+		rows.AddRow(41)
+	}
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `id` FROM `sbi_snapshot` WHERE fetched_at = ? LIMIT ?")).
+		WithArgs(sqlmock.AnyArg(), 1).
+		WillReturnRows(rows)
+}
+
 func TestDBClient_ImportSbiSnapshot_New(t *testing.T) {
 	db, mock := newSbiSQLMock(t)
 	snapshot := &model.SbiSnapshot{
@@ -39,6 +49,7 @@ func TestDBClient_ImportSbiSnapshot_New(t *testing.T) {
 	}
 	holdings := []model.SbiHolding{{Name: "ダミー銘柄A"}, {Name: "ダミー銘柄B"}}
 
+	expectSbiSnapshotLookup(mock, false)
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnResult(sqlmock.NewResult(42, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_holding`")).WillReturnResult(sqlmock.NewResult(1, 2))
@@ -70,9 +81,7 @@ func TestDBClient_ImportSbiSnapshot_DuplicateIsSkipped(t *testing.T) {
 	}
 	holdings := []model.SbiHolding{{Name: "ダミー銘柄A"}}
 
-	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectCommit()
+	expectSbiSnapshotLookup(mock, true)
 
 	inserted, err := db.ImportSbiSnapshot(t.Context(), snapshot, holdings)
 	if err != nil {
@@ -89,6 +98,62 @@ func TestDBClient_ImportSbiSnapshot_DuplicateIsSkipped(t *testing.T) {
 	}
 }
 
+func TestDBClient_ImportSbiSnapshot_DuplicateRaceIsSkipped(t *testing.T) {
+	db, mock := newSbiSQLMock(t)
+	snapshot := &model.SbiSnapshot{
+		FetchedAt: time.Date(2026, 8, 1, 1, 2, 3, 4, time.UTC),
+		Status:    model.SbiStatusOK,
+	}
+	holdings := []model.SbiHolding{{Name: "ダミー銘柄A"}}
+	duplicateErr := &driverMySQL.MySQLError{Number: 1062, Message: "Duplicate entry for key 'uq_fetched_at'"}
+
+	expectSbiSnapshotLookup(mock, false)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnError(duplicateErr)
+	mock.ExpectRollback()
+	expectSbiSnapshotLookup(mock, true)
+
+	inserted, err := db.ImportSbiSnapshot(t.Context(), snapshot, holdings)
+	if err != nil {
+		t.Fatalf("ImportSbiSnapshot: %v", err)
+	}
+	if inserted {
+		t.Fatal("inserted = true, want false")
+	}
+	if holdings[0].SnapshotID != 0 {
+		t.Fatalf("holding snapshot ID = %d, want unchanged", holdings[0].SnapshotID)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("SQL expectations: %v", err)
+	}
+}
+
+func TestDBClient_ImportSbiSnapshot_DuplicateRaceWithoutSnapshotPropagates(t *testing.T) {
+	db, mock := newSbiSQLMock(t)
+	snapshot := &model.SbiSnapshot{
+		FetchedAt: time.Date(2026, 8, 1, 1, 2, 3, 4, time.UTC),
+		Status:    model.SbiStatusOK,
+	}
+	duplicateErr := &driverMySQL.MySQLError{Number: 1062, Message: "Duplicate entry for key 'uq_fetched_at'"}
+
+	expectSbiSnapshotLookup(mock, false)
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnError(duplicateErr)
+	mock.ExpectRollback()
+	expectSbiSnapshotLookup(mock, false)
+
+	inserted, err := db.ImportSbiSnapshot(t.Context(), snapshot, nil)
+	if inserted || err == nil {
+		t.Fatalf("result = inserted %v, error %v; want propagated failure", inserted, err)
+	}
+	if !errors.Is(err, duplicateErr) {
+		t.Fatal("database cause was not preserved")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("SQL expectations: %v", err)
+	}
+}
+
 func TestDBClient_ImportSbiSnapshot_RollsBackHoldingFailure(t *testing.T) {
 	db, mock := newSbiSQLMock(t)
 	snapshot := &model.SbiSnapshot{
@@ -98,6 +163,7 @@ func TestDBClient_ImportSbiSnapshot_RollsBackHoldingFailure(t *testing.T) {
 	holdings := []model.SbiHolding{{Name: "ダミー銘柄A"}}
 	wantErr := errors.New("synthetic holding insert failure")
 
+	expectSbiSnapshotLookup(mock, false)
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnResult(sqlmock.NewResult(42, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_holding`")).WillReturnError(wantErr)
@@ -130,6 +196,7 @@ func TestDBClient_ImportSbiSnapshot_SanitizesDatabaseErrors(t *testing.T) {
 		Message: "Duplicate entry '" + figi + "-" + holdingName + "' for key 'uq_snapshot_section_figi'",
 	}
 
+	expectSbiSnapshotLookup(mock, false)
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnResult(sqlmock.NewResult(42, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_holding`")).WillReturnError(driverErr)

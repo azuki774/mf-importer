@@ -8,9 +8,9 @@ import (
 	"net"
 	"time"
 
+	driverMySQL "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -263,16 +263,22 @@ func (d *DBClient) RegistAssetHistory(ctx context.Context, assetHistory model.As
 // ImportSbiSnapshot atomically creates a snapshot and its holdings. A snapshot
 // with an existing fetched_at is treated as an idempotent no-op.
 func (d *DBClient) ImportSbiSnapshot(ctx context.Context, snapshot *model.SbiSnapshot, holdings []model.SbiHolding) (inserted bool, err error) {
+	snapshot.FetchedAt = model.NormalizeSbiFetchedAt(snapshot.FetchedAt)
+	exists, err := d.sbiSnapshotExists(ctx, snapshot.FetchedAt)
+	if err != nil {
+		return false, newSbiDatabaseError("check existing snapshot", err)
+	}
+	if exists {
+		return false, nil
+	}
+
+	var duplicateErr error
 	err = d.Conn.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		result := tx.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "fetched_at"}},
-			DoNothing: true,
-		}).Table(tableNameSbiSnapshot).Create(snapshot)
-		if result.Error != nil {
-			return newSbiDatabaseError("insert snapshot", result.Error)
-		}
-		if result.RowsAffected == 0 {
-			return nil
+		if err := tx.WithContext(ctx).Table(tableNameSbiSnapshot).Create(snapshot).Error; err != nil {
+			if isMySQLDuplicateError(err) {
+				duplicateErr = err
+			}
+			return newSbiDatabaseError("insert snapshot", err)
 		}
 		inserted = true
 
@@ -287,10 +293,42 @@ func (d *DBClient) ImportSbiSnapshot(ctx context.Context, snapshot *model.SbiSna
 		}
 		return nil
 	})
+	if err == nil {
+		return inserted, nil
+	}
+	if duplicateErr == nil {
+		return false, err
+	}
+
+	exists, checkErr := d.sbiSnapshotExists(ctx, snapshot.FetchedAt)
+	if checkErr != nil {
+		return false, newSbiDatabaseError("check existing snapshot after conflict", checkErr)
+	}
+	if exists {
+		return false, nil
+	}
+	return false, err
+}
+
+func (d *DBClient) sbiSnapshotExists(ctx context.Context, fetchedAt time.Time) (bool, error) {
+	var existing model.SbiSnapshot
+	err := d.Conn.WithContext(ctx).
+		Table(tableNameSbiSnapshot).
+		Select("id").
+		Where("fetched_at = ?", fetchedAt).
+		Take(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
-	return inserted, nil
+	return true, nil
+}
+
+func isMySQLDuplicateError(err error) bool {
+	var mysqlErr *driverMySQL.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062
 }
 
 // 資産履歴を日付の降順で取得（最新から指定件数）
