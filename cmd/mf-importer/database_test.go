@@ -74,7 +74,7 @@ func TestIntegrationImporterStartup(t *testing.T) {
 		t.Fatal(err)
 	}
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM gorp_migrations").Scan(&count); err != nil || count != 7 {
+	if err := db.QueryRow("SELECT COUNT(*) FROM gorp_migrations").Scan(&count); err != nil || count != 8 {
 		t.Fatal("startup did not migrate")
 	}
 	// Migration must fail before accessing this missing input directory or S3.
@@ -99,7 +99,7 @@ func TestIntegrationSbiStartup(t *testing.T) {
 		t.Fatal("expected empty input after migration", err)
 	}
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM gorp_migrations").Scan(&count); err != nil || count != 7 {
+	if err := db.QueryRow("SELECT COUNT(*) FROM gorp_migrations").Scan(&count); err != nil || count != 8 {
 		t.Fatal("SBI startup did not migrate")
 	}
 	if _, err := db.Exec("INSERT INTO gorp_migrations (id, applied_at) VALUES ('999_dummy.sql', NOW())"); err != nil {

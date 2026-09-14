@@ -27,6 +27,8 @@ DB スキーマは `migration/db/*.sql` に定義されています。マイグ�
 | `004_asset_history.sql` | [`asset_history`](#asset_history) を作成 | [`asset_history`](#asset_history) を削除 |
 | `005_sbi_snapshot.sql` | [`sbi_snapshot`](#sbi_snapshot) を作成 | [`sbi_snapshot`](#sbi_snapshot) を削除 |
 | `006_sbi_holding.sql` | [`sbi_holding`](#sbi_holding) を作成 | [`sbi_holding`](#sbi_holding) を削除 |
+| `007_nullable_sbi_values.sql` | SBI資産値と前日比をnullable化 | nullable化前へ戻す |
+| `008_sbi_schema_version_figi.sql` | `schema_version` を文字列化し、保有明細へFIGIと制約を追加 | データ検査後に変更前へ戻す |
 
 ## 共通事項
 
@@ -202,8 +204,10 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | `id` | `INT AUTO_INCREMENT` | No | `—` | `—` |
 | `fetched_at` | `DATETIME(6)` | No | `—` | Assets.fetched_at (Asia/Tokyo wall-clock, truncated to microseconds) |
 | `status` | `VARCHAR(16)` | No | `—` | OK\|MAINTENANCE\|ERROR (normalized to uppercase on ingest; scraper emits ok/maintenance) |
-| `schema_version` | `INT` | No | `—` | Assets.schema_version (CurrentSchemaVersion) |
+| `schema_version` | `VARCHAR(32)` | No | `—` | `2026-09-12` のみ取り込み対象 |
 | `grand_total_jpy` | `DECIMAL(14,2)` | Yes | `—` | grand_total_jpy = nisa+old_nisa+cash+others; NULL when incomplete |
+
+既存行を `008_sbi_schema_version_figi.sql` で更新した場合、`schema_version` は旧整数値を文字列表現（例: `1`）のまま保持し、既存の保有明細の `composite_figi` は `NULL` です。
 
 #### NISA summary
 
@@ -291,7 +295,9 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 
 ## sbi_holding
 
-由来 migration: `006_sbi_holding.sql`、前日比nullable化: `007_nullable_sbi_values.sql`
+由来 migration: `006_sbi_holding.sql`、前日比nullable化: `007_nullable_sbi_values.sql`、FIGI追加: `008_sbi_schema_version_figi.sql`
+
+`id` は保有履歴の行を識別します。`composite_figi` は銘柄・商品を識別し、`name` は表示用の名称です。マイグレーション適用前から存在する行では `composite_figi` は `NULL` です。
 
 用途: SBI の各スナップショットに含まれる保有銘柄・商品の数量、単価、評価額および損益を保持する。
 
@@ -306,6 +312,7 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | `id` | `INT AUTO_INCREMENT` | No | `—` | `—` |
 | `snapshot_id` | `INT` | No | `—` | FK -> sbi_snapshot.id (no DB FK, enforced at app layer) |
 | `section` | `VARCHAR(32)` | No | `—` | nisa_domestic\|nisa_us\|nisa_funds\|old_nisa_funds |
+| `composite_figi` | `VARCHAR(12)` | Yes | `—` | 12文字のASCII英大文字・数字による銘柄識別子 |
 | `name` | `TEXT` | No | `—` | Holding.name (銘柄名) |
 | `quantity` | `DECIMAL(18,6)` | No | `—` | Holding.quantity (口数/株数) |
 | `unit_cost` | `DECIMAL(18,6)` | No | `—` | Holding.unit_cost (取得単価, USD for US stocks, JPY for others) |
@@ -323,6 +330,7 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | Kind | Name | Columns |
 | --- | --- | --- |
 | PRIMARY KEY | — | `id` |
-| UNIQUE KEY | — | なし |
 | INDEX | `idx_snapshot_id` | `snapshot_id` |
 | INDEX | `idx_snapshot_section` | `snapshot_id`, `section` |
+| UNIQUE KEY | `uq_snapshot_section_figi` | `snapshot_id`, `section`, `composite_figi` |
+| INDEX | `idx_composite_figi` | `composite_figi` |

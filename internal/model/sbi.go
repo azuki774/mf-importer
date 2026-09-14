@@ -15,11 +15,13 @@ const (
 	SbiStatusError       SbiStatus = "ERROR"
 )
 
+const CurrentSbiSchemaVersion = "2026-09-12"
+
 type SbiSnapshot struct {
 	ID            int64     `json:"id" gorm:"primaryKey;autoIncrement"`
 	FetchedAt     time.Time `json:"fetched_at" gorm:"uniqueIndex:uq_fetched_at"`
 	Status        SbiStatus `json:"status"`
-	SchemaVersion int       `json:"schema_version"`
+	SchemaVersion string    `json:"schema_version"`
 
 	GrandTotalJPY *float64 `json:"grand_total_jpy"`
 
@@ -74,20 +76,21 @@ type SbiSnapshot struct {
 }
 
 type SbiHolding struct {
-	ID         int64     `json:"id" gorm:"primaryKey;autoIncrement"`
-	SnapshotID int64     `json:"snapshot_id" gorm:"index:idx_snapshot_id;index:idx_snapshot_section"`
-	Section    string    `json:"section" gorm:"index:idx_snapshot_section"`
-	Name       string    `json:"name"`
-	Quantity   float64   `json:"quantity"`
-	UnitCost   float64   `json:"unit_cost"`
-	UnitPrice  float64   `json:"unit_price"`
-	PrevDayJPY *float64  `json:"prev_day_jpy"`
-	PrevDayPct *float64  `json:"prev_day_pct"`
-	PnlJPY     float64   `json:"pnl_jpy"`
-	PnlPct     float64   `json:"pnl_pct"`
-	ValueJPY   float64   `json:"value_jpy"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            int64     `json:"id" gorm:"primaryKey;autoIncrement"`
+	SnapshotID    int64     `json:"snapshot_id" gorm:"index:idx_snapshot_id;index:idx_snapshot_section;uniqueIndex:uq_snapshot_section_figi,priority:1"`
+	Section       string    `json:"section" gorm:"index:idx_snapshot_section;uniqueIndex:uq_snapshot_section_figi,priority:2"`
+	CompositeFIGI *string   `json:"composite_figi" gorm:"index:idx_composite_figi;uniqueIndex:uq_snapshot_section_figi,priority:3"`
+	Name          string    `json:"name"`
+	Quantity      float64   `json:"quantity"`
+	UnitCost      float64   `json:"unit_cost"`
+	UnitPrice     float64   `json:"unit_price"`
+	PrevDayJPY    *float64  `json:"prev_day_jpy"`
+	PrevDayPct    *float64  `json:"prev_day_pct"`
+	PnlJPY        float64   `json:"pnl_jpy"`
+	PnlPct        float64   `json:"pnl_pct"`
+	ValueJPY      float64   `json:"value_jpy"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type sbiMoney struct {
@@ -96,15 +99,16 @@ type sbiMoney struct {
 }
 
 type sbiHoldingJSON struct {
-	Name       string   `json:"name"`
-	Quantity   *float64 `json:"quantity"`
-	UnitCost   *float64 `json:"unit_cost"`
-	UnitPrice  *float64 `json:"unit_price"`
-	PrevDayJPY *float64 `json:"prev_day_jpy"`
-	PrevDayPct *float64 `json:"prev_day_pct"`
-	PnLJPY     *float64 `json:"pnl_jpy"`
-	PnLPct     *float64 `json:"pnl_pct"`
-	ValueJPY   *float64 `json:"value_jpy"`
+	Name          string   `json:"name"`
+	CompositeFIGI string   `json:"composite_figi"`
+	Quantity      *float64 `json:"quantity"`
+	UnitCost      *float64 `json:"unit_cost"`
+	UnitPrice     *float64 `json:"unit_price"`
+	PrevDayJPY    *float64 `json:"prev_day_jpy"`
+	PrevDayPct    *float64 `json:"prev_day_pct"`
+	PnLJPY        *float64 `json:"pnl_jpy"`
+	PnLPct        *float64 `json:"pnl_pct"`
+	ValueJPY      *float64 `json:"value_jpy"`
 }
 
 type sbiNISAItem struct {
@@ -150,7 +154,7 @@ type sbiOthers struct {
 }
 
 type sbiAssets struct {
-	SchemaVersion int              `json:"schema_version"`
+	SchemaVersion string           `json:"schema_version"`
 	FetchedAt     time.Time        `json:"fetched_at"`
 	Status        string           `json:"status"`
 	NISA          *sbiNISA         `json:"nisa"`
@@ -181,13 +185,15 @@ func ParseSbiJSON(data []byte) (*SbiSnapshot, []SbiHolding, error) {
 	switch status {
 	case SbiStatusOK, SbiStatusMaintenance, SbiStatusError:
 	default:
-		return nil, nil, fmt.Errorf("invalid status %q: want OK|MAINTENANCE|ERROR", dto.Status)
+		return nil, nil, fmt.Errorf("invalid status: want OK|MAINTENANCE|ERROR")
 	}
 
 	if dto.FetchedAt.IsZero() {
 		return nil, nil, fmt.Errorf("fetched_at is required")
 	}
-	// TODO: Reject unsupported schema versions once the compatibility policy is defined.
+	if dto.SchemaVersion != CurrentSbiSchemaVersion {
+		return nil, nil, fmt.Errorf("unsupported schema_version")
+	}
 
 	var cashJPYAmount, cashJPYValue, cashUsdAmount, cashUsdValue, otherFundsAmount, otherFundsValue *float64
 	var nisa sbiNISA
@@ -276,12 +282,18 @@ func ParseSbiJSON(data []byte) (*SbiSnapshot, []SbiHolding, error) {
 		{"nisa.funds.holdings", "nisa_funds", dto.NISA.Funds.Holdings},
 		{"old_nisa.funds", "old_nisa_funds", dto.OldNISA.Funds},
 	}
+	seenHoldings := make(map[string]struct{})
 	for _, group := range groups {
 		for index, h := range group.holdings {
 			holding, err := holdingToModel(h, group.section)
 			if err != nil {
 				return nil, nil, fmt.Errorf("%s[%d]: %w", group.path, index, err)
 			}
+			key := group.section + "\x00" + *holding.CompositeFIGI
+			if _, ok := seenHoldings[key]; ok {
+				return nil, nil, fmt.Errorf("%s[%d]: duplicate composite_figi in section", group.path, index)
+			}
+			seenHoldings[key] = struct{}{}
 			holdings = append(holdings, holding)
 		}
 	}
@@ -371,6 +383,11 @@ func holdingToModel(h sbiHoldingJSON, section string) (SbiHolding, error) {
 	if strings.TrimSpace(h.Name) == "" {
 		missing = append(missing, "name")
 	}
+	if h.CompositeFIGI == "" {
+		missing = append(missing, "composite_figi")
+	} else if !validCompositeFIGI(h.CompositeFIGI) {
+		return SbiHolding{}, fmt.Errorf("invalid composite_figi: want 12 ASCII uppercase letters or digits")
+	}
 	require("quantity", h.Quantity)
 	require("unit_cost", h.UnitCost)
 	require("unit_price", h.UnitPrice)
@@ -388,20 +405,34 @@ func holdingToModel(h sbiHoldingJSON, section string) (SbiHolding, error) {
 	prevDayJPY := h.PrevDayJPY
 	prevDayPct := h.PrevDayPct
 	if section == "nisa_us" {
-		// Schema version 1 cannot provide per-holding US prev-day values.
+		// The source format does not provide per-holding US prev-day values.
 		prevDayJPY = nil
 		prevDayPct = nil
 	}
+	compositeFIGI := h.CompositeFIGI
 	return SbiHolding{
-		Section:    section,
-		Name:       h.Name,
-		Quantity:   *h.Quantity,
-		UnitCost:   *h.UnitCost,
-		UnitPrice:  *h.UnitPrice,
-		PrevDayJPY: prevDayJPY,
-		PrevDayPct: prevDayPct,
-		PnlJPY:     *h.PnLJPY,
-		PnlPct:     *h.PnLPct,
-		ValueJPY:   *h.ValueJPY,
+		Section:       section,
+		CompositeFIGI: &compositeFIGI,
+		Name:          h.Name,
+		Quantity:      *h.Quantity,
+		UnitCost:      *h.UnitCost,
+		UnitPrice:     *h.UnitPrice,
+		PrevDayJPY:    prevDayJPY,
+		PrevDayPct:    prevDayPct,
+		PnlJPY:        *h.PnLJPY,
+		PnlPct:        *h.PnLPct,
+		ValueJPY:      *h.ValueJPY,
 	}, nil
+}
+
+func validCompositeFIGI(value string) bool {
+	if len(value) != 12 {
+		return false
+	}
+	for index := 0; index < len(value); index++ {
+		if (value[index] < 'A' || value[index] > 'Z') && (value[index] < '0' || value[index] > '9') {
+			return false
+		}
+	}
+	return true
 }

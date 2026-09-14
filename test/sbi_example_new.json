@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": "2026-09-12",
   "fetched_at": "2026-08-16T12:00:00Z",
   "status": "ok",
   "nisa": {
@@ -21,6 +21,7 @@
       "holdings": [
         {
           "name": "ダミー銘柄A",
+          "composite_figi": "DUMMY0000001",
           "quantity": 100,
           "unit_cost": 800,
           "unit_price": 1000,
@@ -43,6 +44,7 @@
       "holdings": [
         {
           "name": "ダミー米国株",
+          "composite_figi": "DUMMY0000002",
           "quantity": 10,
           "unit_cost": 100,
           "unit_price": 125.5,
@@ -65,6 +67,7 @@
       "holdings": [
         {
           "name": "ダミー投信",
+          "composite_figi": "DUMMY0000003",
           "quantity": 100000,
           "unit_cost": 2000,
           "unit_price": 3000,
@@ -86,6 +89,7 @@
     "funds": [
       {
         "name": "ダミー投信(旧)",
+        "composite_figi": "DUMMY0000004",
         "quantity": 150000,
         "unit_cost": 1000,
         "unit_price": 2666.67,
