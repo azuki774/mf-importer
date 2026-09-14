@@ -30,6 +30,21 @@ type DBClient struct {
 	Conn *gorm.DB
 }
 
+type sbiDatabaseError struct {
+	operation string
+	cause     error
+}
+
+func (e *sbiDatabaseError) Error() string {
+	return "SBI database operation failed: " + e.operation
+}
+
+func (e *sbiDatabaseError) Unwrap() error { return e.cause }
+
+func newSbiDatabaseError(operation string, err error) error {
+	return &sbiDatabaseError{operation: operation, cause: err}
+}
+
 // buildMySQLDSN fixes the connection location because DATETIME has no timezone.
 // SBI fetched_at values are stored as canonical Asia/Tokyo wall-clock values.
 func buildMySQLDSN(host, port, user, pass, name string) string {
@@ -254,7 +269,7 @@ func (d *DBClient) ImportSbiSnapshot(ctx context.Context, snapshot *model.SbiSna
 			DoNothing: true,
 		}).Table(tableNameSbiSnapshot).Create(snapshot)
 		if result.Error != nil {
-			return result.Error
+			return newSbiDatabaseError("insert snapshot", result.Error)
 		}
 		if result.RowsAffected == 0 {
 			return nil
@@ -267,7 +282,10 @@ func (d *DBClient) ImportSbiSnapshot(ctx context.Context, snapshot *model.SbiSna
 		if len(holdings) == 0 {
 			return nil
 		}
-		return tx.WithContext(ctx).Table(tableNameSbiHolding).Create(&holdings).Error
+		if err := tx.WithContext(ctx).Table(tableNameSbiHolding).Create(&holdings).Error; err != nil {
+			return newSbiDatabaseError("insert holdings", err)
+		}
+		return nil
 	})
 	if err != nil {
 		return false, err

@@ -19,7 +19,7 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(migrations) != 7 {
+	if len(migrations) != 8 {
 		t.Fatalf("got %d migrations", len(migrations))
 	}
 	for _, m := range migrations {

@@ -3,10 +3,12 @@ package repository
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	driverMySQL "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"mf-importer/internal/model"
@@ -107,6 +109,45 @@ func TestDBClient_ImportSbiSnapshot_RollsBackHoldingFailure(t *testing.T) {
 	}
 	if inserted {
 		t.Fatal("inserted = true, want false on rollback")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("SQL expectations: %v", err)
+	}
+}
+
+func TestDBClient_ImportSbiSnapshot_SanitizesDatabaseErrors(t *testing.T) {
+	db, mock := newSbiSQLMock(t)
+	snapshot := &model.SbiSnapshot{
+		FetchedAt:     time.Date(2026, 8, 1, 1, 2, 3, 4, time.UTC),
+		Status:        model.SbiStatusOK,
+		SchemaVersion: model.CurrentSbiSchemaVersion,
+	}
+	figi := "DUMMY0000001"
+	const holdingName = "ダミー銘柄A"
+	holdings := []model.SbiHolding{{Name: holdingName, CompositeFIGI: &figi}}
+	driverErr := &driverMySQL.MySQLError{
+		Number:  1062,
+		Message: "Duplicate entry '" + figi + "-" + holdingName + "' for key 'uq_snapshot_section_figi'",
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_snapshot`")).WillReturnResult(sqlmock.NewResult(42, 1))
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `sbi_holding`")).WillReturnError(driverErr)
+	mock.ExpectRollback()
+
+	inserted, err := db.ImportSbiSnapshot(t.Context(), snapshot, holdings)
+	if inserted || err == nil {
+		t.Fatalf("result = inserted %v, error %v; want sanitized failure", inserted, err)
+	}
+	if errors.Is(err, driverErr) == false {
+		t.Fatal("database cause was not preserved")
+	}
+	var gotDriverErr *driverMySQL.MySQLError
+	if !errors.As(err, &gotDriverErr) || gotDriverErr != driverErr {
+		t.Fatal("database error was not available through errors.As")
+	}
+	if strings.Contains(err.Error(), figi) || strings.Contains(err.Error(), holdingName) {
+		t.Fatalf("error echoed holding data: %q", err)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("SQL expectations: %v", err)

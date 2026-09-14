@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"mf-importer/internal/logger"
@@ -47,6 +48,15 @@ func TestSbiJSONOperator_LoadSbiJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "20260816-114651.json")
 	jsonStr := `{"fetched_at":"2026-08-16T11:46:51.908856153Z","status":"ok","schema_version":1,"nisa":{"total_jpy":600000,"prev_day_jpy":12000,"prev_day_pct":2.04,"prev_month_jpy":45000,"prev_month_pct":8.11,"pnl_jpy":150000,"pnl_pct":33.33,"domestic_stocks":{"value_jpy":100000,"pnl_jpy":20000,"pnl_pct":25,"prev_day_jpy":3000,"prev_day_pct":3.09,"prev_month_jpy":8000,"prev_month_pct":8.7,"holdings":[{"name":"ダミー銘柄A","quantity":100,"unit_cost":800,"unit_price":1000,"prev_day_jpy":30,"prev_day_pct":3.09,"pnl_jpy":20000,"pnl_pct":25,"value_jpy":100000}]},"us_stocks":{"value_jpy":200000,"pnl_jpy":50000,"pnl_pct":33.33,"prev_day_jpy":0,"prev_day_pct":0,"prev_month_jpy":30000,"prev_month_pct":17.65,"holdings":[{"name":"ダミー米国株B","quantity":10,"unit_cost":100,"unit_price":125.5,"pnl_jpy":40000,"pnl_pct":40,"value_jpy":200000}]},"funds":{"value_jpy":300000,"pnl_jpy":80000,"pnl_pct":36.36,"prev_day_jpy":9000,"prev_day_pct":3.09,"prev_month_jpy":7000,"prev_month_pct":2.39,"holdings":[{"name":"ダミー投信C","quantity":100000,"unit_cost":2000,"unit_price":3000,"prev_day_jpy":90,"prev_day_pct":3.09,"pnl_jpy":80000,"pnl_pct":36.36,"value_jpy":300000}]}},"old_nisa":{"total_jpy":400000,"prev_day_jpy":10000,"prev_day_pct":2.56,"pnl_jpy":250000,"pnl_pct":166.67,"funds":[{"name":"ダミー投信D","quantity":150000,"unit_cost":1000,"unit_price":2666.67,"prev_day_jpy":66.67,"prev_day_pct":2.56,"pnl_jpy":250000,"pnl_pct":166.67,"value_jpy":400000}]},"cash":{"jpy":{"amount":50000,"value_jpy":50000},"usd":{"amount":500,"value_jpy":80000}},"others":{"funds":{"amount":30000,"value_jpy":30000}},"grand_total_jpy":1160000}`
+	jsonStr = strings.Replace(jsonStr, `"schema_version":1`, `"schema_version":"2026-09-12"`, 1)
+	for _, replacement := range []struct{ name, figi string }{
+		{"ダミー銘柄A", "DUMMY0000001"},
+		{"ダミー米国株B", "DUMMY0000002"},
+		{"ダミー投信C", "DUMMY0000003"},
+		{"ダミー投信D", "DUMMY0000004"},
+	} {
+		jsonStr = strings.Replace(jsonStr, `"name":"`+replacement.name+`","quantity"`, `"name":"`+replacement.name+`","composite_figi":"`+replacement.figi+`","quantity"`, 1)
+	}
 	writeFile(t, path, []byte(jsonStr))
 
 	op := &SbiJSONOperator{Logger: logger.NewLogger()}
@@ -68,5 +78,29 @@ func TestSbiJSONOperator_LoadSbiJSON(t *testing.T) {
 	}
 	if holdings[0].Name != "ダミー銘柄A" {
 		t.Errorf("holdings[0].Name = %q", holdings[0].Name)
+	}
+}
+
+func TestSbiJSONOperator_MixedFormatsStopsAtLegacySchema(t *testing.T) {
+	newData, err := os.ReadFile("../../test/sbi_example_new.json")
+	if err != nil {
+		t.Fatal("read synthetic current fixture")
+	}
+	legacyData := strings.Replace(string(newData), `"schema_version": "2026-09-12"`, `"schema_version": 1`, 1)
+	if legacyData == string(newData) {
+		t.Fatal("failed to prepare synthetic legacy fixture")
+	}
+	dir := t.TempDir()
+	newPath := filepath.Join(dir, "01-current.json")
+	legacyPath := filepath.Join(dir, "02-legacy.json")
+	writeFile(t, newPath, newData)
+	writeFile(t, legacyPath, []byte(legacyData))
+
+	op := &SbiJSONOperator{Logger: logger.NewLogger()}
+	if _, _, err := op.LoadSbiJSON(context.Background(), newPath); err != nil {
+		t.Fatalf("current format was rejected: %v", err)
+	}
+	if _, _, err := op.LoadSbiJSON(context.Background(), legacyPath); err == nil {
+		t.Fatal("legacy format was accepted in a mixed input set")
 	}
 }
