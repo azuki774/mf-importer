@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mf-importer/internal/model"
 	"sort"
@@ -21,9 +22,10 @@ type SbiJSONOperator interface {
 }
 
 type SbiImportResult struct {
-	Files    int
-	Inserted int
-	Skipped  int
+	Files       int
+	Inserted    int
+	Skipped     int
+	Unsupported int
 }
 
 type SbiImporter struct {
@@ -48,14 +50,21 @@ func (i *SbiImporter) Start(ctx context.Context, inputDir string) (SbiImportResu
 
 	var result SbiImportResult
 	for _, path := range files {
+		result.Files++
 		snapshot, holdings, err := i.Operator.LoadSbiJSON(ctx, path)
 		if err != nil {
+			if errors.Is(err, model.ErrUnsupportedSbiSchemaVersion) {
+				result.Unsupported++
+				if i.Logger != nil {
+					i.Logger.Warn("skip SBI JSON with unsupported schema version", zap.String("path", path))
+				}
+				continue
+			}
 			return result, fmt.Errorf("load SBI JSON %s: %w", path, err)
 		}
 		if snapshot == nil {
 			return result, fmt.Errorf("load SBI JSON %s: empty snapshot", path)
 		}
-		result.Files++
 		if snapshot.Status != model.SbiStatusOK {
 			holdings = nil
 		}

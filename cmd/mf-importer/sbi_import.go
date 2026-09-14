@@ -122,6 +122,7 @@ func runSbiImport() error {
 		zap.Int("files", result.Files),
 		zap.Int("inserted", result.Inserted),
 		zap.Int("skipped", result.Skipped),
+		zap.Int("unsupported", result.Unsupported),
 	)
 	return nil
 }
