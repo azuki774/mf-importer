@@ -173,6 +173,28 @@ func NormalizeSbiFetchedAt(t time.Time) time.Time {
 }
 
 func ParseSbiJSON(data []byte) (*SbiSnapshot, []SbiHolding, error) {
+	// Check the version before decoding the full payload so an unknown string
+	// version can be skipped even when known fields change type in that version.
+	var envelope struct {
+		SchemaVersion json.RawMessage `json:"schema_version"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, nil, fmt.Errorf("unmarshal sbi json: %w", err)
+	}
+	if len(envelope.SchemaVersion) == 0 {
+		return nil, nil, fmt.Errorf("schema_version is required")
+	}
+	var schemaVersion *string
+	if err := json.Unmarshal(envelope.SchemaVersion, &schemaVersion); err != nil {
+		return nil, nil, fmt.Errorf("unmarshal schema_version: %w", err)
+	}
+	if schemaVersion == nil {
+		return nil, nil, fmt.Errorf("schema_version is required")
+	}
+	if *schemaVersion != CurrentSbiSchemaVersion {
+		return nil, nil, ErrUnsupportedSbiSchemaVersion
+	}
+
 	var dto sbiAssets
 	if err := json.Unmarshal(data, &dto); err != nil {
 		return nil, nil, fmt.Errorf("unmarshal sbi json: %w", err)

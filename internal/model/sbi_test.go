@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
 	"reflect"
@@ -100,10 +101,26 @@ func TestParseSbiJSON_RejectsMissingNullNumericAndUnknownSchemaVersions(t *testi
 		{name: "unknown", json: strings.Replace(currentSbiOKJSON(), `"schema_version":"2026-09-12"`, `"schema_version":"2026-09-13"`, 1)},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, _, err := ParseSbiJSON([]byte(test.json)); err == nil {
+			_, _, err := ParseSbiJSON([]byte(test.json))
+			if err == nil {
 				t.Fatal("accepted unsupported schema version")
 			}
+			if test.name == "unknown" && !errors.Is(err, ErrUnsupportedSbiSchemaVersion) {
+				t.Fatalf("error = %v, want ErrUnsupportedSbiSchemaVersion", err)
+			}
+			if test.name != "unknown" && errors.Is(err, ErrUnsupportedSbiSchemaVersion) {
+				t.Fatalf("error = %v, must be fatal for a non-string/missing version", err)
+			}
 		})
+	}
+}
+
+func TestParseSbiJSON_UnsupportedStringVersionSkipsUnknownFields(t *testing.T) {
+	raw := strings.Replace(currentSbiOKJSON(), `"schema_version":"2026-09-12"`, `"schema_version":"2026-09-13"`, 1)
+	raw = strings.Replace(raw, `"nisa":{"total`, `"nisa":"incompatible","nisa_extra":{"total`, 1)
+	_, _, err := ParseSbiJSON([]byte(raw))
+	if !errors.Is(err, ErrUnsupportedSbiSchemaVersion) {
+		t.Fatalf("error = %v, want ErrUnsupportedSbiSchemaVersion", err)
 	}
 }
 
