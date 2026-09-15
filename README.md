@@ -6,7 +6,7 @@
 
 | サービス | 役割 |
 | --- | --- |
-| mf-importer | CSV インポート（重複除外、月末表記変換、S3 ダウンロード対応）とSBI JSON取り込み |
+| mf-importer | CSV インポート（重複除外、月末表記変換、S3 ダウンロード対応）と SBI / NRKN JSON 取り込み |
 | mf-importer-api | データ閲覧・管理用 REST API |
 | mf-importer-maw | [mawinter-server](https://github.com/azuki774/mawinter-server) へのデータ連携 |
 | mf-importer-metrics | Prometheus メトリクス提供 |
@@ -28,7 +28,7 @@ make migration # 内蔵 SQL で DB を更新（API などの起動前にも実�
 
 ## DB マイグレーション
 
-`mf-importer start` / `sbi-import` は、DB 接続後、ダウンロード・取り込み前に未適用の SQL を自動適用します。`start --dry-run` は適用せず、既存スキーマを前提に動作します。API・metrics・maw は自動適用しません。
+`mf-importer start` / `sbi-import` / `nrkn-import` は、DB 接続後、ダウンロード・取り込み前に未適用の SQL を自動適用します。`start --dry-run` は適用せず、既存スキーマを前提に動作します。API・metrics・maw は自動適用しません。
 
 既存の `migration/db/*.sql` を `go:embed` でバイナリに埋め込み、`github.com/rubenv/sql-migrate` の Go API から実行します。外部マイグレーションバイナリ、実行時の SQL 配置、Git アクセスは不要です。適用対象はビルド時の SQL で、適用履歴は既存の `gorp_migrations` を引き継ぎます。
 
@@ -57,5 +57,6 @@ make test # gofmt / vet / staticcheck / go test
 - DB スキーマの説明: [docs/schema.md](docs/schema.md)
 - S3 取り込みの詳細: [docs/s3-download.md](docs/s3-download.md)
 - SBI JSON取り込み: [docs/sbi-import.md](docs/sbi-import.md)
+- NRKN JSON取り込み: [docs/nrkn-import.md](docs/nrkn-import.md)
 - ローカル確認: [docs/local-verify.md](docs/local-verify.md)
 - 各サービスのコマンド詳細は `--help` を参照してください。
