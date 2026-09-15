@@ -75,12 +75,12 @@ func TestIntegrationLifecycle(t *testing.T) {
 	if n, err := migrate.ExecMax(db, "mysql", source, migrate.Up, 3); err != nil || n != 3 {
 		t.Fatal("seed legacy history failed")
 	}
-	assertRun(t, db, migrate.Up, 0, 5)
+	assertRun(t, db, migrate.Up, 0, 6)
 	assertRun(t, db, migrate.Up, 0, 0)
 	assertRun(t, db, migrate.Down, 1, 1)
 	assertRun(t, db, migrate.Up, 0, 1)
-	assertRun(t, db, migrate.Down, 0, 8)
-	assertRun(t, db, migrate.Up, 0, 8)
+	assertRun(t, db, migrate.Down, 0, 9)
+	assertRun(t, db, migrate.Up, 0, 9)
 }
 
 func TestIntegrationConcurrentStartup(t *testing.T) {
@@ -103,14 +103,14 @@ func TestIntegrationConcurrentStartup(t *testing.T) {
 	for n := range results {
 		total += n
 	}
-	if total != 8 {
+	if total != 9 {
 		t.Fatalf("applied %d times", total)
 	}
 }
 
 func TestIntegrationUnknownHistory(t *testing.T) {
 	db := testDatabase(t)
-	assertRun(t, db, migrate.Up, 0, 8)
+	assertRun(t, db, migrate.Up, 0, 9)
 	if _, err := db.Exec("INSERT INTO gorp_migrations (id, applied_at) VALUES ('999_dummy.sql', NOW())"); err != nil {
 		t.Fatal("seed unknown history")
 	}
@@ -217,7 +217,7 @@ func TestIntegrationLostSessionCannotContinue(t *testing.T) {
 		t.Fatal("continued after losing the locked session")
 	}
 	// The next run must obtain a fresh lock and still be able to apply all SQL.
-	assertRun(t, db, migrate.Up, 0, 8)
+	assertRun(t, db, migrate.Up, 0, 9)
 }
 
 func TestIntegrationSbiSchemaUpgradePreservesHistoryAndAddsUniqueness(t *testing.T) {
@@ -228,7 +228,7 @@ func TestIntegrationSbiSchemaUpgradePreservesHistoryAndAddsUniqueness(t *testing
 	}
 	snapshotID := insertLegacySbiSnapshot(t, db)
 	insertLegacySbiHolding(t, db, snapshotID)
-	assertRun(t, db, migrate.Up, 0, 1)
+	assertRun(t, db, migrate.Up, 0, 2)
 
 	var schemaVersion string
 	if err := db.QueryRow("SELECT schema_version FROM sbi_snapshot WHERE id = ?", snapshotID).Scan(&schemaVersion); err != nil {
@@ -255,7 +255,7 @@ func TestIntegrationSbiSchemaUpgradePreservesHistoryAndAddsUniqueness(t *testing
 
 func TestIntegrationSbiJSONRoundTrip(t *testing.T) {
 	db := testDatabase(t)
-	assertRun(t, db, migrate.Up, 0, 8)
+	assertRun(t, db, migrate.Up, 0, 9)
 	raw, err := os.ReadFile("../../test/sbi_example_new.json")
 	if err != nil {
 		t.Fatal("read synthetic fixture")
@@ -350,7 +350,7 @@ func TestIntegrationSbiMigrationDownGuard(t *testing.T) {
 			db := testDatabase(t)
 			db.SetMaxOpenConns(1)
 			db.SetMaxIdleConns(1)
-			assertRun(t, db, migrate.Up, 0, 8)
+			assertRun(t, db, migrate.Up, 8, 8)
 			if _, err := db.Exec("SET SESSION sql_mode = ?", test.sqlMode); err != nil {
 				t.Fatal("set SQL mode")
 			}
