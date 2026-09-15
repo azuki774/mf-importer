@@ -105,6 +105,7 @@ func (d *nrknDownloader) start(ctx context.Context, bucketDirPrefix string) erro
 	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if d.Endpoint != "" {
 			o.BaseEndpoint = aws.String(d.Endpoint)
+			o.UsePathStyle = true
 		}
 	})
 

@@ -37,6 +37,9 @@ func TestNrknDownloaderConfiguration(t *testing.T) {
 func TestNrknDownloaderPaginationAndPrivateFiles(t *testing.T) {
 	var lists, gets int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.Host, "localhost:") || !strings.HasPrefix(r.URL.Path, "/dummy") {
+			t.Error("custom endpoint must use path-style bucket addressing")
+		}
 		if r.URL.Query().Get("list-type") == "2" {
 			lists++
 			if r.URL.Query().Get("prefix") != "dummy/2000/01/" {
@@ -55,7 +58,10 @@ func TestNrknDownloaderPaginationAndPrivateFiles(t *testing.T) {
 	}))
 	defer server.Close()
 	dir := t.TempDir()
-	d := &nrknDownloader{AccessKeyID: "dummy", SecretAccessKey: "dummy", Region: "us-east-1", BucketName: "dummy", BucketDir: "dummy", Endpoint: server.URL, SaveDir: dir}
+	// An IP endpoint makes the SDK use path-style automatically and would hide
+	// regressions affecting hostname-based S3-compatible endpoints.
+	endpoint := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+	d := &nrknDownloader{AccessKeyID: "dummy", SecretAccessKey: "dummy", Region: "us-east-1", BucketName: "dummy", BucketDir: "dummy", Endpoint: endpoint, SaveDir: dir}
 	if err := d.StartMonth(t.Context(), "200001"); err != nil {
 		t.Fatal(err)
 	}

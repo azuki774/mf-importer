@@ -23,7 +23,7 @@ S3 の取得範囲は `<NRKN_BUCKET_DIR>/<YYYY>/<MM>/` です。JSON のみ取�
 | `NRKN_BUCKET_NAME` | 必須 | NRKN のバケット |
 | `NRKN_BUCKET_DIR` | 必須 | NRKN JSON のルートプレフィックス |
 | `AWS_REGION` | 必須 | リージョン |
-| `NRKN_BUCKET_URL` | 任意 | S3 互換エンドポイント。省略時は `BUCKET_URL`、両方なければ AWS 標準 |
+| `NRKN_BUCKET_URL` | 任意 | S3 互換エンドポイント（path-style）。省略時は `BUCKET_URL`、両方なければ AWS 標準 |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | 条件付き | 静的認証情報を使う場合。両方が揃わなければ SDK の既定の認証方法を使用 |
 
 バケット名・プレフィックスは NRKN 専用設定が必要です。`BUCKET_NAME` / `BUCKET_DIR` へのフォールバックはありません。
