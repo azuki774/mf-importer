@@ -16,6 +16,8 @@ DB スキーマは `migration/db/*.sql` に定義されています。マイグ�
 | [`asset_history`](#asset_history) | `004_asset_history.sql` | 日付ごとの資産合計と内訳を保持する。 |
 | [`sbi_snapshot`](#sbi_snapshot) | `005_sbi_snapshot.sql` | SBI の資産情報を取得した時点のサマリーを保持する。 |
 | [`sbi_holding`](#sbi_holding) | `006_sbi_holding.sql` | SBI のスナップショットに含まれる銘柄・商品ごとの保有情報を保持する。 |
+| [`nrkn_snapshot`](#nrkn_snapshot) | `009_nrkn_snapshot.sql` | NRKN の取得時点の評価額・取得価額累計・損益の合計を保持する。 |
+| [`nrkn_holding`](#nrkn_holding) | `009_nrkn_snapshot.sql` | NRKN の商品明細と FIGI・基準日・価格の元表記を保持する。 |
 
 ## マイグレーション一覧
 
@@ -29,6 +31,7 @@ DB スキーマは `migration/db/*.sql` に定義されています。マイグ�
 | `006_sbi_holding.sql` | [`sbi_holding`](#sbi_holding) を作成 | [`sbi_holding`](#sbi_holding) を削除 |
 | `007_nullable_sbi_values.sql` | SBI資産値と前日比をnullable化 | nullable化前へ戻す |
 | `008_sbi_schema_version_figi.sql` | `schema_version` を文字列化し、保有明細へFIGIと制約を追加 | データ検査後に変更前へ戻す |
+| `009_nrkn_snapshot.sql` | NRKN の合計・商品明細テーブルを作成 | NRKN の商品明細・合計テーブルを削除 |
 
 ## 共通事項
 
@@ -334,3 +337,52 @@ SQL 上のテーブル属性: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf
 | INDEX | `idx_snapshot_section` | `snapshot_id`, `section` |
 | UNIQUE KEY | `uq_snapshot_section_figi` | `snapshot_id`, `section`, `composite_figi` |
 | INDEX | `idx_composite_figi` | `composite_figi` |
+
+## nrkn_snapshot
+
+由来 migration: `009_nrkn_snapshot.sql`。`ENGINE=InnoDB`、`utf8mb4_unicode_ci`。
+
+| Column | Type | Null | Description |
+| --- | --- | --- | --- |
+| `id` | `BIGINT AUTO_INCREMENT` | No | 主キー |
+| `fetched_at` | `DATETIME(6)` | No | 東京時刻・マイクロ秒精度の取得日時。`uq_fetched_at` で一意 |
+| `schema_version` | `VARCHAR(32)` | No | 入力バージョン |
+| `status` | `VARCHAR(16)` | No | 成功状態 `OK` |
+| `grand_total_jpy` | `BIGINT` | No | 表示された資産評価額合計 |
+| `total_cost_jpy` | `BIGINT` | No | 表示された取得価額累計合計 |
+| `pnl_jpy` | `BIGINT` | No | 表示された損益合計 |
+| `created_at` | `TIMESTAMP` | Yes | `DEFAULT CURRENT_TIMESTAMP` |
+| `updated_at` | `TIMESTAMP` | Yes | `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` |
+
+## nrkn_holding
+
+由来 migration: `009_nrkn_snapshot.sql`。`ENGINE=InnoDB`、`utf8mb4_unicode_ci`。
+コードと FIGI の列は `utf8mb4_bin`。金額は入力の整数を `BIGINT`、数量・価格・比率は入力の Go `float64` に合わせて `DOUBLE` で保存します。
+
+| Column | Type | Null | Description |
+| --- | --- | --- | --- |
+| `id` | `BIGINT AUTO_INCREMENT` | No | 主キー |
+| `snapshot_id` | `BIGINT` | No | `nrkn_snapshot.id` への外部キー |
+| `product_code` | `VARCHAR(64)` | No | 先頭ゼロを保持する商品コード |
+| `composite_figi` | `VARCHAR(12)` | No | 商品の識別子 |
+| `name`, `category` | `TEXT` | No | 商品名・分類 |
+| `quantity` | `DOUBLE` | No | 数量 |
+| `unit_price` | `DOUBLE` | No | 基準価額 |
+| `value_jpy`, `cost_jpy` | `BIGINT` | No | 評価額・取得価額累計 |
+| `redemption_unit_price` | `DOUBLE` | No | 解約価額 |
+| `redemption_value_jpy` | `BIGINT` | No | 解約時評価額 |
+| `pnl_jpy` | `BIGINT` | No | 損益 |
+| `reference_date` | `DATE` | No | 商品基準日 |
+| `allocation_pct` | `DOUBLE` | No | 構成比（パーセント） |
+| `unit_price_raw`, `redemption_unit_price_raw` | `TEXT` | No | 特殊記号を含む価格の元表記 |
+| `created_at` | `TIMESTAMP` | Yes | `DEFAULT CURRENT_TIMESTAMP` |
+| `updated_at` | `TIMESTAMP` | Yes | `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` |
+
+| Kind | Name | Columns |
+| --- | --- | --- |
+| PRIMARY KEY | — | `id` |
+| UNIQUE KEY | `uq_snapshot_product` | `snapshot_id`, `product_code` |
+| INDEX | `idx_composite_figi` | `composite_figi` |
+| FOREIGN KEY | `fk_nrkn_holding_snapshot` | `snapshot_id` → `nrkn_snapshot.id` |
+
+`009_nrkn_snapshot.sql` の Down は明細、合計の順に削除します。保存データが必要な場合は、実行前に退避してください。

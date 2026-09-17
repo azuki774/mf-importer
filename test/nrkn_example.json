@@ -1,0 +1,27 @@
+{
+  "schema_version": "2026-09-14",
+  "fetched_at": "2000-01-02T03:04:05.123456789Z",
+  "status": "ok",
+  "grand_total_jpy": 100,
+  "total_cost_jpy": 110,
+  "pnl_jpy": -10,
+  "holdings": [
+    {
+      "product_code": "000001",
+      "composite_figi": "DUMMY0000001",
+      "name": "ダミー商品A",
+      "category": "テスト分類",
+      "quantity": 2.5,
+      "unit_price": 40,
+      "value_jpy": 100,
+      "cost_jpy": 110,
+      "redemption_unit_price": 39.5,
+      "redemption_value_jpy": 99,
+      "pnl_jpy": -10,
+      "reference_date": "2000-01-01",
+      "allocation_pct": 100,
+      "unit_price_raw": "*40円",
+      "redemption_unit_price_raw": "*39.5円"
+    }
+  ]
+}
