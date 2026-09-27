@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"mf-importer/internal/openapi"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -35,12 +37,12 @@ func (s *Server) Start(ctx context.Context) error {
 	if s.StaticDir != "" {
 		// 静的配信時は API を /api 配下に限定する (フロントの相対パス呼び出しに合わせる)
 		r.Route("/api", func(sub chi.Router) {
-			openapi.HandlerFromMux(gw, sub)
+			registerAPI(gw, sub)
 		})
 		r.Handle("/*", newSPAHandler(s.StaticDir))
 		s.Logger.Info("serve static frontend", zap.String("dir", s.StaticDir))
 	} else {
-		openapi.HandlerFromMux(gw, r)
+		registerAPI(gw, r)
 	}
 
 	addr := s.Addr
@@ -56,6 +58,64 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func registerAPI(gw *apigateway, r chi.Router) {
+	validateRaw := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p := strings.TrimPrefix(req.URL.Path, "/api")
+			if strings.HasPrefix(p, "/financial-assets/") {
+				allowed := map[string]bool{}
+				if p == "/financial-assets/snapshots" || p == "/financial-assets/balances" {
+					allowed = map[string]bool{"source": true, "from": true, "to": true, "limit": true, "cursor": true}
+				}
+				if p == "/financial-assets/balances" {
+					allowed["at"], allowed["interval"] = true, true
+				}
+				query, err := url.ParseQuery(req.URL.RawQuery)
+				if err != nil {
+					writeBadRequest(w)
+					return
+				}
+				for k, vals := range query {
+					if !allowed[k] || (k != "source" && len(vals) != 1) || len(vals) == 0 {
+						writeBadRequest(w)
+						return
+					}
+					for _, val := range vals {
+						if val == "" {
+							writeBadRequest(w)
+							return
+						}
+					}
+					if k == "source" {
+						src := map[string]bool{}
+						for _, v := range vals {
+							if (v != "sbi" && v != "nrkn") || src[v] {
+								writeBadRequest(w)
+								return
+							}
+							src[v] = true
+						}
+					}
+				}
+			}
+			next.ServeHTTP(w, req)
+		})
+	}
+	openapi.HandlerWithOptions(gw, openapi.ChiServerOptions{BaseRouter: r, Middlewares: []openapi.MiddlewareFunc{validateRaw}, ErrorHandlerFunc: func(w http.ResponseWriter, req *http.Request, err error) {
+		if strings.HasPrefix(req.URL.Path, "/financial-assets/") || strings.HasPrefix(req.URL.Path, "/api/financial-assets/") {
+			writeBadRequest(w)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}})
+}
+
+func writeBadRequest(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(openapi.ApiError{Error: "invalid request parameters"})
 }
 
 // newSPAHandler は静的ファイルを配信し、存在しないパスは index.html へフォールバックする
