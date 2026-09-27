@@ -23,6 +23,12 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 | POST | `/rules` | 抽出ルール追加 | Body: `application/json` の `RuleRequest` | 仕様記載あり（201: `Rule`） |
 | GET | `/rules/{id}` | 抽出ルール取得 | Path: `id` (integer、必須) | 仕様記載あり（200: `Rule`） |
 | DELETE | `/rules/{id}` | 抽出ルール削除 | Path: `id` (integer、必須)。Body: YAML 上は `content: {}` | 仕様記載あり（204） |
+| GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（summary のみ） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 設計済み・未実装 |
+| GET | `/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 設計済み・未実装 |
+| GET | `/financial-assets/balances` | 指定時点のソース別・合計残高 | Query: `source` 任意、`at` (RFC 3339、default: 現在) | 設計済み・未実装 |
+| GET | `/financial-assets/history` | 日次・月次の残高推移 | Query: `from` (inclusive), `to` (exclusive), `interval` (`day` / `month`), `source`, `limit`, `cursor` | 設計済み・未実装 |
+
+金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧はメタデータと totals を返します。履歴は Asia/Tokyo の期間境界を使い、各点で境界時刻未満の最新スナップショットを採用して前方補完します。月の途中の期間指定では境界を指定範囲に合わせます。ソースまたは値が欠ける場合、合計は項目ごとに `null` となります。`missingSources` は該当するスナップショット自体がないソースだけを列挙します。カーソルはフィルターとページ条件に紐づき、継続ページ間でデータ集合は固定されません。現在のサーバーでは、この4つのエンドポイントは `501` を返します。
 
 `/details/{id}` の PATCH は、仕様上 required な `ope` に `reset` を指定します。未知の操作名は 400 です。
 

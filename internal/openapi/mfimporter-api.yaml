@@ -219,8 +219,159 @@ paths:
           description: No Content
       servers:
         - url: 'http://localhost:3000'
+  /financial-assets/snapshots:
+    get:
+      summary: List immutable financial asset snapshots
+      description: >-
+        Returns summary metadata and totals only; use the detail endpoint for holdings.
+        Snapshots are immutable after import. Clients should track processed snapshot IDs.
+        Optional from/to select fetchedAt in [from, to); from must precede to when both exist.
+        Empty results return an empty items array. Ordering is ascending by fetchedAt then snapshotId.
+        Cursors are opaque and valid only with the same source, from, to and page size; they do
+        not freeze the result set, and concurrent imports may affect later pages.
+      operationId: list-financial-asset-snapshots
+      parameters:
+        - $ref: '#/components/parameters/Sources'
+        - name: from
+          in: query
+          description: Inclusive fetchedAt boundary, RFC 3339 with timezone.
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Exclusive fetchedAt boundary, RFC 3339 with timezone.
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: cursor
+          in: query
+          description: Opaque cursor returned by the previous page.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshot page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SnapshotPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+      servers:
+        - url: 'http://localhost:3000'
+  '/financial-assets/snapshots/{snapshotId}':
+    get:
+      summary: Get an immutable snapshot and its holdings
+      operationId: get-financial-asset-snapshot
+      parameters:
+        - name: snapshotId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Snapshot with holdings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SnapshotDetail' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+      servers:
+        - url: 'http://localhost:3000'
+  /financial-assets/balances:
+    get:
+      summary: Get source balances at a point in time
+      description: >-
+        For each requested source selects its latest snapshot fetchedAt <= at
+        (default current time). Aggregate amount is null if a source or its total
+        is missing; missingSources lists unavailable sources. No total is inferred.
+      operationId: get-financial-asset-balances
+      parameters:
+        - $ref: '#/components/parameters/Sources'
+        - name: at
+          in: query
+          description: RFC 3339 timestamp; inclusive cutoff for eligible snapshots.
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Balance and source provenance
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BalanceResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+      servers:
+        - url: 'http://localhost:3000'
+  /financial-assets/history:
+    get:
+      summary: Get daily or monthly historical balances
+      description: >-
+        from is inclusive and to is exclusive (from must be earlier than to), both
+        calendar dates in Asia/Tokyo. Each point is evaluated at the exclusive end
+        of its day or month, clipped to to for a partial final period, and selects
+        the latest snapshot fetchedAt strictly before periodEnd. Values carry forward
+        from before the range; if no prior snapshot/value exists it is null.
+        Totals are null per metric if any requested source/value is absent. Ordering is ascending
+        by periodStart. Calendar months are clipped at both requested range boundaries.
+        Cursor continuation requires the same sources, from, to, interval and limit;
+        results are not frozen and concurrent imports can affect subsequent pages.
+      operationId: get-financial-asset-history
+      parameters:
+        - $ref: '#/components/parameters/Sources'
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: interval
+          in: query
+          schema: { type: string, enum: [day, month], default: day }
+        - name: limit
+          in: query
+          description: Must match the limit used for the cursor being continued.
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Historical points
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HistoryPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '501': { $ref: '#/components/responses/NotImplemented' }
+      servers:
+        - url: 'http://localhost:3000'
 components:
+  parameters:
+    Sources:
+      name: source
+      in: query
+      description: Repeatable source filter. Omit to request both sources.
+      schema:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: { type: string, enum: [sbi, nrkn] }
+        default: [sbi, nrkn]
+      style: form
+      explode: true
   responses:
+    BadRequest:
+      description: Invalid parameter or incompatible/invalid cursor.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotFound:
+      description: Snapshot ID does not exist.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    NotImplemented:
+      description: Endpoint is specified but not implemented by this server version.
     import:
       description: /import response
       content:
@@ -259,6 +410,150 @@ components:
             default:
               value: '2024-06-01'
   schemas:
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    DecimalString:
+      description: Decimal number encoded as a string to avoid binary floating point loss.
+      type: string
+      pattern: '^-?[0-9]+(\.[0-9]+)?$'
+    NullableDecimal:
+      x-go-type: '*string'
+      x-go-type-skip-optional-pointer: true
+      anyOf:
+        - $ref: '#/components/schemas/DecimalString'
+        - type: 'null'
+    NullableString:
+      x-go-type: '*string'
+      x-go-type-skip-optional-pointer: true
+      anyOf:
+        - type: string
+        - type: 'null'
+    NullableDate:
+      x-go-type: '*string'
+      anyOf:
+        - type: string
+          format: date
+        - type: 'null'
+    NullableDateTime:
+      x-go-type: '*string'
+      anyOf:
+        - type: string
+          format: date-time
+        - type: 'null'
+    Totals:
+      type: object
+      description: >-
+        valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and
+        unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null.
+        Aggregate each field independently and return null if any requested source
+        lacks that metric. Never infer a missing value.
+      properties:
+        valuationJpy: { $ref: '#/components/schemas/NullableDecimal' }
+        costJpy: { $ref: '#/components/schemas/NullableDecimal' }
+        unrealizedPnlJpy: { $ref: '#/components/schemas/NullableDecimal' }
+      required: [valuationJpy, costJpy, unrealizedPnlJpy]
+    SnapshotPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SnapshotSummary' }
+        nextCursor: { $ref: '#/components/schemas/NullableString' }
+      required: [items, nextCursor]
+    SnapshotSummary:
+      type: object
+      description: Source totals are represented as decimal strings; null means unavailable.
+      properties:
+        snapshotId: { type: string, description: Stable opaque globally unique ID. }
+        source: { $ref: '#/components/schemas/Source' }
+        fetchedAt: { type: string, format: date-time }
+        importedAt: { type: string, format: date-time }
+        totals: { $ref: '#/components/schemas/Totals' }
+      required: [snapshotId, source, fetchedAt, importedAt, totals]
+    SnapshotDetail:
+      allOf:
+        - $ref: '#/components/schemas/SnapshotSummary'
+        - type: object
+          properties:
+            holdings:
+              type: array
+              items: { $ref: '#/components/schemas/Holding' }
+          required: [holdings]
+    Holding:
+      type: object
+      description: >-
+        holdingId is stable only within its immutable snapshot. positionKey is a
+        nullable stable source+section+product key across snapshots where identifiable;
+        FIGI is not used as cross-source holding identity. Missing/unavailable values
+        are null; no values are guessed or derived. valuationJpy maps value_jpy and
+        unrealizedPnlJpy maps pnl_jpy in both sources. costJpy maps NRKN cost_jpy;
+        SBI costJpy is null. referenceDate maps NRKN reference_date and is null for SBI.
+        section maps SBI section and is null for NRKN. productCode maps NRKN product_code
+        and is null for SBI. positionKey uses source+section+FIGI for SBI when FIGI
+        exists, otherwise null; NRKN uses source+productCode. Keys are opaque to clients.
+      properties:
+        holdingId: { type: string }
+        positionKey: { $ref: '#/components/schemas/NullableString' }
+        section: { $ref: '#/components/schemas/NullableString' }
+        productCode: { $ref: '#/components/schemas/NullableString' }
+        compositeFigi: { $ref: '#/components/schemas/NullableString' }
+        referenceDate: { $ref: '#/components/schemas/NullableDate' }
+        name: { type: string }
+        quantity: { $ref: '#/components/schemas/NullableDecimal' }
+        valuationJpy: { $ref: '#/components/schemas/NullableDecimal' }
+        costJpy: { $ref: '#/components/schemas/NullableDecimal' }
+        unrealizedPnlJpy: { $ref: '#/components/schemas/NullableDecimal' }
+      required: [holdingId, positionKey, section, productCode, compositeFigi, referenceDate, name, quantity, valuationJpy, costJpy, unrealizedPnlJpy]
+    BalanceResponse:
+      type: object
+      description: sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
+      properties:
+        at: { type: string, format: date-time }
+        totals: { $ref: '#/components/schemas/Totals' }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/BalanceSource' }
+        missingSources:
+          type: array
+          items: { $ref: '#/components/schemas/Source' }
+      required: [at, totals, sources, missingSources]
+    BalanceSource:
+      type: object
+      description: When no eligible snapshot exists, snapshotId, fetchedAt and every totals field are null.
+      properties:
+        source: { $ref: '#/components/schemas/Source' }
+        snapshotId: { $ref: '#/components/schemas/NullableString' }
+        fetchedAt: { $ref: '#/components/schemas/NullableDateTime' }
+        totals: { $ref: '#/components/schemas/Totals' }
+      required: [source, snapshotId, fetchedAt, totals]
+    HistoryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/HistoryPoint' }
+        nextCursor: { $ref: '#/components/schemas/NullableString' }
+      required: [items, nextCursor]
+    HistoryPoint:
+      type: object
+      description: sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
+      properties:
+        periodStart: { type: string, format: date, description: Inclusive period start clipped to requested range. }
+        periodEnd: { type: string, format: date, description: Exclusive cutoff; end of daily/monthly period clipped to requested to. }
+        totals: { $ref: '#/components/schemas/Totals' }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/BalanceSource' }
+        missingSources:
+          type: array
+          items: { $ref: '#/components/schemas/Source' }
+      required: [periodStart, periodEnd, totals, sources, missingSources]
+    Source:
+      type: string
+      enum: [sbi, nrkn]
     DetailsCount:
       type: object
       properties:

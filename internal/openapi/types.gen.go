@@ -9,6 +9,64 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for Source.
+const (
+	SourceNrkn Source = "nrkn"
+	SourceSbi  Source = "sbi"
+)
+
+// Defines values for GetFinancialAssetBalancesParamsSource.
+const (
+	GetFinancialAssetBalancesParamsSourceNrkn GetFinancialAssetBalancesParamsSource = "nrkn"
+	GetFinancialAssetBalancesParamsSourceSbi  GetFinancialAssetBalancesParamsSource = "sbi"
+)
+
+// Defines values for GetFinancialAssetHistoryParamsSource.
+const (
+	GetFinancialAssetHistoryParamsSourceNrkn GetFinancialAssetHistoryParamsSource = "nrkn"
+	GetFinancialAssetHistoryParamsSourceSbi  GetFinancialAssetHistoryParamsSource = "sbi"
+)
+
+// Defines values for GetFinancialAssetHistoryParamsInterval.
+const (
+	Day   GetFinancialAssetHistoryParamsInterval = "day"
+	Month GetFinancialAssetHistoryParamsInterval = "month"
+)
+
+// Defines values for ListFinancialAssetSnapshotsParamsSource.
+const (
+	ListFinancialAssetSnapshotsParamsSourceNrkn ListFinancialAssetSnapshotsParamsSource = "nrkn"
+	ListFinancialAssetSnapshotsParamsSourceSbi  ListFinancialAssetSnapshotsParamsSource = "sbi"
+)
+
+// ApiError defines model for ApiError.
+type ApiError struct {
+	Error string `json:"error"`
+}
+
+// BalanceResponse sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
+type BalanceResponse struct {
+	At             time.Time       `json:"at"`
+	MissingSources []Source        `json:"missingSources"`
+	Sources        []BalanceSource `json:"sources"`
+
+	// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+	Totals Totals `json:"totals"`
+}
+
+// BalanceSource When no eligible snapshot exists, snapshotId, fetchedAt and every totals field are null.
+type BalanceSource struct {
+	FetchedAt  NullableDateTime `json:"fetchedAt"`
+	SnapshotId NullableString   `json:"snapshotId"`
+	Source     Source           `json:"source"`
+
+	// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+	Totals Totals `json:"totals"`
+}
+
+// DecimalString Decimal number encoded as a string to avoid binary floating point loss.
+type DecimalString = string
+
 // Detail defines model for Detail.
 type Detail struct {
 	Id              int                `json:"id"`
@@ -25,6 +83,54 @@ type DetailsCount struct {
 	// Count total number of details
 	Count int `json:"count"`
 }
+
+// HistoryPage defines model for HistoryPage.
+type HistoryPage struct {
+	Items      []HistoryPoint `json:"items"`
+	NextCursor NullableString `json:"nextCursor"`
+}
+
+// HistoryPoint sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
+type HistoryPoint struct {
+	MissingSources []Source `json:"missingSources"`
+
+	// PeriodEnd Exclusive cutoff; end of daily/monthly period clipped to requested to.
+	PeriodEnd openapi_types.Date `json:"periodEnd"`
+
+	// PeriodStart Inclusive period start clipped to requested range.
+	PeriodStart openapi_types.Date `json:"periodStart"`
+	Sources     []BalanceSource    `json:"sources"`
+
+	// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+	Totals Totals `json:"totals"`
+}
+
+// Holding holdingId is stable only within its immutable snapshot. positionKey is a nullable stable source+section+product key across snapshots where identifiable; FIGI is not used as cross-source holding identity. Missing/unavailable values are null; no values are guessed or derived. valuationJpy maps value_jpy and unrealizedPnlJpy maps pnl_jpy in both sources. costJpy maps NRKN cost_jpy; SBI costJpy is null. referenceDate maps NRKN reference_date and is null for SBI. section maps SBI section and is null for NRKN. productCode maps NRKN product_code and is null for SBI. positionKey uses source+section+FIGI for SBI when FIGI exists, otherwise null; NRKN uses source+productCode. Keys are opaque to clients.
+type Holding struct {
+	CompositeFigi    NullableString  `json:"compositeFigi"`
+	CostJpy          NullableDecimal `json:"costJpy"`
+	HoldingId        string          `json:"holdingId"`
+	Name             string          `json:"name"`
+	PositionKey      NullableString  `json:"positionKey"`
+	ProductCode      NullableString  `json:"productCode"`
+	Quantity         NullableDecimal `json:"quantity"`
+	ReferenceDate    NullableDate    `json:"referenceDate"`
+	Section          NullableString  `json:"section"`
+	UnrealizedPnlJpy NullableDecimal `json:"unrealizedPnlJpy"`
+	ValuationJpy     NullableDecimal `json:"valuationJpy"`
+}
+
+// NullableDate defines model for NullableDate.
+type NullableDate = *string
+
+// NullableDateTime defines model for NullableDateTime.
+type NullableDateTime = *string
+
+// NullableDecimal defines model for NullableDecimal.
+type NullableDecimal = *string
+
+// NullableString defines model for NullableString.
+type NullableString = *string
 
 // Rule defines model for Rule.
 type Rule struct {
@@ -43,6 +149,58 @@ type RuleRequest struct {
 	Value      string `json:"value"`
 }
 
+// SnapshotDetail defines model for SnapshotDetail.
+type SnapshotDetail struct {
+	FetchedAt  time.Time `json:"fetchedAt"`
+	Holdings   []Holding `json:"holdings"`
+	ImportedAt time.Time `json:"importedAt"`
+
+	// SnapshotId Stable opaque globally unique ID.
+	SnapshotId string `json:"snapshotId"`
+	Source     Source `json:"source"`
+
+	// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+	Totals Totals `json:"totals"`
+}
+
+// SnapshotPage defines model for SnapshotPage.
+type SnapshotPage struct {
+	Items      []SnapshotSummary `json:"items"`
+	NextCursor NullableString    `json:"nextCursor"`
+}
+
+// SnapshotSummary Source totals are represented as decimal strings; null means unavailable.
+type SnapshotSummary struct {
+	FetchedAt  time.Time `json:"fetchedAt"`
+	ImportedAt time.Time `json:"importedAt"`
+
+	// SnapshotId Stable opaque globally unique ID.
+	SnapshotId string `json:"snapshotId"`
+	Source     Source `json:"source"`
+
+	// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+	Totals Totals `json:"totals"`
+}
+
+// Source defines model for Source.
+type Source string
+
+// Totals valuationJpy maps SBI grand_total_jpy / NRKN grand_total_jpy. costJpy and unrealizedPnlJpy map only NRKN total_cost_jpy and pnl_jpy; SBI values are null. Aggregate each field independently and return null if any requested source lacks that metric. Never infer a missing value.
+type Totals struct {
+	CostJpy          NullableDecimal `json:"costJpy"`
+	UnrealizedPnlJpy NullableDecimal `json:"unrealizedPnlJpy"`
+	ValuationJpy     NullableDecimal `json:"valuationJpy"`
+}
+
+// Sources defines model for Sources.
+type Sources = []string
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ApiError
+
+// NotFound defines model for NotFound.
+type NotFound = ApiError
+
 // GetDetailsParams defines parameters for GetDetails.
 type GetDetailsParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -60,6 +218,56 @@ type PatchDetailsIdParams struct {
 	// Ope operate name ("reset": judge history reset)
 	Ope string `form:"ope" json:"ope"`
 }
+
+// GetFinancialAssetBalancesParams defines parameters for GetFinancialAssetBalances.
+type GetFinancialAssetBalancesParams struct {
+	// Source Repeatable source filter. Omit to request both sources.
+	Source *Sources `form:"source,omitempty" json:"source,omitempty"`
+
+	// At RFC 3339 timestamp; inclusive cutoff for eligible snapshots.
+	At *time.Time `form:"at,omitempty" json:"at,omitempty"`
+}
+
+// GetFinancialAssetBalancesParamsSource defines parameters for GetFinancialAssetBalances.
+type GetFinancialAssetBalancesParamsSource string
+
+// GetFinancialAssetHistoryParams defines parameters for GetFinancialAssetHistory.
+type GetFinancialAssetHistoryParams struct {
+	// Source Repeatable source filter. Omit to request both sources.
+	Source   *Sources                                `form:"source,omitempty" json:"source,omitempty"`
+	From     openapi_types.Date                      `form:"from" json:"from"`
+	To       openapi_types.Date                      `form:"to" json:"to"`
+	Interval *GetFinancialAssetHistoryParamsInterval `form:"interval,omitempty" json:"interval,omitempty"`
+
+	// Limit Must match the limit used for the cursor being continued.
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// GetFinancialAssetHistoryParamsSource defines parameters for GetFinancialAssetHistory.
+type GetFinancialAssetHistoryParamsSource string
+
+// GetFinancialAssetHistoryParamsInterval defines parameters for GetFinancialAssetHistory.
+type GetFinancialAssetHistoryParamsInterval string
+
+// ListFinancialAssetSnapshotsParams defines parameters for ListFinancialAssetSnapshots.
+type ListFinancialAssetSnapshotsParams struct {
+	// Source Repeatable source filter. Omit to request both sources.
+	Source *Sources `form:"source,omitempty" json:"source,omitempty"`
+
+	// From Inclusive fetchedAt boundary, RFC 3339 with timezone.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Exclusive fetchedAt boundary, RFC 3339 with timezone.
+	To    *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	Limit *int       `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Opaque cursor returned by the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListFinancialAssetSnapshotsParamsSource defines parameters for ListFinancialAssetSnapshots.
+type ListFinancialAssetSnapshotsParamsSource string
 
 // GetHealthTextBody defines parameters for GetHealth.
 type GetHealthTextBody = string
