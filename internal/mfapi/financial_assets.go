@@ -157,7 +157,11 @@ func (s financialService) list(ctx context.Context, p openapi.ListFinancialAsset
 		}
 	}
 	for _, row := range snapshots {
-		result.Items = append(result.Items, financialDetail(row))
+		detail, err := financialDetail(row)
+		if err != nil {
+			return result, err
+		}
+		result.Items = append(result.Items, detail)
 	}
 	return result, nil
 }
@@ -175,20 +179,49 @@ func (s financialService) detail(ctx context.Context, id string) (openapi.Snapsh
 	if err != nil {
 		return openapi.SnapshotDetail{}, err
 	}
-	return financialDetail(row), nil
+	return financialDetail(row)
 }
 
 func financialTotals(row model.FinancialSnapshot) openapi.Totals {
 	return openapi.Totals{ValuationJpy: row.ValuationJpy, CostJpy: row.CostJpy, UnrealizedPnlJpy: row.UnrealizedPnlJpy}
 }
 
-func financialDetail(row model.FinancialSnapshot) openapi.SnapshotDetail {
+func financialDetail(row model.FinancialSnapshot) (openapi.SnapshotDetail, error) {
 	result := openapi.SnapshotDetail{SnapshotId: snapshotID(row.Source, row.ID), Source: openapi.Source(row.Source), FetchedAt: row.FetchedAt.In(jst), ImportedAt: row.ImportedAt.In(jst), Totals: financialTotals(row), Holdings: []openapi.Holding{}}
 	sort.Slice(row.Holdings, func(i, j int) bool { return row.Holdings[i].ID < row.Holdings[j].ID })
 	for _, h := range row.Holdings {
-		result.Holdings = append(result.Holdings, openapi.Holding{HoldingId: fmt.Sprintf("v1:%s:%020d:%020d", row.Source, row.ID, h.ID), Section: h.Section, ProductCode: h.ProductCode, CompositeFigi: h.CompositeFigi, ReferenceDate: h.ReferenceDate, Name: h.Name, Quantity: h.Quantity, ValuationJpy: h.ValuationJpy, CostJpy: h.CostJpy, UnrealizedPnlJpy: h.UnrealizedPnlJpy})
+		cost, err := financialHoldingCost(row.Source, h)
+		if err != nil {
+			return openapi.SnapshotDetail{}, err
+		}
+		result.Holdings = append(result.Holdings, openapi.Holding{HoldingId: fmt.Sprintf("v1:%s:%020d:%020d", row.Source, row.ID, h.ID), Section: h.Section, ProductCode: h.ProductCode, CompositeFigi: h.CompositeFigi, ReferenceDate: h.ReferenceDate, Name: h.Name, Quantity: h.Quantity, ValuationJpy: h.ValuationJpy, CostJpy: cost, UnrealizedPnlJpy: h.UnrealizedPnlJpy})
 	}
-	return result
+	return result, nil
+}
+
+// financialHoldingCost calculates the missing SBI holding cost in API responses:
+// costJpy = valuationJpy - unrealizedPnlJpy. Both operands are stored JPY values
+// from the same snapshot; exact decimal arithmetic avoids float64 rounding.
+// This is a calculated value, not a separately imported acquisition-cost field,
+// and is not written back to the DB. Never use quantity * unit_cost here: unit
+// cost may be in another currency or quoted per multiple fund units. Existing
+// costs (including NRKN's imported value) take precedence; missing operands stay
+// null. Snapshot totals are not derived because holdings do not cover all assets.
+func financialHoldingCost(source string, h model.FinancialHolding) (*string, error) {
+	if h.CostJpy != nil || source != "sbi" {
+		return h.CostJpy, nil
+	}
+	if h.ValuationJpy == nil || h.UnrealizedPnlJpy == nil {
+		return nil, nil
+	}
+	if !financialDecimalPattern.MatchString(*h.UnrealizedPnlJpy) {
+		return nil, errors.New("invalid stored financial decimal")
+	}
+	negativePnl := "-" + *h.UnrealizedPnlJpy
+	if strings.HasPrefix(*h.UnrealizedPnlJpy, "-") {
+		negativePnl = strings.TrimPrefix(*h.UnrealizedPnlJpy, "-")
+	}
+	return sumFinancialDecimals([]*string{h.ValuationJpy, &negativePnl})
 }
 
 func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAssetBalancesParams) (openapi.BalancePage, error) {

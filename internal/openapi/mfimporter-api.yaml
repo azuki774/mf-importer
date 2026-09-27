@@ -490,9 +490,13 @@ components:
         grouping dimensions when separate holdings are desired. When FIGI is absent,
         productCode can identify products within the same source only; names must not
         be used as product identifiers. Missing/unavailable values
-        are null; no values are guessed or derived. valuationJpy maps value_jpy and
+        are null; no values are guessed. valuationJpy maps value_jpy and
         unrealizedPnlJpy maps pnl_jpy in both sources. costJpy maps NRKN cost_jpy;
-        SBI costJpy is null. referenceDate maps NRKN reference_date and is null for SBI.
+        SBI holding costJpy is calculated as valuationJpy minus unrealizedPnlJpy,
+        using exact decimal arithmetic on the stored JPY values in this snapshot.
+        Missing operands produce null. This calculation is performed only for
+        response holdings, not stored back in the DB or used to infer snapshot totals.
+        referenceDate maps NRKN reference_date and is null for SBI.
         section maps SBI section and is null for NRKN. productCode maps NRKN product_code
         and is null for SBI. Record IDs are opaque to clients.
       properties:
@@ -504,7 +508,10 @@ components:
         name: { type: string }
         quantity: { $ref: '#/components/schemas/NullableDecimal' }
         valuationJpy: { $ref: '#/components/schemas/NullableDecimal' }
-        costJpy: { $ref: '#/components/schemas/NullableDecimal' }
+        costJpy:
+          allOf:
+            - $ref: '#/components/schemas/NullableDecimal'
+          description: NRKN は取り込み値。SBI の明細は評価額から評価損益を引いて計算により補完する。どちらかの値がなければ null。
         unrealizedPnlJpy: { $ref: '#/components/schemas/NullableDecimal' }
       required: [holdingId, section, productCode, compositeFigi, referenceDate, name, quantity, valuationJpy, costJpy, unrealizedPnlJpy]
     BalancePage:

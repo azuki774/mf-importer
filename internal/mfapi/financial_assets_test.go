@@ -197,6 +197,78 @@ func TestFinancialExactDecimalAddition(t *testing.T) {
 	}
 }
 
+func TestFinancialHoldingCostCalculation(t *testing.T) {
+	// Hand-written values exercise gains, losses, zero and precision; none are
+	// taken from actual holdings or downloaded financial data.
+	for _, tc := range []struct {
+		name, source           string
+		value, pnl, cost, want *string
+	}{
+		{"gain", "sbi", financialTestPtr("120.25"), financialTestPtr("20.10"), nil, financialTestPtr("100.15")},
+		{"loss", "sbi", financialTestPtr("80.25"), financialTestPtr("-20.10"), nil, financialTestPtr("100.35")},
+		{"zero", "sbi", financialTestPtr("0.00"), financialTestPtr("0.00"), nil, financialTestPtr("0")},
+		{"precision", "sbi", financialTestPtr("999999999999.99"), financialTestPtr("-0.01"), nil, financialTestPtr("1000000000000")},
+		{"missing value", "sbi", nil, financialTestPtr("1"), nil, nil},
+		{"missing pnl", "sbi", financialTestPtr("1"), nil, nil, nil},
+		{"imported zero preserved", "nrkn", financialTestPtr("120"), financialTestPtr("20"), financialTestPtr("0"), financialTestPtr("0")},
+		{"imported cost preserved", "nrkn", financialTestPtr("120"), financialTestPtr("20"), financialTestPtr("99"), financialTestPtr("99")},
+		{"NRKN not inferred", "nrkn", financialTestPtr("120"), financialTestPtr("20"), nil, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := financialHoldingCost(tc.source, model.FinancialHolding{ValuationJpy: tc.value, UnrealizedPnlJpy: tc.pnl, CostJpy: tc.cost})
+			if err != nil || !reflect.DeepEqual(got, tc.want) {
+				t.Fatal("incorrect calculated cost")
+			}
+		})
+	}
+	for _, h := range []model.FinancialHolding{
+		{ValuationJpy: financialTestPtr("invalid"), UnrealizedPnlJpy: financialTestPtr("1")},
+		{ValuationJpy: financialTestPtr("1"), UnrealizedPnlJpy: financialTestPtr("invalid")},
+	} {
+		if _, err := financialHoldingCost("sbi", h); err == nil {
+			t.Fatal("invalid decimal accepted")
+		}
+	}
+}
+
+func TestFinancialCalculatedCostConsistentAcrossListAndDetail(t *testing.T) {
+	s := newMockFinancialService()
+	p, err := s.list(context.Background(), openapi.ListFinancialAssetSnapshotsParams{Source: financialTestPtr(openapi.Sources{"sbi"})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Items) == 0 {
+		t.Fatal("missing synthetic snapshots")
+	}
+	for _, row := range p.Items {
+		if row.Totals.CostJpy != nil || row.Totals.UnrealizedPnlJpy != nil {
+			t.Fatal("snapshot totals must not be inferred from holdings")
+		}
+		detail, err := s.detail(context.Background(), row.SnapshotId)
+		if err != nil || !reflect.DeepEqual(detail, row) {
+			t.Fatal("list/detail cost mismatch")
+		}
+		if len(row.Holdings) == 0 {
+			t.Fatal("missing synthetic holdings")
+		}
+		for _, h := range row.Holdings {
+			if h.CostJpy == nil || *h.CostJpy != "101.1" {
+				t.Fatal("missing calculated holding cost")
+			}
+		}
+	}
+	// Derivation affects only API output, not stored read models.
+	for _, row := range s.repo.(memoryFinancialRepository).rows {
+		if row.Source == "sbi" {
+			for _, h := range row.Holdings {
+				if h.CostJpy != nil {
+					t.Fatal("mutated stored holding cost")
+				}
+			}
+		}
+	}
+}
+
 func TestFinancialCursorPositionValidation(t *testing.T) {
 	s := newMockFinancialService()
 	ctx := context.Background()

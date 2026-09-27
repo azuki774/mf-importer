@@ -37,6 +37,8 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 
 商品の識別には `compositeFigi` を使い、保有先・保有区分を分ける場合はスナップショットの `source` と明細の `section` を併用します。FIGI がない場合、`productCode` は同じデータ元の中だけで利用できます。商品名で同一判定はしません。`holdingId` は取得時点の明細の識別子です。
 
+SBI の商品明細の `costJpy` は、同じスナップショットの円建て値を使い、`valuationJpy - unrealizedPnlJpy` の計算により補完します。浮動小数点を経由せず計算し、どちらかが欠けていれば `null` とします。DB への書き戻しは行いません。NRKN の取り込み済み取得価額を優先し、明細だけでは対象範囲を網羅できない全体の取得価額・評価損益は補完しません。
+
 `/details/{id}` の PATCH は、仕様上 required な `ope` に `reset` を指定します。未知の操作名は 400 です。
 
 ## スキーマ概要
