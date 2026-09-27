@@ -433,12 +433,14 @@ components:
         - type: 'null'
     NullableDate:
       x-go-type: '*string'
+      x-go-type-skip-optional-pointer: true
       anyOf:
         - type: string
           format: date
         - type: 'null'
     NullableDateTime:
       x-go-type: '*string'
+      x-go-type-skip-optional-pointer: true
       anyOf:
         - type: string
           format: date-time
