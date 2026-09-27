@@ -22,6 +22,40 @@ type APIService interface {
 	ResetImportDetails(ctx context.Context, id int) (err error)
 	AddRule(ctx context.Context, req openapi.RuleRequest) (openapi.Rule, error)
 	DeleteRule(ctx context.Context, id int) error
+	ListFinancialAssetSnapshots(context.Context, openapi.ListFinancialAssetSnapshotsParams) (openapi.SnapshotPage, error)
+	GetFinancialAssetSnapshot(context.Context, string) (openapi.SnapshotDetail, error)
+	GetFinancialAssetBalances(context.Context, openapi.GetFinancialAssetBalancesParams) (openapi.BalancePage, error)
+}
+
+func (a *apigateway) ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, p openapi.ListFinancialAssetSnapshotsParams) {
+	v, err := a.APIService.ListFinancialAssetSnapshots(r.Context(), p)
+	a.writeFinancialAsset(w, v, err)
+}
+func (a *apigateway) GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, id string) {
+	v, err := a.APIService.GetFinancialAssetSnapshot(r.Context(), id)
+	a.writeFinancialAsset(w, v, err)
+}
+func (a *apigateway) GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, p openapi.GetFinancialAssetBalancesParams) {
+	v, err := a.APIService.GetFinancialAssetBalances(r.Context(), p)
+	a.writeFinancialAsset(w, v, err)
+}
+func (a *apigateway) writeFinancialAsset(w http.ResponseWriter, v any, err error) {
+	if err != nil {
+		code, msg := http.StatusInternalServerError, "internal server error"
+		if errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
+			code, msg = http.StatusBadRequest, "invalid financial asset request"
+		} else if errors.Is(err, model.ErrRecordNotFound) {
+			code, msg = http.StatusNotFound, "financial asset snapshot not found"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		_ = json.NewEncoder(w).Encode(openapi.ApiError{Error: msg})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if e := json.NewEncoder(w).Encode(v); e != nil {
+		return
+	}
 }
 
 type apigateway struct {

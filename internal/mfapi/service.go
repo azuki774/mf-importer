@@ -32,12 +32,13 @@ type DBRepository interface {
 }
 
 type APIService struct {
-	Logger *zap.Logger
-	Repo   DBRepository
+	Logger        *zap.Logger
+	Repo          DBRepository
+	financialRepo financialRepository
 }
 
 func NewAPIService(l *zap.Logger, db *repository.DBClient) (ap *APIService) {
-	return &APIService{Logger: l, Repo: db}
+	return &APIService{Logger: l, Repo: db, financialRepo: db}
 }
 
 func (a *APIService) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (dets []openapi.Detail, err error) {

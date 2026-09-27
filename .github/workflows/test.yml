@@ -22,8 +22,8 @@ jobs:
       - name: Build
         run: make bin
 
-      - name: Migration integration tests
-        run: go test -v ./internal/migration ./cmd/mf-importer
+      - name: Migration and financial asset repository integration tests
+        run: go test -v ./internal/migration ./internal/repository ./cmd/mf-importer
         env:
           MF_MIGRATION_TEST_DSN: "root:password@tcp(127.0.0.1:3306)/?parseTime=true"
 

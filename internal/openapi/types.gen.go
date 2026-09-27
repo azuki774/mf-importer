@@ -236,6 +236,9 @@ type Sources = []string
 // BadRequest defines model for BadRequest.
 type BadRequest = ApiError
 
+// InternalError defines model for InternalError.
+type InternalError = ApiError
+
 // NotFound defines model for NotFound.
 type NotFound = ApiError
 

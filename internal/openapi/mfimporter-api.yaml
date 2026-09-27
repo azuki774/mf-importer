@@ -256,7 +256,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SnapshotPage' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
+        '500': { $ref: '#/components/responses/InternalError' }
       servers:
         - url: 'http://localhost:3000'
   '/financial-assets/snapshots/{snapshotId}':
@@ -276,7 +276,7 @@ paths:
               schema: { $ref: '#/components/schemas/SnapshotDetail' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
+        '500': { $ref: '#/components/responses/InternalError' }
       servers:
         - url: 'http://localhost:3000'
   /financial-assets/balances:
@@ -330,7 +330,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/BalancePage' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
+        '500': { $ref: '#/components/responses/InternalError' }
       servers:
         - url: 'http://localhost:3000'
 components:
@@ -358,8 +358,11 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ApiError' }
-    NotImplemented:
-      description: Endpoint is specified but not implemented by this server version.
+    InternalError:
+      description: Unexpected server failure.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
     import:
       description: /import response
       content:
