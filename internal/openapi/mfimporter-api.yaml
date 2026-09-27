@@ -221,9 +221,11 @@ paths:
         - url: 'http://localhost:3000'
   /financial-assets/snapshots:
     get:
-      summary: 保存済みの取得履歴を一覧で取得（合計と識別子）
+      summary: 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
       description: >-
-        Returns summary metadata and totals only; use the detail endpoint for holdings.
+        Each item has the same structure as the detail endpoint, including metadata,
+        totals and all holdings belonging to that snapshot. Pagination counts snapshots,
+        not holdings; a snapshot's holdings are never truncated or split across pages.
         Snapshots are immutable after import. Clients should track processed snapshot IDs.
         Optional from/to select fetchedAt in [from, to); from must precede to when both exist.
         Empty results return an empty items array. Ordering is ascending by fetchedAt then snapshotId.
@@ -454,7 +456,7 @@ components:
       properties:
         items:
           type: array
-          items: { $ref: '#/components/schemas/SnapshotSummary' }
+          items: { $ref: '#/components/schemas/SnapshotDetail' }
         nextCursor: { $ref: '#/components/schemas/NullableString' }
       required: [items, nextCursor]
     SnapshotSummary:

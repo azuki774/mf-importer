@@ -200,8 +200,8 @@ type SnapshotDetail struct {
 
 // SnapshotPage defines model for SnapshotPage.
 type SnapshotPage struct {
-	Items      []SnapshotSummary `json:"items"`
-	NextCursor NullableString    `json:"nextCursor"`
+	Items      []SnapshotDetail `json:"items"`
+	NextCursor NullableString   `json:"nextCursor"`
 }
 
 // SnapshotSummary Source totals are represented as decimal strings; null means unavailable.

@@ -32,7 +32,7 @@ type ServerInterface interface {
 	// GetFinancialAssetBalances 残高または期間推移を取得
 	// (GET /financial-assets/balances)
 	GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams)
-	// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と識別子）
+	// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
 	// (GET /financial-assets/snapshots)
 	ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams)
 	// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
@@ -98,7 +98,7 @@ func (_ Unimplemented) GetFinancialAssetBalances(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と識別子）
+// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
 // (GET /financial-assets/snapshots)
 func (_ Unimplemented) ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams) {
 	w.WriteHeader(http.StatusNotImplemented)

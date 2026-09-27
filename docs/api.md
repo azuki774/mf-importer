@@ -23,11 +23,11 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 | POST | `/rules` | 抽出ルール追加 | Body: `application/json` の `RuleRequest` | 仕様記載あり（201: `Rule`） |
 | GET | `/rules/{id}` | 抽出ルール取得 | Path: `id` (integer、必須) | 仕様記載あり（200: `Rule`） |
 | DELETE | `/rules/{id}` | 抽出ルール削除 | Path: `id` (integer、必須)。Body: YAML 上は `content: {}` | 仕様記載あり（204） |
-| GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（summary のみ） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 設計済み・未実装 |
+| GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（詳細と同じ合計・保有明細を含む） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 設計済み・未実装 |
 | GET | `/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 設計済み・未実装 |
 | GET | `/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 設計済み・未実装 |
 
-金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧はメタデータと totals を返します。`fetchedAt` はデータ取得時刻、`importedAt` はシステムへの取り込み時刻です。スナップショット ID は安定した不透明 ID です。
+金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧の各要素は詳細 API と同じ `SnapshotDetail`（メタデータ・合計・全保有明細）を返します。ページングはスナップショット単位で、保有明細を途中で切り分けません。`fetchedAt` はデータ取得時刻、`importedAt` はシステムへの取り込み時刻です。スナップショット ID は安定した不透明 ID です。
 
 残高応答は常に `items` 配列と nullable な `nextCursor` を持ち、現在/指定時点モードは1点、期間モードは日・月ごとに1点です。データがない期間も点を返し、合計を null として `missingSources` を設定します。各点は単一時点の `timestamp`、または期間の `periodStart`/`periodEnd` を使い、使わないフィールドは null です。期間は Asia/Tokyo の境界を使い、各点で期間終了時刻未満の最新スナップショットを採用して前方補完します。月途中の期間指定では境界を指定範囲に合わせます。`at` と期間指定は併用できず、`interval`/`limit`/`cursor` は期間指定時のみ有効です。
 
