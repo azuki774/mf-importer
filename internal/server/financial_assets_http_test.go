@@ -42,18 +42,18 @@ func TestFinancialAssetHTTPResponses(t *testing.T) {
 		called     bool
 		body       string
 	}{
-		{"ok", "/financial-assets/snapshots", nil, 200, true, ""},
-		{"invalid", "/financial-assets/snapshots", model.ErrInvalidFinancialAssetRequest, 400, true, "invalid financial asset request"},
-		{"missing", "/financial-assets/snapshots/fake-id", model.ErrRecordNotFound, 404, true, "financial asset snapshot not found"},
-		{"failure", "/financial-assets/balances", errors.New("sensitive internal detail"), 500, true, "internal server error"},
-		{"unknown", "/financial-assets/snapshots?unexpected=x", nil, 400, false, "invalid request parameters"},
-		{"duplicate", "/financial-assets/snapshots?limit=1&limit=2", nil, 400, false, "invalid request parameters"},
-		{"duplicate_source", "/financial-assets/snapshots?source=sbi&source=sbi", nil, 400, false, "invalid request parameters"},
-		{"empty", "/financial-assets/snapshots?cursor=", nil, 400, false, "invalid request parameters"},
-		{"bad_bind", "/financial-assets/snapshots?limit=nope", nil, 400, false, "invalid request parameters"},
-		{"wrong_endpoint_parameter", "/financial-assets/snapshots?at=2000-01-01T00:00:00Z", nil, 400, false, "invalid request parameters"},
-		{"detail_parameter", "/financial-assets/snapshots/fake-id?source=sbi", nil, 400, false, "invalid request parameters"},
-		{"invalid_encoding", "/financial-assets/balances?unknown=%zz", nil, 400, false, "invalid request parameters"},
+		{"ok", "/v2/financial-assets/snapshots", nil, 200, true, ""},
+		{"invalid", "/v2/financial-assets/snapshots", model.ErrInvalidFinancialAssetRequest, 400, true, "invalid financial asset request"},
+		{"missing", "/v2/financial-assets/snapshots/fake-id", model.ErrRecordNotFound, 404, true, "financial asset snapshot not found"},
+		{"failure", "/v2/financial-assets/balances", errors.New("sensitive internal detail"), 500, true, "internal server error"},
+		{"unknown", "/v2/financial-assets/snapshots?unexpected=x", nil, 400, false, "invalid request parameters"},
+		{"duplicate", "/v2/financial-assets/snapshots?limit=1&limit=2", nil, 400, false, "invalid request parameters"},
+		{"duplicate_source", "/v2/financial-assets/snapshots?source=sbi&source=sbi", nil, 400, false, "invalid request parameters"},
+		{"empty", "/v2/financial-assets/snapshots?cursor=", nil, 400, false, "invalid request parameters"},
+		{"bad_bind", "/v2/financial-assets/snapshots?limit=nope", nil, 400, false, "invalid request parameters"},
+		{"wrong_endpoint_parameter", "/v2/financial-assets/snapshots?at=2000-01-01T00:00:00Z", nil, 400, false, "invalid request parameters"},
+		{"detail_parameter", "/v2/financial-assets/snapshots/fake-id?source=sbi", nil, 400, false, "invalid request parameters"},
+		{"invalid_encoding", "/v2/financial-assets/balances?unknown=%zz", nil, 400, false, "invalid request parameters"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := &financialAssetHTTPService{err: tc.err}
@@ -81,7 +81,7 @@ func TestFinancialAssetHTTPErrorsOnStaticAPIMount(t *testing.T) {
 	r := chi.NewRouter()
 	r.Route("/api", func(sub chi.Router) { registerAPI(&apigateway{APIService: &financialAssetHTTPService{}}, sub) })
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest("GET", "/api/financial-assets/balances?source=bad", nil))
+	r.ServeHTTP(rec, httptest.NewRequest("GET", "/api/v2/financial-assets/balances?source=bad", nil))
 	if rec.Code != 400 || !strings.Contains(rec.Header().Get("Content-Type"), "application/json") {
 		t.Fatalf("got %d %s", rec.Code, rec.Body.String())
 	}
@@ -102,27 +102,59 @@ func TestFinancialAssetHTTPWithMockService(t *testing.T) {
 		}
 	}
 	var page openapi.SnapshotPage
-	get("/financial-assets/snapshots?limit=1", 200, &page)
+	get("/v2/financial-assets/snapshots?limit=1", 200, &page)
 	if len(page.Items) != 1 || len(page.Items[0].Holdings) != 1 || page.NextCursor == nil {
 		t.Fatal("missing detailed snapshot page")
 	}
 	var detail openapi.SnapshotDetail
-	get("/financial-assets/snapshots/"+page.Items[0].SnapshotId, 200, &detail)
+	get("/v2/financial-assets/snapshots/"+page.Items[0].SnapshotId, 200, &detail)
 	a, _ := json.Marshal(detail)
 	b, _ := json.Marshal(page.Items[0])
 	if string(a) != string(b) {
 		t.Fatal("list/detail inconsistent")
 	}
-	get("/financial-assets/snapshots?limit=1&cursor="+url.QueryEscape(*page.NextCursor), 200, &page)
+	get("/v2/financial-assets/snapshots?limit=1&cursor="+url.QueryEscape(*page.NextCursor), 200, &page)
 	for _, query := range []string{"", "?at=2000-01-01T12:00:00%2B09:00", "?from=2000-01-01&to=2000-01-05", "?from=2000-01-02&to=2000-02-03&interval=month"} {
 		var balances openapi.BalancePage
-		get("/financial-assets/balances"+query, 200, &balances)
+		get("/v2/financial-assets/balances"+query, 200, &balances)
 		if len(balances.Items) == 0 {
 			t.Fatal("empty mock balance")
 		}
 	}
 	for _, query := range []string{"?from=2000-01-01", "?from=2000-01-01&to=2000-01-01", "?at=2000-01-01T00:00:00Z&interval=day", "?limit=0"} {
 		var e openapi.ApiError
-		get("/financial-assets/balances"+query, 400, &e)
+		get("/v2/financial-assets/balances"+query, 400, &e)
+	}
+}
+
+func TestFinancialAssetVersionedRoutes(t *testing.T) {
+	for _, prefix := range []string{"", "/api"} {
+		r := chi.NewRouter()
+		gw := &apigateway{APIService: &mfapi.MockAPIService{}}
+		if prefix == "" {
+			registerAPI(gw, r)
+		} else {
+			r.Route(prefix, func(sub chi.Router) { registerAPI(gw, sub) })
+		}
+		for _, tc := range []struct {
+			path   string
+			status int
+		}{
+			{"/v2/financial-assets/snapshots", 200},
+			{"/v2/financial-assets/balances", 200},
+			{"/financial-assets/snapshots", 404},
+			{"/financial-assets/snapshots/fake-id", 404},
+			{"/financial-assets/balances", 404},
+			{"/v1/financial-assets/snapshots", 404},
+			{"/health", 200},
+			{"/details", 200},
+			{"/rules", 200},
+		} {
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, httptest.NewRequest("GET", prefix+tc.path, nil))
+			if rec.Code != tc.status {
+				t.Fatalf("%s: status %d, want %d", prefix+tc.path, rec.Code, tc.status)
+			}
+		}
 	}
 }

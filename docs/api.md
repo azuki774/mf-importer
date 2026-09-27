@@ -23,9 +23,11 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 | POST | `/rules` | 抽出ルール追加 | Body: `application/json` の `RuleRequest` | 仕様記載あり（201: `Rule`） |
 | GET | `/rules/{id}` | 抽出ルール取得 | Path: `id` (integer、必須) | 仕様記載あり（200: `Rule`） |
 | DELETE | `/rules/{id}` | 抽出ルール削除 | Path: `id` (integer、必須)。Body: YAML 上は `content: {}` | 仕様記載あり（204） |
-| GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（詳細と同じ合計・保有明細を含む） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 実装済み（DB・モック API） |
-| GET | `/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 実装済み（DB・モック API） |
-| GET | `/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/snapshots` | 金融資産スナップショット一覧（詳細と同じ合計・保有明細を含む） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 実装済み（DB・モック API） |
+
+既存の `/details`・`/rules` 等のバージョンなし API を v1 相当として扱います。金融資産 API はすべて `/v2/financial-assets/` 配下に配置し、バージョンなしの金融資産 API は提供しません。静的 UI と同時配信する構成では `/api/v2/financial-assets/` です。レスポンスの ID にある `v1:` は ID の形式バージョンであり、API の URL バージョンとは独立しています。
 
 金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧の各要素は詳細 API と同じ `SnapshotDetail`（メタデータ・合計・全保有明細）を返します。ページングはスナップショット単位で、保有明細を途中で切り分けません。`fetchedAt` はデータ取得時刻、`importedAt` はシステムへの取り込み時刻です。スナップショット ID は安定した不透明 ID です。
 

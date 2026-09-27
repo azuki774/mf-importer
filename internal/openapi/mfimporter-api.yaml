@@ -219,7 +219,7 @@ paths:
           description: No Content
       servers:
         - url: 'http://localhost:3000'
-  /financial-assets/snapshots:
+  /v2/financial-assets/snapshots:
     get:
       summary: 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
       description: >-
@@ -259,7 +259,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
       servers:
         - url: 'http://localhost:3000'
-  '/financial-assets/snapshots/{snapshotId}':
+  '/v2/financial-assets/snapshots/{snapshotId}':
     get:
       summary: 指定した取得履歴の合計と保有商品明細を取得
       operationId: get-financial-asset-snapshot
@@ -279,7 +279,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
       servers:
         - url: 'http://localhost:3000'
-  /financial-assets/balances:
+  /v2/financial-assets/balances:
     get:
       summary: 残高または期間推移を取得
       description: >-
