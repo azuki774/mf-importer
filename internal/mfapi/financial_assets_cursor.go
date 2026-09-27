@@ -28,11 +28,6 @@ func parseSnapshotID(value string) (string, int64, error) {
 	return p[1], id, nil
 }
 
-func positionID(parts []string) string {
-	b, _ := json.Marshal(parts)
-	return "v1:" + base64.RawURLEncoding.EncodeToString(b)
-}
-
 type financialCursor struct {
 	Version   int       `json:"v"`
 	Kind      string    `json:"kind"`

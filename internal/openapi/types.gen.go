@@ -132,13 +132,12 @@ type DetailsCount struct {
 	Count int `json:"count"`
 }
 
-// Holding holdingId is stable only within its immutable snapshot. positionKey is a nullable stable source+section+product key across snapshots where identifiable; FIGI is not used as cross-source holding identity. Missing/unavailable values are null; no values are guessed or derived. valuationJpy maps value_jpy and unrealizedPnlJpy maps pnl_jpy in both sources. costJpy maps NRKN cost_jpy; SBI costJpy is null. referenceDate maps NRKN reference_date and is null for SBI. section maps SBI section and is null for NRKN. productCode maps NRKN product_code and is null for SBI. positionKey uses source+section+FIGI for SBI when FIGI exists, otherwise null; NRKN uses source+productCode. Keys are opaque to clients.
+// Holding holdingId identifies a record within its immutable snapshot, not a product across time. Use compositeFigi to group the same identified product across snapshots or sources; use the parent snapshot's source and this holding's section as additional grouping dimensions when separate holdings are desired. When FIGI is absent, productCode can identify products within the same source only; names must not be used as product identifiers. Missing/unavailable values are null; no values are guessed or derived. valuationJpy maps value_jpy and unrealizedPnlJpy maps pnl_jpy in both sources. costJpy maps NRKN cost_jpy; SBI costJpy is null. referenceDate maps NRKN reference_date and is null for SBI. section maps SBI section and is null for NRKN. productCode maps NRKN product_code and is null for SBI. Record IDs are opaque to clients.
 type Holding struct {
 	CompositeFigi    NullableString  `json:"compositeFigi"`
 	CostJpy          NullableDecimal `json:"costJpy"`
 	HoldingId        string          `json:"holdingId"`
 	Name             string          `json:"name"`
-	PositionKey      NullableString  `json:"positionKey"`
 	ProductCode      NullableString  `json:"productCode"`
 	Quantity         NullableDecimal `json:"quantity"`
 	ReferenceDate    NullableDate    `json:"referenceDate"`

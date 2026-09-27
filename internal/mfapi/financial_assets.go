@@ -186,16 +186,7 @@ func financialDetail(row model.FinancialSnapshot) openapi.SnapshotDetail {
 	result := openapi.SnapshotDetail{SnapshotId: snapshotID(row.Source, row.ID), Source: openapi.Source(row.Source), FetchedAt: row.FetchedAt.In(jst), ImportedAt: row.ImportedAt.In(jst), Totals: financialTotals(row), Holdings: []openapi.Holding{}}
 	sort.Slice(row.Holdings, func(i, j int) bool { return row.Holdings[i].ID < row.Holdings[j].ID })
 	for _, h := range row.Holdings {
-		var position *string
-		if row.Source == "nrkn" && h.ProductCode != nil {
-			v := positionID([]string{row.Source, *h.ProductCode})
-			position = &v
-		}
-		if row.Source == "sbi" && h.CompositeFigi != nil && *h.CompositeFigi != "" && h.Section != nil {
-			v := positionID([]string{row.Source, *h.Section, *h.CompositeFigi})
-			position = &v
-		}
-		result.Holdings = append(result.Holdings, openapi.Holding{HoldingId: fmt.Sprintf("v1:%s:%020d:%020d", row.Source, row.ID, h.ID), PositionKey: position, Section: h.Section, ProductCode: h.ProductCode, CompositeFigi: h.CompositeFigi, ReferenceDate: h.ReferenceDate, Name: h.Name, Quantity: h.Quantity, ValuationJpy: h.ValuationJpy, CostJpy: h.CostJpy, UnrealizedPnlJpy: h.UnrealizedPnlJpy})
+		result.Holdings = append(result.Holdings, openapi.Holding{HoldingId: fmt.Sprintf("v1:%s:%020d:%020d", row.Source, row.ID, h.ID), Section: h.Section, ProductCode: h.ProductCode, CompositeFigi: h.CompositeFigi, ReferenceDate: h.ReferenceDate, Name: h.Name, Quantity: h.Quantity, ValuationJpy: h.ValuationJpy, CostJpy: h.CostJpy, UnrealizedPnlJpy: h.UnrealizedPnlJpy})
 	}
 	return result
 }
