@@ -5,6 +5,7 @@ CONTAINER_NAME_FRONT=mf-importer-fe
 CONTAINER_NAME_API=mf-importer-api
 CONTAINER_NAME_METRICS=mf-importer-metrics
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
+OAPI_CODEGEN=go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
 pwd := $(shell pwd)
 API_BIN=build/bin/mf-importer-api
 URL ?= http://127.0.0.1:8080
@@ -44,9 +45,9 @@ migration:
 	go run ./cmd/mf-importer migrate up
 
 generate:
-	oapi-codegen -package "openapi" -generate "chi-server" ${OPENAPI_YAML} > internal/openapi/server.gen.go
-	oapi-codegen -package "openapi" -generate "spec"       ${OPENAPI_YAML} > internal/openapi/spec.gen.go
-	oapi-codegen -package "openapi" -generate "types"      ${OPENAPI_YAML} > internal/openapi/types.gen.go
+	$(OAPI_CODEGEN) -package "openapi" -generate "chi-server" ${OPENAPI_YAML} > internal/openapi/server.gen.go
+	$(OAPI_CODEGEN) -package "openapi" -generate "spec"       ${OPENAPI_YAML} > internal/openapi/spec.gen.go
+	$(OAPI_CODEGEN) -package "openapi" -generate "types"      ${OPENAPI_YAML} > internal/openapi/types.gen.go
 
 api-bin:
 	go build -o $(API_BIN) ./cmd/mf-importer-api

@@ -25,6 +25,7 @@ type APIService interface {
 }
 
 type apigateway struct {
+	openapi.Unimplemented
 	Logger     *zap.Logger
 	APIService APIService
 }
