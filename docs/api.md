@@ -25,10 +25,13 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 | DELETE | `/rules/{id}` | 抽出ルール削除 | Path: `id` (integer、必須)。Body: YAML 上は `content: {}` | 仕様記載あり（204） |
 | GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（summary のみ） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 設計済み・未実装 |
 | GET | `/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 設計済み・未実装 |
-| GET | `/financial-assets/balances` | 指定時点のソース別・合計残高 | Query: `source` 任意、`at` (RFC 3339、default: 現在) | 設計済み・未実装 |
-| GET | `/financial-assets/history` | 日次・月次の残高推移 | Query: `from` (inclusive), `to` (exclusive), `interval` (`day` / `month`), `source`, `limit`, `cursor` | 設計済み・未実装 |
+| GET | `/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 設計済み・未実装 |
 
-金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧はメタデータと totals を返します。履歴は Asia/Tokyo の期間境界を使い、各点で境界時刻未満の最新スナップショットを採用して前方補完します。月の途中の期間指定では境界を指定範囲に合わせます。ソースまたは値が欠ける場合、合計は項目ごとに `null` となります。`missingSources` は該当するスナップショット自体がないソースだけを列挙します。カーソルはフィルターとページ条件に紐づき、継続ページ間でデータ集合は固定されません。現在のサーバーでは、この4つのエンドポイントは `501` を返します。
+金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧はメタデータと totals を返します。`fetchedAt` はデータ取得時刻、`importedAt` はシステムへの取り込み時刻です。スナップショット ID は安定した不透明 ID です。
+
+残高応答は常に `items` 配列と nullable な `nextCursor` を持ち、現在/指定時点モードは1点、期間モードは日・月ごとに1点です。データがない期間も点を返し、合計を null として `missingSources` を設定します。各点は単一時点の `timestamp`、または期間の `periodStart`/`periodEnd` を使い、使わないフィールドは null です。期間は Asia/Tokyo の境界を使い、各点で期間終了時刻未満の最新スナップショットを採用して前方補完します。月途中の期間指定では境界を指定範囲に合わせます。`at` と期間指定は併用できず、`interval`/`limit`/`cursor` は期間指定時のみ有効です。
+
+ソースまたは値が欠ける場合、合計は項目ごとに `null` となります。`missingSources` は該当するスナップショット自体がないソースだけを列挙します。カーソルはフィルターとページ条件に紐づき、継続ページ間でデータ集合は固定されません。現在のサーバーでは、これらのエンドポイントは `501` を返します。
 
 `/details/{id}` の PATCH は、仕様上 required な `ope` に `reset` を指定します。未知の操作名は 400 です。
 

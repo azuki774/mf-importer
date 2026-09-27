@@ -221,7 +221,7 @@ paths:
         - url: 'http://localhost:3000'
   /financial-assets/snapshots:
     get:
-      summary: List immutable financial asset snapshots
+      summary: 保存済みの取得履歴を一覧で取得（合計と識別子）
       description: >-
         Returns summary metadata and totals only; use the detail endpoint for holdings.
         Snapshots are immutable after import. Clients should track processed snapshot IDs.
@@ -259,7 +259,7 @@ paths:
         - url: 'http://localhost:3000'
   '/financial-assets/snapshots/{snapshotId}':
     get:
-      summary: Get an immutable snapshot and its holdings
+      summary: 指定した取得履歴の合計と保有商品明細を取得
       operationId: get-financial-asset-snapshot
       parameters:
         - name: snapshotId
@@ -279,68 +279,54 @@ paths:
         - url: 'http://localhost:3000'
   /financial-assets/balances:
     get:
-      summary: Get source balances at a point in time
+      summary: 残高または期間推移を取得
       description: >-
-        For each requested source selects its latest snapshot fetchedAt <= at
-        (default current time). Aggregate amount is null if a source or its total
-        is missing; missingSources lists unavailable sources. No total is inferred.
+        With no time parameters, returns the current single balance. With at, returns
+        one historical balance using each source's latest snapshot fetchedAt <= at.
+        With from and to, returns daily or monthly points over [from,to) in Asia/Tokyo;
+        both dates are required and from must precede to. Period boundaries are clipped
+        to the requested range and snapshots must have fetchedAt strictly before each
+        period end. interval (default day), limit and cursor are valid only in range mode.
+        at cannot be combined with from/to; from/to cannot be combined with interval,
+        limit or cursor unless both range dates are provided. Each item has exactly one
+        of timestamp (single mode) or periodStart/periodEnd (range mode), with the other
+        fields null. Invalid parameter combinations return 400. Schema defaults for interval
+        and limit apply only in range mode; omission in single mode is valid.
+        Aggregates are null when a requested source/metric is unavailable;
+        missingSources lists sources with no eligible snapshot. No total is inferred.
       operationId: get-financial-asset-balances
       parameters:
         - $ref: '#/components/parameters/Sources'
         - name: at
           in: query
-          description: RFC 3339 timestamp; inclusive cutoff for eligible snapshots.
+          description: RFC 3339 inclusive cutoff; mutually exclusive with from/to.
           schema: { type: string, format: date-time }
-      responses:
-        '200':
-          description: Balance and source provenance
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/BalanceResponse' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '501': { $ref: '#/components/responses/NotImplemented' }
-      servers:
-        - url: 'http://localhost:3000'
-  /financial-assets/history:
-    get:
-      summary: Get daily or monthly historical balances
-      description: >-
-        from is inclusive and to is exclusive (from must be earlier than to), both
-        calendar dates in Asia/Tokyo. Each point is evaluated at the exclusive end
-        of its day or month, clipped to to for a partial final period, and selects
-        the latest snapshot fetchedAt strictly before periodEnd. Values carry forward
-        from before the range; if no prior snapshot/value exists it is null.
-        Totals are null per metric if any requested source/value is absent. Ordering is ascending
-        by periodStart. Calendar months are clipped at both requested range boundaries.
-        Cursor continuation requires the same sources, from, to, interval and limit;
-        results are not frozen and concurrent imports can affect subsequent pages.
-      operationId: get-financial-asset-history
-      parameters:
-        - $ref: '#/components/parameters/Sources'
         - name: from
           in: query
-          required: true
+          description: Inclusive calendar date in Asia/Tokyo; requires to.
           schema: { type: string, format: date }
         - name: to
           in: query
-          required: true
+          description: Exclusive calendar date in Asia/Tokyo; requires from.
           schema: { type: string, format: date }
         - name: interval
           in: query
+          description: Range mode only; day or month.
           schema: { type: string, enum: [day, month], default: day }
         - name: limit
           in: query
-          description: Must match the limit used for the cursor being continued.
+          description: Range mode only; page size must match when continuing a cursor.
           schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
         - name: cursor
           in: query
+          description: Range mode only; opaque cursor from the previous page.
           schema: { type: string }
       responses:
         '200':
-          description: Historical points
+          description: Balance items and source provenance
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/HistoryPage' }
+              schema: { $ref: '#/components/schemas/BalancePage' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '501': { $ref: '#/components/responses/NotImplemented' }
       servers:
@@ -416,12 +402,14 @@ components:
         error: { type: string }
       required: [error]
     DecimalString:
-      description: Decimal number encoded as a string to avoid binary floating point loss.
+      description: Decimal number encoded as a string. Examples are hand-written synthetic values.
       type: string
       pattern: '^-?[0-9]+(\.[0-9]+)?$'
+      example: '100.00'
     NullableDecimal:
       x-go-type: '*string'
       x-go-type-skip-optional-pointer: true
+      example: '100.00'
       anyOf:
         - $ref: '#/components/schemas/DecimalString'
         - type: 'null'
@@ -457,6 +445,10 @@ components:
         costJpy: { $ref: '#/components/schemas/NullableDecimal' }
         unrealizedPnlJpy: { $ref: '#/components/schemas/NullableDecimal' }
       required: [valuationJpy, costJpy, unrealizedPnlJpy]
+      example:
+        valuationJpy: '100.00'
+        costJpy: '120.00'
+        unrealizedPnlJpy: '-20.00'
     SnapshotPage:
       type: object
       properties:
@@ -469,10 +461,10 @@ components:
       type: object
       description: Source totals are represented as decimal strings; null means unavailable.
       properties:
-        snapshotId: { type: string, description: Stable opaque globally unique ID. }
+        snapshotId: { type: string, description: Stable opaque globally unique ID for this immutable snapshot. }
         source: { $ref: '#/components/schemas/Source' }
-        fetchedAt: { type: string, format: date-time }
-        importedAt: { type: string, format: date-time }
+        fetchedAt: { type: string, format: date-time, description: Time source data was fetched. }
+        importedAt: { type: string, format: date-time, description: Time this snapshot was imported into the system. }
         totals: { $ref: '#/components/schemas/Totals' }
       required: [snapshotId, source, fetchedAt, importedAt, totals]
     SnapshotDetail:
@@ -509,50 +501,59 @@ components:
         costJpy: { $ref: '#/components/schemas/NullableDecimal' }
         unrealizedPnlJpy: { $ref: '#/components/schemas/NullableDecimal' }
       required: [holdingId, positionKey, section, productCode, compositeFigi, referenceDate, name, quantity, valuationJpy, costJpy, unrealizedPnlJpy]
-    BalanceResponse:
+    BalancePage:
       type: object
-      description: sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
+      description: >-
+        Always returns items and nullable nextCursor. Single modes return exactly one item;
+        range mode emits one point per intersecting calendar period, including periods
+        with no data (null totals and missingSources); an exhausted page may be empty.
+        nextCursor is null in single mode and on the final range page.
+        Sources contains exactly the requested
+        sources. missingSources lists only sources with no eligible snapshot, not sources
+        whose individual metrics are null. Cursors apply only to range mode and are opaque,
+        scoped to sources, from, to, interval and limit; results are not frozen between pages.
       properties:
-        at: { type: string, format: date-time }
-        totals: { $ref: '#/components/schemas/Totals' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/BalancePoint' }
+        nextCursor: { $ref: '#/components/schemas/NullableString' }
+      required: [items, nextCursor]
+    BalancePoint:
+      type: object
+      description: >-
+        Exactly one mode is populated. Single mode uses timestamp and null periodStart/periodEnd;
+        range mode uses null timestamp and both periodStart/periodEnd. Single mode's timestamp
+        is requested at, or current time when omitted. Range values use fetchedAt strictly before
+        periodEnd; values carry forward from before the range. Periods are ordered by periodStart.
+      properties:
+        timestamp: { $ref: '#/components/schemas/NullableDateTime' }
+        periodStart: { $ref: '#/components/schemas/NullableDate' }
+        periodEnd: { $ref: '#/components/schemas/NullableDate' }
+        totals:
+          allOf:
+            - $ref: '#/components/schemas/Totals'
+          example:
+            valuationJpy: '123.45'
+            costJpy: null
+            unrealizedPnlJpy: null
         sources:
           type: array
           items: { $ref: '#/components/schemas/BalanceSource' }
         missingSources:
           type: array
           items: { $ref: '#/components/schemas/Source' }
-      required: [at, totals, sources, missingSources]
+      required: [timestamp, periodStart, periodEnd, totals, sources, missingSources]
     BalanceSource:
       type: object
-      description: When no eligible snapshot exists, snapshotId, fetchedAt and every totals field are null.
+      description: >-
+        When no eligible snapshot exists, snapshotId and fetchedAt are null and all totals
+        fields are null. fetchedAt is when the source data was fetched.
       properties:
         source: { $ref: '#/components/schemas/Source' }
         snapshotId: { $ref: '#/components/schemas/NullableString' }
         fetchedAt: { $ref: '#/components/schemas/NullableDateTime' }
         totals: { $ref: '#/components/schemas/Totals' }
       required: [source, snapshotId, fetchedAt, totals]
-    HistoryPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/HistoryPoint' }
-        nextCursor: { $ref: '#/components/schemas/NullableString' }
-      required: [items, nextCursor]
-    HistoryPoint:
-      type: object
-      description: sources contains exactly the requested sources; missingSources includes only sources with no eligible snapshot, not sources whose individual metrics are null.
-      properties:
-        periodStart: { type: string, format: date, description: Inclusive period start clipped to requested range. }
-        periodEnd: { type: string, format: date, description: Exclusive cutoff; end of daily/monthly period clipped to requested to. }
-        totals: { $ref: '#/components/schemas/Totals' }
-        sources:
-          type: array
-          items: { $ref: '#/components/schemas/BalanceSource' }
-        missingSources:
-          type: array
-          items: { $ref: '#/components/schemas/Source' }
-      required: [periodStart, periodEnd, totals, sources, missingSources]
     Source:
       type: string
       enum: [sbi, nrkn]

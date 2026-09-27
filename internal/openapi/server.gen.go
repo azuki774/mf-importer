@@ -29,16 +29,13 @@ type ServerInterface interface {
 	// PatchDetailsId change status detail
 	// (PATCH /details/{id})
 	PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams)
-	// GetFinancialAssetBalances Get source balances at a point in time
+	// GetFinancialAssetBalances 残高または期間推移を取得
 	// (GET /financial-assets/balances)
 	GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams)
-	// GetFinancialAssetHistory Get daily or monthly historical balances
-	// (GET /financial-assets/history)
-	GetFinancialAssetHistory(w http.ResponseWriter, r *http.Request, params GetFinancialAssetHistoryParams)
-	// ListFinancialAssetSnapshots List immutable financial asset snapshots
+	// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と識別子）
 	// (GET /financial-assets/snapshots)
 	ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams)
-	// GetFinancialAssetSnapshot Get an immutable snapshot and its holdings
+	// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
 	// (GET /financial-assets/snapshots/{snapshotId})
 	GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string)
 	// GetHealth health check
@@ -95,25 +92,19 @@ func (_ Unimplemented) PatchDetailsId(w http.ResponseWriter, r *http.Request, id
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetFinancialAssetBalances Get source balances at a point in time
+// GetFinancialAssetBalances 残高または期間推移を取得
 // (GET /financial-assets/balances)
 func (_ Unimplemented) GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetFinancialAssetHistory Get daily or monthly historical balances
-// (GET /financial-assets/history)
-func (_ Unimplemented) GetFinancialAssetHistory(w http.ResponseWriter, r *http.Request, params GetFinancialAssetHistoryParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// ListFinancialAssetSnapshots List immutable financial asset snapshots
+// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と識別子）
 // (GET /financial-assets/snapshots)
 func (_ Unimplemented) ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetFinancialAssetSnapshot Get an immutable snapshot and its holdings
+// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
 // (GET /financial-assets/snapshots/{snapshotId})
 func (_ Unimplemented) GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -379,42 +370,9 @@ func (siw *ServerInterfaceWrapper) GetFinancialAssetBalances(w http.ResponseWrit
 		return
 	}
 
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFinancialAssetBalances(w, r, params)
-	}))
+	// ------------- Optional query parameter "from" -------------
 
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetFinancialAssetHistory operation middleware
-func (siw *ServerInterfaceWrapper) GetFinancialAssetHistory(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetFinancialAssetHistoryParams
-
-	// ------------- Optional query parameter "source" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
-		}
-		return
-	}
-
-	// ------------- Required query parameter "from" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
 	if err != nil {
 		var requiredError *runtime.RequiredParameterError
 		if errors.As(err, &requiredError) {
@@ -425,9 +383,9 @@ func (siw *ServerInterfaceWrapper) GetFinancialAssetHistory(w http.ResponseWrite
 		return
 	}
 
-	// ------------- Required query parameter "to" -------------
+	// ------------- Optional query parameter "to" -------------
 
-	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
 	if err != nil {
 		var requiredError *runtime.RequiredParameterError
 		if errors.As(err, &requiredError) {
@@ -478,7 +436,7 @@ func (siw *ServerInterfaceWrapper) GetFinancialAssetHistory(w http.ResponseWrite
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFinancialAssetHistory(w, r, params)
+		siw.Handler.GetFinancialAssetBalances(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -893,9 +851,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/financial-assets/balances", wrapper.GetFinancialAssetBalances)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/financial-assets/history", wrapper.GetFinancialAssetHistory)
 	})
 
 	return r
