@@ -29,15 +29,6 @@ type ServerInterface interface {
 	// PatchDetailsId change status detail
 	// (PATCH /details/{id})
 	PatchDetailsId(w http.ResponseWriter, r *http.Request, id int, params PatchDetailsIdParams)
-	// GetFinancialAssetBalances 残高または期間推移を取得
-	// (GET /financial-assets/balances)
-	GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams)
-	// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
-	// (GET /financial-assets/snapshots)
-	ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams)
-	// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
-	// (GET /financial-assets/snapshots/{snapshotId})
-	GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string)
 	// GetHealth health check
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -56,6 +47,15 @@ type ServerInterface interface {
 	// GetRulesId get rule
 	// (GET /rules/{id})
 	GetRulesId(w http.ResponseWriter, r *http.Request, id int)
+	// GetFinancialAssetBalances 残高または期間推移を取得
+	// (GET /v2/financial-assets/balances)
+	GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams)
+	// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
+	// (GET /v2/financial-assets/snapshots)
+	ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams)
+	// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
+	// (GET /v2/financial-assets/snapshots/{snapshotId})
+	GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -92,24 +92,6 @@ func (_ Unimplemented) PatchDetailsId(w http.ResponseWriter, r *http.Request, id
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetFinancialAssetBalances 残高または期間推移を取得
-// (GET /financial-assets/balances)
-func (_ Unimplemented) GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
-// (GET /financial-assets/snapshots)
-func (_ Unimplemented) ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
-// (GET /financial-assets/snapshots/{snapshotId})
-func (_ Unimplemented) GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // GetHealth health check
 // (GET /health)
 func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +125,24 @@ func (_ Unimplemented) DeleteRulesId(w http.ResponseWriter, r *http.Request, id 
 // GetRulesId get rule
 // (GET /rules/{id})
 func (_ Unimplemented) GetRulesId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetFinancialAssetBalances 残高または期間推移を取得
+// (GET /v2/financial-assets/balances)
+func (_ Unimplemented) GetFinancialAssetBalances(w http.ResponseWriter, r *http.Request, params GetFinancialAssetBalancesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListFinancialAssetSnapshots 保存済みの取得履歴を一覧で取得（合計と保有商品明細）
+// (GET /v2/financial-assets/snapshots)
+func (_ Unimplemented) ListFinancialAssetSnapshots(w http.ResponseWriter, r *http.Request, params ListFinancialAssetSnapshotsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetFinancialAssetSnapshot 指定した取得履歴の合計と保有商品明細を取得
+// (GET /v2/financial-assets/snapshots/{snapshotId})
+func (_ Unimplemented) GetFinancialAssetSnapshot(w http.ResponseWriter, r *http.Request, snapshotId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -326,6 +326,146 @@ func (siw *ServerInterfaceWrapper) PatchDetailsId(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchDetailsId(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHistories operation middleware
+func (siw *ServerInterfaceWrapper) GetHistories(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHistories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRules operation middleware
+func (siw *ServerInterfaceWrapper) GetRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRulesParams
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostRules operation middleware
+func (siw *ServerInterfaceWrapper) PostRules(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostRules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRulesId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRulesId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRulesId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRulesId operation middleware
+func (siw *ServerInterfaceWrapper) GetRulesId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRulesId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -557,146 +697,6 @@ func (siw *ServerInterfaceWrapper) GetFinancialAssetSnapshot(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHealth(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetHistories operation middleware
-func (siw *ServerInterfaceWrapper) GetHistories(w http.ResponseWriter, r *http.Request) {
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHistories(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetRules operation middleware
-func (siw *ServerInterfaceWrapper) GetRules(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetRulesParams
-
-	// ------------- Optional query parameter "sort" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", r.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "order" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "order", r.URL.Query(), &params.Order, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "order"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetRules(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// PostRules operation middleware
-func (siw *ServerInterfaceWrapper) PostRules(w http.ResponseWriter, r *http.Request) {
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostRules(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteRulesId operation middleware
-func (siw *ServerInterfaceWrapper) DeleteRulesId(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteRulesId(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetRulesId operation middleware
-func (siw *ServerInterfaceWrapper) GetRulesId(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetRulesId(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -844,13 +844,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/rules/{id}", wrapper.GetRulesId)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/financial-assets/snapshots", wrapper.ListFinancialAssetSnapshots)
+		r.Get(options.BaseURL+"/v2/financial-assets/snapshots", wrapper.ListFinancialAssetSnapshots)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/financial-assets/snapshots/{snapshotId}", wrapper.GetFinancialAssetSnapshot)
+		r.Get(options.BaseURL+"/v2/financial-assets/snapshots/{snapshotId}", wrapper.GetFinancialAssetSnapshot)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/financial-assets/balances", wrapper.GetFinancialAssetBalances)
+		r.Get(options.BaseURL+"/v2/financial-assets/balances", wrapper.GetFinancialAssetBalances)
 	})
 
 	return r

@@ -64,12 +64,12 @@ func registerAPI(gw *apigateway, r chi.Router) {
 	validateRaw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			p := strings.TrimPrefix(req.URL.Path, "/api")
-			if strings.HasPrefix(p, "/financial-assets/") {
+			if strings.HasPrefix(p, "/v2/financial-assets/") {
 				allowed := map[string]bool{}
-				if p == "/financial-assets/snapshots" || p == "/financial-assets/balances" {
+				if p == "/v2/financial-assets/snapshots" || p == "/v2/financial-assets/balances" {
 					allowed = map[string]bool{"source": true, "from": true, "to": true, "limit": true, "cursor": true}
 				}
-				if p == "/financial-assets/balances" {
+				if p == "/v2/financial-assets/balances" {
 					allowed["at"], allowed["interval"] = true, true
 				}
 				query, err := url.ParseQuery(req.URL.RawQuery)
@@ -104,7 +104,7 @@ func registerAPI(gw *apigateway, r chi.Router) {
 		})
 	}
 	openapi.HandlerWithOptions(gw, openapi.ChiServerOptions{BaseRouter: r, Middlewares: []openapi.MiddlewareFunc{validateRaw}, ErrorHandlerFunc: func(w http.ResponseWriter, req *http.Request, err error) {
-		if strings.HasPrefix(req.URL.Path, "/financial-assets/") || strings.HasPrefix(req.URL.Path, "/api/financial-assets/") {
+		if strings.HasPrefix(req.URL.Path, "/v2/financial-assets/") || strings.HasPrefix(req.URL.Path, "/api/v2/financial-assets/") {
 			writeBadRequest(w)
 			return
 		}

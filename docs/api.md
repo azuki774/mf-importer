@@ -23,15 +23,21 @@ API は `internal/openapi/mfimporter-api.yaml` に定義されています。
 | POST | `/rules` | 抽出ルール追加 | Body: `application/json` の `RuleRequest` | 仕様記載あり（201: `Rule`） |
 | GET | `/rules/{id}` | 抽出ルール取得 | Path: `id` (integer、必須) | 仕様記載あり（200: `Rule`） |
 | DELETE | `/rules/{id}` | 抽出ルール削除 | Path: `id` (integer、必須)。Body: YAML 上は `content: {}` | 仕様記載あり（204） |
-| GET | `/financial-assets/snapshots` | 金融資産スナップショット一覧（詳細と同じ合計・保有明細を含む） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 実装済み（DB・モック API） |
-| GET | `/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 実装済み（DB・モック API） |
-| GET | `/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/snapshots` | 金融資産スナップショット一覧（詳細と同じ合計・保有明細を含む） | Query: 繰返し可 `source` (`sbi` / `nrkn`、省略時は両方)、`from` / `to` (RFC 3339、開始を含み終了を含まない)、`limit` (default: 100、最大500)、`cursor` | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/snapshots/{snapshotId}` | スナップショットと保有明細 | Path: `snapshotId` (opaque ID) | 実装済み（DB・モック API） |
+| GET | `/v2/financial-assets/balances` | 現在・指定時点残高、または日次/月次推移 | Query: `source` 任意、単一時点は `at` (RFC 3339、inclusive、省略時は現在)。期間は `from` / `to` (Asia/Tokyo の日付、`[from,to)`、両方必須)、`interval` (`day` / `month`、default: `day`)、`limit`、`cursor` | 実装済み（DB・モック API） |
+
+既存の `/details`・`/rules` 等のバージョンなし API を v1 相当として扱います。金融資産 API はすべて `/v2/financial-assets/` 配下に配置し、バージョンなしの金融資産 API は提供しません。静的 UI と同時配信する構成では `/api/v2/financial-assets/` です。レスポンスの ID にある `v1:` は ID の形式バージョンであり、API の URL バージョンとは独立しています。
 
 金融資産 API の金額・数量は decimal string とし、未取得・不明値は `null` とします。スナップショットは不変で、一覧の各要素は詳細 API と同じ `SnapshotDetail`（メタデータ・合計・全保有明細）を返します。ページングはスナップショット単位で、保有明細を途中で切り分けません。`fetchedAt` はデータ取得時刻、`importedAt` はシステムへの取り込み時刻です。スナップショット ID は安定した不透明 ID です。
 
 残高応答は常に `items` 配列と nullable な `nextCursor` を持ち、現在/指定時点モードは1点、期間モードは日・月ごとに1点です。データがない期間も点を返し、合計を null として `missingSources` を設定します。各点は単一時点の `timestamp`、または期間の `periodStart`/`periodEnd` を使い、使わないフィールドは null です。期間は Asia/Tokyo の境界を使い、各点で期間終了時刻未満の最新スナップショットを採用して前方補完します。月途中の期間指定では境界を指定範囲に合わせます。`at` と期間指定は併用できず、`interval`/`limit`/`cursor` は期間指定時のみ有効です。
 
 ソースまたは値が欠ける場合、合計は項目ごとに `null` となります。`missingSources` は該当するスナップショット自体がないソースだけを列挙します。カーソルはフィルターとページ条件に紐づき、継続ページ間でデータ集合は固定されません。無効な入力は `400`、存在しないスナップショットは `404`、予期しないサーバーエラーは `500` の JSON `ApiError` を返します。
+
+商品の識別には `compositeFigi` を使い、保有先・保有区分を分ける場合はスナップショットの `source` と明細の `section` を併用します。FIGI がない場合、`productCode` は同じデータ元の中だけで利用できます。商品名で同一判定はしません。`holdingId` は取得時点の明細の識別子です。
+
+SBI の商品明細の `costJpy` は、同じスナップショットの円建て値を使い、`valuationJpy - unrealizedPnlJpy` の計算により補完します。浮動小数点を経由せず計算し、どちらかが欠けていれば `null` とします。DB への書き戻しは行いません。NRKN の取り込み済み取得価額を優先し、明細だけでは対象範囲を網羅できない全体の取得価額・評価損益は補完しません。
 
 `/details/{id}` の PATCH は、仕様上 required な `ope` に `reset` を指定します。未知の操作名は 400 です。
 
