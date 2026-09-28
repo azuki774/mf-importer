@@ -85,11 +85,11 @@ func TestFinancialAssetReadsMariaDB(t *testing.T) {
 	if err != nil || len(got) != 2 {
 		t.Fatal("list NRKN/status filter")
 	}
-	if *got[0].ValuationJpy != "9007199254740993" || *got[0].CostJpy != "9007199254740992" || *got[0].UnrealizedPnlJpy != "-3" {
+	if got[0].ID != 2 || *got[1].ValuationJpy != "9007199254740993" || *got[1].CostJpy != "9007199254740992" || *got[1].UnrealizedPnlJpy != "-3" {
 		t.Fatal("NRKN integer precision")
 	}
 	page, err := db.ListFinancialSnapshots(ctx, model.FinancialSnapshotQuery{Source: "nrkn", AfterFetchedAt: &got[0].FetchedAt, AfterID: got[0].ID, Limit: 1})
-	if err != nil || len(page) != 1 || page[0].ID != 2 {
+	if err != nil || len(page) != 1 || page[0].ID != 1 {
 		t.Fatal("cursor boundary")
 	}
 	holdings, err := db.GetFinancialHoldings(ctx, "nrkn", []int64{1, 2})
@@ -116,7 +116,7 @@ func TestFinancialAssetReadsMariaDB(t *testing.T) {
 	}
 	wantFetched := time.Date(2000, 1, 1, 12, 0, 0, 0, time.FixedZone("JST", 9*3600))
 	wantImported := time.Date(2000, 1, 1, 12, 0, 0, 0, time.UTC)
-	if !got[0].FetchedAt.Equal(wantFetched) || !got[0].ImportedAt.Equal(wantImported) {
+	if !got[1].FetchedAt.Equal(wantFetched) || !got[1].ImportedAt.Equal(wantImported) {
 		t.Fatal("DATETIME JST or TIMESTAMP UTC session decoding")
 	}
 	// SQL TIMESTAMP session rendering must not shift the reported imported instant.
