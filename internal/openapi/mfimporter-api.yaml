@@ -228,7 +228,8 @@ paths:
         not holdings; a snapshot's holdings are never truncated or split across pages.
         Snapshots are immutable after import. Clients should track processed snapshot IDs.
         Optional from/to select fetchedAt in [from, to); from must precede to when both exist.
-        Empty results return an empty items array. Ordering is ascending by fetchedAt then snapshotId.
+        Empty results return an empty items array. Ordering is descending by fetchedAt then snapshotId;
+        limit=1 returns the latest matching snapshot. Subsequent pages return older snapshots.
         Cursors are opaque and valid only with the same source, from, to and page size; they do
         not freeze the result set, and concurrent imports may affect later pages.
       operationId: list-financial-asset-snapshots

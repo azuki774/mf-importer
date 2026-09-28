@@ -27,6 +27,7 @@ func TestFinancialSnapshotsPaginationAndDetail(t *testing.T) {
 	p := openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1)}
 	seen := map[string]bool{}
 	previous := ""
+	var previousTime time.Time
 	for i := 0; i < 4; i++ {
 		page, err := s.list(ctx, p)
 		if err != nil {
@@ -40,10 +41,11 @@ func TestFinancialSnapshotsPaginationAndDetail(t *testing.T) {
 			t.Fatal("duplicate snapshot")
 		}
 		seen[item.SnapshotId] = true
-		if i == 1 && previous >= item.SnapshotId {
-			t.Fatal("same timestamp ID ordering")
+		if i > 0 && (item.FetchedAt.After(previousTime) || item.FetchedAt.Equal(previousTime) && previous <= item.SnapshotId) {
+			t.Fatal("descending timestamp/ID ordering")
 		}
 		previous = item.SnapshotId
+		previousTime = item.FetchedAt
 		detail, err := s.detail(ctx, item.SnapshotId)
 		if err != nil {
 			t.Fatal(err)
@@ -91,6 +93,35 @@ func TestFinancialSnapshotFilterAndCursorValidation(t *testing.T) {
 	p, err := s.list(ctx, openapi.ListFinancialAssetSnapshotsParams{From: &t0, To: &t1})
 	if err != nil || len(p.Items) != 2 {
 		t.Fatal("inclusive from/exclusive to")
+	}
+}
+
+func TestFinancialSnapshotsNewestFirstTies(t *testing.T) {
+	s := newMockFinancialService()
+	at := time.Date(2000, 1, 1, 0, 0, 0, 0, jst)
+	s.repo = memoryFinancialRepository{rows: []model.FinancialSnapshot{
+		{Source: "sbi", ID: 1, FetchedAt: at},
+		{Source: "nrkn", ID: 9223372036854775807, FetchedAt: at},
+		{Source: "sbi", ID: 2, FetchedAt: at},
+		{Source: "nrkn", ID: 1, FetchedAt: at},
+		{Source: "nrkn", ID: 2, FetchedAt: at.Add(time.Hour)},
+	}}
+	want := []string{snapshotID("nrkn", 2), snapshotID("sbi", 2), snapshotID("sbi", 1), snapshotID("nrkn", 9223372036854775807), snapshotID("nrkn", 1)}
+	p := openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1)}
+	for i, id := range want {
+		page, err := s.list(context.Background(), p)
+		if err != nil || len(page.Items) != 1 || page.Items[0].SnapshotId != id {
+			t.Fatalf("unexpected descending page %d", i)
+		}
+		if (page.NextCursor == nil) != (i == len(want)-1) {
+			t.Fatal("incorrect pagination termination")
+		}
+		p.Cursor = page.NextCursor
+	}
+	old := encodeFinancialCursor(financialCursor{Version: 1, Kind: "snapshots", Filter: financialFilter([]string{"nrkn", "sbi"}, "", "", "", 1), ID: snapshotID("sbi", 1), FetchedAt: at})
+	p.Cursor = &old
+	if _, err := s.list(context.Background(), p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
+		t.Fatal("ascending cursor must be rejected")
 	}
 }
 
@@ -276,7 +307,7 @@ func TestFinancialCursorPositionValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	filter := financialFilter([]string{"nrkn", "sbi"}, "", "", "", 1)
+	filter := financialFilter([]string{"nrkn", "sbi"}, "", "", "snapshots-desc", 1)
 	cursor, err := decodeFinancialCursor(*page.NextCursor, "snapshots", filter)
 	if err != nil {
 		t.Fatal(err)
