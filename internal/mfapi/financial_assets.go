@@ -66,6 +66,16 @@ func financialLimit(p *int) (int, error) {
 
 func validFinancialTime(t time.Time) bool { y := t.In(jst).Year(); return y >= 1000 && y <= 9999 }
 
+func financialOffset(p *int) (int, error) {
+	if p == nil {
+		return 0, nil
+	}
+	if *p < 0 {
+		return 0, model.ErrInvalidFinancialAssetRequest
+	}
+	return *p, nil
+}
+
 func (s financialService) list(ctx context.Context, p openapi.ListFinancialAssetSnapshotsParams) (openapi.SnapshotPage, error) {
 	result := openapi.SnapshotPage{Items: []openapi.SnapshotDetail{}}
 	sources, err := financialSources(p.Source)
@@ -79,60 +89,17 @@ func (s financialService) list(ctx context.Context, p openapi.ListFinancialAsset
 	if p.From != nil && !validFinancialTime(*p.From) || p.To != nil && !validFinancialTime(*p.To) || p.From != nil && p.To != nil && !p.From.Before(*p.To) {
 		return result, model.ErrInvalidFinancialAssetRequest
 	}
-	filter := financialFilter(sources, timeKey(p.From), timeKey(p.To), "snapshots-desc", limit)
-	var after financialCursor
-	if p.Cursor != nil {
-		after, err = decodeFinancialCursor(*p.Cursor, "snapshots", filter)
-		if err != nil {
-			return result, err
-		}
-		source, id, e := parseSnapshotID(after.ID)
-		if e != nil || !containsSource(sources, source) || !validFinancialTime(after.FetchedAt) || after.FetchedAt.Nanosecond()%1000 != 0 || after.Period != "" || p.From != nil && after.FetchedAt.Before(*p.From) || p.To != nil && !after.FetchedAt.Before(*p.To) {
-			return result, model.ErrInvalidFinancialAssetRequest
-		}
-		row, e := s.repo.GetFinancialSnapshot(ctx, source, id)
-		if errors.Is(e, model.ErrRecordNotFound) {
-			return result, model.ErrInvalidFinancialAssetRequest
-		}
-		if e != nil {
-			return result, e
-		}
-		if !row.FetchedAt.Equal(after.FetchedAt) {
-			return result, model.ErrInvalidFinancialAssetRequest
-		}
+	offset, err := financialOffset(p.Offset)
+	if err != nil {
+		return result, err
 	}
-	var snapshots []model.FinancialSnapshot
-	for _, source := range sources {
-		q := model.FinancialSnapshotQuery{Source: source, From: p.From, To: p.To, Limit: limit + 1}
-		if p.Cursor != nil {
-			lastSource, lastID, _ := parseSnapshotID(after.ID)
-			q.AfterFetchedAt = &after.FetchedAt
-			switch {
-			case source == lastSource:
-				q.AfterID = lastID
-			case source < lastSource:
-				// Include every ID from lower-sorting sources at the cursor time.
-				q.AfterID = -1
-			}
-		}
-		rows, e := s.repo.ListFinancialSnapshots(ctx, q)
-		if e != nil {
-			return result, e
-		}
-		snapshots = append(snapshots, rows...)
-	}
-	sort.Slice(snapshots, func(i, j int) bool {
-		a, b := snapshots[i], snapshots[j]
-		if !a.FetchedAt.Equal(b.FetchedAt) {
-			return a.FetchedAt.After(b.FetchedAt)
-		}
-		return snapshotID(a.Source, a.ID) > snapshotID(b.Source, b.ID)
+	// Apply the offset once to the combined, ordered sources in the repository.
+	// Only the selected snapshots and their complete holdings enter memory.
+	snapshots, err := s.repo.ListFinancialSnapshots(ctx, model.FinancialSnapshotQuery{
+		Sources: sources, From: p.From, To: p.To, Limit: limit, Offset: offset,
 	})
-	if len(snapshots) > limit {
-		snapshots = snapshots[:limit]
-		last := snapshots[len(snapshots)-1]
-		cursor := encodeFinancialCursor(financialCursor{Version: 1, Kind: "snapshots", Filter: filter, ID: snapshotID(last.Source, last.ID), FetchedAt: last.FetchedAt})
-		result.NextCursor = &cursor
+	if err != nil {
+		return result, err
 	}
 	for _, source := range sources {
 		ids := []int64{}
@@ -232,7 +199,7 @@ func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAs
 	}
 	rangeMode := p.From != nil || p.To != nil
 	if !rangeMode {
-		if p.Interval != nil || p.Limit != nil || p.Cursor != nil {
+		if p.Interval != nil || p.Limit != nil || p.Offset != nil {
 			return result, model.ErrInvalidFinancialAssetRequest
 		}
 		at := s.now()
@@ -278,25 +245,27 @@ func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAs
 	if err != nil {
 		return result, err
 	}
-	filter := financialFilter(sources, from.Format(time.DateOnly), to.Format(time.DateOnly), interval, limit)
+	offset, err := financialOffset(p.Offset)
+	if err != nil {
+		return result, err
+	}
+	// Count before adding offset to avoid date arithmetic overflow on large inputs.
+	count := int((to.Unix() - from.Unix()) / 86400)
+	if interval == "month" {
+		count = (to.Year()-from.Year())*12 + int(to.Month()-from.Month())
+		if to.Day() > 1 {
+			count++
+		}
+	}
+	if offset >= count {
+		return result, nil
+	}
 	start := from
-	if p.Cursor != nil {
-		c, e := decodeFinancialCursor(*p.Cursor, "balances", filter)
-		if e != nil {
-			return result, e
-		}
-		start, e = time.ParseInLocation(time.DateOnly, c.Period, jst)
-		if e != nil || !start.After(from) || !start.Before(to) || c.ID != "" || !c.FetchedAt.IsZero() || interval == "month" && start.Day() != 1 {
-			return result, model.ErrInvalidFinancialAssetRequest
-		}
-		// A continuation must start on a page boundary of this exact range.
-		// Count calendar days in UTC to avoid timezone/DST duration differences.
-		steps := int((time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC).Unix() - time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC).Unix()) / 86400)
+	if offset > 0 {
 		if interval == "month" {
-			steps = (start.Year()-from.Year())*12 + int(start.Month()-from.Month())
-		}
-		if steps%limit != 0 {
-			return result, model.ErrInvalidFinancialAssetRequest
+			start = time.Date(from.Year(), from.Month()+time.Month(offset), 1, 0, 0, 0, 0, jst)
+		} else {
+			start = from.AddDate(0, 0, offset)
 		}
 	}
 	type period struct{ start, end time.Time }
@@ -313,10 +282,6 @@ func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAs
 		t = end
 	}
 	pageEnd := periods[len(periods)-1].end
-	if pageEnd.Before(to) {
-		v := encodeFinancialCursor(financialCursor{Version: 1, Kind: "balances", Filter: filter, Period: pageEnd.Format(time.DateOnly)})
-		result.NextCursor = &v
-	}
 	latest := map[string]*model.FinancialSnapshot{}
 	events := map[string][]model.FinancialSnapshot{}
 	indexes := map[string]int{}
@@ -326,7 +291,7 @@ func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAs
 			return result, e
 		}
 		latest[source] = row
-		rows, e := s.repo.ListFinancialSnapshots(ctx, model.FinancialSnapshotQuery{Source: source, From: &start, To: &pageEnd})
+		rows, e := s.repo.ListFinancialSnapshots(ctx, model.FinancialSnapshotQuery{Sources: []string{source}, From: &start, To: &pageEnd})
 		if e != nil {
 			return result, e
 		}

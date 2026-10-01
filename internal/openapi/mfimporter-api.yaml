@@ -230,8 +230,9 @@ paths:
         Optional from/to select fetchedAt in [from, to); from must precede to when both exist.
         Empty results return an empty items array. Ordering is descending by fetchedAt then snapshotId;
         limit=1 returns the latest matching snapshot. Subsequent pages return older snapshots.
-        Cursors are opaque and valid only with the same source, from, to and page size; they do
-        not freeze the result set, and concurrent imports may affect later pages.
+        offset skips snapshots in the combined filtered result, not separately per source.
+        Pagination does not freeze the result set; concurrent imports may shift later pages.
+        Continue with offset + limit; fewer than limit items means the end of the result set.
       operationId: list-financial-asset-snapshots
       parameters:
         - $ref: '#/components/parameters/Sources'
@@ -246,10 +247,10 @@ paths:
         - name: limit
           in: query
           schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
-        - name: cursor
+        - name: offset
           in: query
-          description: Opaque cursor returned by the previous page.
-          schema: { type: string }
+          description: Number of matching snapshots to skip. Offsets beyond the result set return empty items.
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         '200':
           description: Snapshot page
@@ -289,12 +290,15 @@ paths:
         With from and to, returns daily or monthly points over [from,to) in Asia/Tokyo;
         both dates are required and from must precede to. Period boundaries are clipped
         to the requested range and snapshots must have fetchedAt strictly before each
-        period end. interval (default day), limit and cursor are valid only in range mode.
+        period end. interval (default day), limit and offset are valid only in range mode.
         at cannot be combined with from/to; from/to cannot be combined with interval,
-        limit or cursor unless both range dates are provided. Each item has exactly one
+        limit or offset unless both range dates are provided. Each item has exactly one
         of timestamp (single mode) or periodStart/periodEnd (range mode), with the other
         fields null. Invalid parameter combinations return 400. Schema defaults for interval
-        and limit apply only in range mode; omission in single mode is valid.
+        limit and offset apply only in range mode; omission in single mode is valid.
+        offset skips calendar periods, including periods with no data. Offsets beyond the
+        requested range return empty items. Continue with offset + limit; fewer than limit
+        items means the end of the result set. Values may change after concurrent imports.
         Aggregates are null when a requested source/metric is unavailable;
         missingSources lists sources with no eligible snapshot. No total is inferred.
       operationId: get-financial-asset-balances
@@ -318,12 +322,12 @@ paths:
           schema: { type: string, enum: [day, month], default: day }
         - name: limit
           in: query
-          description: Range mode only; page size must match when continuing a cursor.
+          description: Range mode only; number of calendar periods per page.
           schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
-        - name: cursor
+        - name: offset
           in: query
-          description: Range mode only; opaque cursor from the previous page.
-          schema: { type: string }
+          description: Range mode only; number of calendar periods to skip.
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         '200':
           description: Balance items and source provenance
@@ -350,7 +354,7 @@ components:
       explode: true
   responses:
     BadRequest:
-      description: Invalid parameter or incompatible/invalid cursor.
+      description: Invalid parameter or incompatible parameter combination.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ApiError' }
@@ -461,8 +465,7 @@ components:
         items:
           type: array
           items: { $ref: '#/components/schemas/SnapshotDetail' }
-        nextCursor: { $ref: '#/components/schemas/NullableString' }
-      required: [items, nextCursor]
+      required: [items]
     SnapshotSummary:
       type: object
       description: Source totals are represented as decimal strings; null means unavailable.
@@ -518,20 +521,18 @@ components:
     BalancePage:
       type: object
       description: >-
-        Always returns items and nullable nextCursor. Single modes return exactly one item;
+        Always returns items. Single modes return exactly one item;
         range mode emits one point per intersecting calendar period, including periods
         with no data (null totals and missingSources); an exhausted page may be empty.
-        nextCursor is null in single mode and on the final range page.
         Sources contains exactly the requested
         sources. missingSources lists only sources with no eligible snapshot, not sources
-        whose individual metrics are null. Cursors apply only to range mode and are opaque,
-        scoped to sources, from, to, interval and limit; results are not frozen between pages.
+        whose individual metrics are null. limit and offset apply only to range mode;
+        results are not frozen between pages.
       properties:
         items:
           type: array
           items: { $ref: '#/components/schemas/BalancePoint' }
-        nextCursor: { $ref: '#/components/schemas/NullableString' }
-      required: [items, nextCursor]
+      required: [items]
     BalancePoint:
       type: object
       description: >-

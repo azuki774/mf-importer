@@ -67,7 +67,7 @@ func registerAPI(gw *apigateway, r chi.Router) {
 			if strings.HasPrefix(p, "/v2/financial-assets/") {
 				allowed := map[string]bool{}
 				if p == "/v2/financial-assets/snapshots" || p == "/v2/financial-assets/balances" {
-					allowed = map[string]bool{"source": true, "from": true, "to": true, "limit": true, "cursor": true}
+					allowed = map[string]bool{"source": true, "from": true, "to": true, "limit": true, "offset": true}
 				}
 				if p == "/v2/financial-assets/balances" {
 					allowed["at"], allowed["interval"] = true, true

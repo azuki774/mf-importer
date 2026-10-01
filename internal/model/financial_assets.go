@@ -18,9 +18,7 @@ type FinancialHolding struct {
 }
 
 type FinancialSnapshotQuery struct {
-	Source         string
-	From, To       *time.Time
-	AfterFetchedAt *time.Time
-	AfterID        int64 // Descending cursor boundary; -1 includes all IDs at AfterFetchedAt.
-	Limit          int
+	Sources       []string
+	From, To      *time.Time
+	Limit, Offset int // Limit == 0 is an unpaged internal read (Offset must be zero).
 }

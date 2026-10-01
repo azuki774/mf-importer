@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"mf-importer/internal/model"
@@ -30,6 +31,7 @@ func financialTables(source string) (string, string, bool) {
 // fields without changing the existing ingestion behavior or models.
 type financialSnapshotRow struct {
 	ID            int64     `gorm:"column:id"`
+	Source        string    `gorm:"column:source"`
 	FetchedAt     time.Time `gorm:"column:fetched_at"`
 	ImportedEpoch *int64    `gorm:"column:imported_epoch"`
 	Valuation     *string   `gorm:"column:valuation"`
@@ -62,35 +64,48 @@ func snapshotModel(row financialSnapshotRow, source string) model.FinancialSnaps
 }
 
 func (d *DBClient) ListFinancialSnapshots(ctx context.Context, query model.FinancialSnapshotQuery) ([]model.FinancialSnapshot, error) {
-	snapTable, _, ok := financialTables(query.Source)
-	if !ok {
-		return nil, fmt.Errorf("list financial snapshots: unsupported source")
+	if query.Limit < 0 || query.Offset < 0 || query.Limit == 0 && query.Offset != 0 {
+		return nil, fmt.Errorf("list financial snapshots: invalid pagination")
 	}
-	db := d.Conn.WithContext(ctx).Table(snapTable).Select(snapshotSelect(query.Source)).Where("status = ?", "OK")
-	if query.From != nil {
-		db = db.Where("fetched_at >= ?", jstBound(*query.From, true))
+	if len(query.Sources) == 0 {
+		return nil, fmt.Errorf("list financial snapshots: missing sources")
 	}
-	if query.To != nil {
-		db = db.Where("fetched_at < ?", jstBound(*query.To, true))
+	var selects []string
+	var args []any
+	seen := map[string]bool{}
+	for _, source := range query.Sources {
+		snapTable, _, ok := financialTables(source)
+		if !ok || seen[source] {
+			return nil, fmt.Errorf("list financial snapshots: invalid sources")
+		}
+		seen[source] = true
+		// Both the table and source literal are restricted by financialTables.
+		part := "SELECT " + snapshotSelect(source) + ", '" + source + "' AS source FROM " + snapTable + " WHERE status = ?"
+		args = append(args, "OK")
+		if query.From != nil {
+			part += " AND fetched_at >= ?"
+			args = append(args, jstBound(*query.From, true))
+		}
+		if query.To != nil {
+			part += " AND fetched_at < ?"
+			args = append(args, jstBound(*query.To, true))
+		}
+		selects = append(selects, part)
 	}
-	if query.AfterFetchedAt != nil {
-		bound := jstBound(*query.AfterFetchedAt, false)
-		db = db.Where("(fetched_at < ? OR (fetched_at = ? AND (id < ? OR ? = -1)))", bound, bound, query.AfterID, query.AfterID)
-	}
-	db = db.Order("fetched_at DESC, id DESC")
-	if query.Limit < 0 {
-		return nil, fmt.Errorf("list financial snapshots: invalid limit")
-	}
+	// The global offset belongs outside UNION ALL. Applying it separately to
+	// each source would skip records and break pages spanning both sources.
+	statement := "SELECT * FROM (" + strings.Join(selects, " UNION ALL ") + ") AS snapshots ORDER BY fetched_at DESC, source DESC, id DESC"
 	if query.Limit > 0 {
-		db = db.Limit(query.Limit)
+		statement += " LIMIT ? OFFSET ?"
+		args = append(args, query.Limit, query.Offset)
 	}
 	var rows []financialSnapshotRow
-	if err := db.Scan(&rows).Error; err != nil {
+	if err := d.Conn.WithContext(ctx).Raw(statement, args...).Scan(&rows).Error; err != nil {
 		return nil, dbReadError("list financial snapshots", err)
 	}
 	result := make([]model.FinancialSnapshot, 0, len(rows))
 	for _, row := range rows {
-		result = append(result, snapshotModel(row, query.Source))
+		result = append(result, snapshotModel(row, row.Source))
 	}
 	return result, nil
 }

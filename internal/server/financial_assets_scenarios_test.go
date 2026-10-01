@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,13 @@ func getFinancialMockJSON[T any](t *testing.T, r http.Handler, path string) T {
 	var out T
 	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
+	}
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(rec.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := envelope["nextCursor"]; ok {
+		t.Fatal("offset-based response must not include nextCursor")
 	}
 	return out
 }
@@ -52,7 +60,7 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 
 			t.Run("latest balance and complete holdings", func(t *testing.T) {
 				page := getFinancialMockJSON[openapi.BalancePage](t, r, base+"/balances")
-				if len(page.Items) != 1 || page.NextCursor != nil {
+				if len(page.Items) != 1 {
 					t.Fatal("expected one current balance")
 				}
 				point := page.Items[0]
@@ -174,16 +182,16 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 						copy := item
 						previous = &copy
 					}
-					if page.NextCursor == nil {
+					if len(page.Items) < 2 {
 						break
 					}
-					next = path + "&cursor=" + url.QueryEscape(*page.NextCursor)
+					next = path + "&offset=" + strconv.Itoa((n+1)*2)
 				}
 				if !reflect.DeepEqual(sizes, []int{4, 60, 1, 1, 1, 1, 0}) {
 					t.Fatal("missing snapshots or holdings")
 				}
 				empty := getFinancialMockJSON[openapi.SnapshotPage](t, r, base+"/snapshots?to=1999-12-30T00:00:00Z")
-				if empty.Items == nil || len(empty.Items) != 0 || empty.NextCursor != nil {
+				if empty.Items == nil || len(empty.Items) != 0 {
 					t.Fatal("empty history must terminate with an empty array")
 				}
 			})
@@ -191,11 +199,15 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 			t.Run("daily continuation and monthly carry forward", func(t *testing.T) {
 				path := base + "/balances?from=2000-01-31&to=2000-02-04&interval=day&limit=2"
 				first := getFinancialMockJSON[openapi.BalancePage](t, r, path)
-				if first.NextCursor == nil || len(first.Items) != 2 {
+				if len(first.Items) != 2 {
 					t.Fatal("missing first daily page")
 				}
-				second := getFinancialMockJSON[openapi.BalancePage](t, r, path+"&cursor="+url.QueryEscape(*first.NextCursor))
-				if second.NextCursor != nil || len(second.Items) != 2 {
+				second := getFinancialMockJSON[openapi.BalancePage](t, r, path+"&offset=2")
+				if len(second.Items) != 2 {
+					t.Fatal("missing second daily page")
+				}
+				end := getFinancialMockJSON[openapi.BalancePage](t, r, path+"&offset=4")
+				if end.Items == nil || len(end.Items) != 0 {
 					t.Fatal("daily pagination did not terminate")
 				}
 				points := append(first.Items, second.Items...)
@@ -206,7 +218,7 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 					}
 				}
 				month := getFinancialMockJSON[openapi.BalancePage](t, r, base+"/balances?from=2000-01-01&to=2000-04-01&interval=month")
-				if len(month.Items) != 3 || month.NextCursor != nil {
+				if len(month.Items) != 3 {
 					t.Fatal("unexpected monthly page")
 				}
 				for i, want := range []string{"320.2", "320.25", "320.25"} {
@@ -214,6 +226,34 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 				}
 				if !reflect.DeepEqual(month.Items[1].Sources, month.Items[2].Sources) {
 					t.Fatal("carry forward must preserve source provenance")
+				}
+			})
+
+			t.Run("offset validation and retired cursor", func(t *testing.T) {
+				for _, path := range []string{
+					"/snapshots?offset=-1", "/snapshots?offset=nope", "/snapshots?offset=1.5",
+					"/snapshots?offset=", "/snapshots?offset=0&offset=1", "/snapshots?offset=9223372036854775808",
+					"/snapshots?cursor=old", "/balances?cursor=old", "/balances?offset=0",
+					"/balances?at=2000-01-01T00:00:00Z&offset=1",
+					"/balances?from=2000-01-01&to=2000-01-05&offset=-1",
+					"/balances?from=2000-01-01&to=2000-01-05&offset=0&offset=1",
+					"/balances?from=2000-01-01&to=2000-01-05&offset=nope",
+					"/balances?from=2000-01-01&to=2000-01-05&cursor=old",
+				} {
+					rec := httptest.NewRecorder()
+					r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, base+path, nil))
+					if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Header().Get("Content-Type"), "application/json") {
+						t.Fatalf("expected JSON 400 for %s", path)
+					}
+				}
+				first := getFinancialMockJSON[openapi.SnapshotPage](t, r, base+"/snapshots?limit=2")
+				zero := getFinancialMockJSON[openapi.SnapshotPage](t, r, base+"/snapshots?limit=2&offset=0")
+				if !reflect.DeepEqual(first, zero) {
+					t.Fatal("omitted offset must default to zero")
+				}
+				end := getFinancialMockJSON[openapi.SnapshotPage](t, r, base+"/snapshots?limit=2&offset=7")
+				if end.Items == nil || len(end.Items) != 0 {
+					t.Fatal("offset at end must return an empty array")
 				}
 			})
 		})

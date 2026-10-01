@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
+	"slices"
 	"sort"
 	"time"
 )
@@ -86,12 +87,15 @@ func (m memoryFinancialRepository) ListFinancialSnapshots(ctx context.Context, q
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if q.Limit < 0 || q.Offset < 0 || q.Limit == 0 && q.Offset != 0 {
+		return nil, fmt.Errorf("list financial snapshots: invalid pagination")
+	}
+	if _, err := financialSources(&q.Sources); err != nil {
+		return nil, err
+	}
 	rows := []model.FinancialSnapshot{}
 	for _, row := range m.rows {
-		if row.Source != q.Source || q.From != nil && row.FetchedAt.Before(*q.From) || q.To != nil && !row.FetchedAt.Before(*q.To) {
-			continue
-		}
-		if q.AfterFetchedAt != nil && (row.FetchedAt.After(*q.AfterFetchedAt) || row.FetchedAt.Equal(*q.AfterFetchedAt) && q.AfterID != -1 && row.ID >= q.AfterID) {
+		if !slices.Contains(q.Sources, row.Source) || q.From != nil && row.FetchedAt.Before(*q.From) || q.To != nil && !row.FetchedAt.Before(*q.To) {
 			continue
 		}
 		row.Holdings = nil
@@ -101,8 +105,15 @@ func (m memoryFinancialRepository) ListFinancialSnapshots(ctx context.Context, q
 		if !rows[i].FetchedAt.Equal(rows[j].FetchedAt) {
 			return rows[i].FetchedAt.After(rows[j].FetchedAt)
 		}
+		if rows[i].Source != rows[j].Source {
+			return rows[i].Source > rows[j].Source
+		}
 		return rows[i].ID > rows[j].ID
 	})
+	if q.Offset >= len(rows) {
+		return []model.FinancialSnapshot{}, nil
+	}
+	rows = rows[q.Offset:]
 	if q.Limit > 0 && len(rows) > q.Limit {
 		rows = rows[:q.Limit]
 	}

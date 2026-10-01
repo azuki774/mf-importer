@@ -86,10 +86,9 @@ type ApiError struct {
 	Error string `json:"error"`
 }
 
-// BalancePage Always returns items and nullable nextCursor. Single modes return exactly one item; range mode emits one point per intersecting calendar period, including periods with no data (null totals and missingSources); an exhausted page may be empty. nextCursor is null in single mode and on the final range page. Sources contains exactly the requested sources. missingSources lists only sources with no eligible snapshot, not sources whose individual metrics are null. Cursors apply only to range mode and are opaque, scoped to sources, from, to, interval and limit; results are not frozen between pages.
+// BalancePage Always returns items. Single modes return exactly one item; range mode emits one point per intersecting calendar period, including periods with no data (null totals and missingSources); an exhausted page may be empty. Sources contains exactly the requested sources. missingSources lists only sources with no eligible snapshot, not sources whose individual metrics are null. limit and offset apply only to range mode; results are not frozen between pages.
 type BalancePage struct {
-	Items      []BalancePoint `json:"items"`
-	NextCursor NullableString `json:"nextCursor"`
+	Items []BalancePoint `json:"items"`
 }
 
 // BalancePoint Exactly one mode is populated. Single mode uses timestamp and null periodStart/periodEnd; range mode uses null timestamp and both periodStart/periodEnd. Single mode's timestamp is requested at, or current time when omitted. Range values use fetchedAt strictly before periodEnd; values carry forward from before the range. Periods are ordered by periodStart.
@@ -201,8 +200,7 @@ type SnapshotDetail struct {
 
 // SnapshotPage defines model for SnapshotPage.
 type SnapshotPage struct {
-	Items      []SnapshotDetail `json:"items"`
-	NextCursor NullableString   `json:"nextCursor"`
+	Items []SnapshotDetail `json:"items"`
 }
 
 // SnapshotSummary Source totals are represented as decimal strings; null means unavailable.
@@ -290,11 +288,11 @@ type GetFinancialAssetBalancesParams struct {
 	// Interval Range mode only; day or month.
 	Interval *GetFinancialAssetBalancesParamsInterval `form:"interval,omitempty" json:"interval,omitempty"`
 
-	// Limit Range mode only; page size must match when continuing a cursor.
+	// Limit Range mode only; number of calendar periods per page.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Cursor Range mode only; opaque cursor from the previous page.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	// Offset Range mode only; number of calendar periods to skip.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // GetFinancialAssetBalancesParamsSource defines parameters for GetFinancialAssetBalances.
@@ -315,8 +313,8 @@ type ListFinancialAssetSnapshotsParams struct {
 	To    *time.Time `form:"to,omitempty" json:"to,omitempty"`
 	Limit *int       `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Cursor Opaque cursor returned by the previous page.
-	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	// Offset Number of matching snapshots to skip. Offsets beyond the result set return empty items.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListFinancialAssetSnapshotsParamsSource defines parameters for ListFinancialAssetSnapshots.

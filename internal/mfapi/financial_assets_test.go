@@ -57,15 +57,16 @@ func TestFinancialSnapshotsPaginationAndDetail(t *testing.T) {
 		if !reflect.DeepEqual(item, detail) || len(item.Holdings) != 1 {
 			t.Fatal("list/detail mismatch or missing holdings")
 		}
-		if i < 3 && page.NextCursor == nil || i == 3 && page.NextCursor != nil {
-			t.Fatal("cursor termination")
-		}
-		p.Cursor = page.NextCursor
+		p.Offset = financialTestPtr(i + 1)
 	}
 	if len(seen) != 4 {
 		t.Fatal("missing snapshots")
 	}
-	_, err := s.detail(ctx, "invalid")
+	page, err := s.list(ctx, p)
+	if err != nil || page.Items == nil || len(page.Items) != 0 {
+		t.Fatal("offset at the end must return empty items")
+	}
+	_, err = s.detail(ctx, "invalid")
 	if !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
 		t.Fatal("invalid id")
 	}
@@ -75,17 +76,11 @@ func TestFinancialSnapshotsPaginationAndDetail(t *testing.T) {
 	}
 }
 
-func TestFinancialSnapshotFilterAndCursorValidation(t *testing.T) {
+func TestFinancialSnapshotFilterAndOffsetValidation(t *testing.T) {
 	s := newMockFinancialService()
 	ctx := context.Background()
-	page, err := s.list(ctx, openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1)})
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, p := range []openapi.ListFinancialAssetSnapshotsParams{
-		{Limit: financialTestPtr(2), Cursor: page.NextCursor},
-		{Limit: financialTestPtr(1), Cursor: page.NextCursor, Source: financialTestPtr(openapi.Sources{"sbi"})},
-		{Cursor: financialTestPtr("invalid")}, {Source: financialTestPtr(openapi.Sources{"sbi", "sbi"})},
+		{Offset: financialTestPtr(-1)}, {Source: financialTestPtr(openapi.Sources{"sbi", "sbi"})},
 		{Limit: financialTestPtr(0)}, {Limit: financialTestPtr(501)}, {Source: financialTestPtr(openapi.Sources{})},
 	} {
 		if _, err := s.list(ctx, p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
@@ -117,15 +112,11 @@ func TestFinancialSnapshotsNewestFirstTies(t *testing.T) {
 		if err != nil || len(page.Items) != 1 || page.Items[0].SnapshotId != id {
 			t.Fatalf("unexpected descending page %d", i)
 		}
-		if (page.NextCursor == nil) != (i == len(want)-1) {
-			t.Fatal("incorrect pagination termination")
-		}
-		p.Cursor = page.NextCursor
+		p.Offset = financialTestPtr(i + 1)
 	}
-	old := encodeFinancialCursor(financialCursor{Version: 1, Kind: "snapshots", Filter: financialFilter([]string{"nrkn", "sbi"}, "", "", "", 1), ID: snapshotID("sbi", 1), FetchedAt: at})
-	p.Cursor = &old
-	if _, err := s.list(context.Background(), p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
-		t.Fatal("ascending cursor must be rejected")
+	page, err := s.list(context.Background(), p)
+	if err != nil || len(page.Items) != 0 {
+		t.Fatal("offset beyond last item must be empty")
 	}
 }
 
@@ -138,7 +129,7 @@ func TestFinancialSingleBalanceBoundaryAndNulls(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(page.Items) != 1 || page.NextCursor != nil {
+		if len(page.Items) != 1 {
 			t.Fatal("single page")
 		}
 		point := page.Items[0]
@@ -164,20 +155,21 @@ func TestFinancialDailyAndMonthlyBalances(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(first.Items) != 2 || first.NextCursor == nil || *first.Items[1].Totals.ValuationJpy != "300.1" {
+	if len(first.Items) != 2 || *first.Items[1].Totals.ValuationJpy != "300.1" {
 		t.Fatal("daily carry")
 	}
-	p.Cursor = first.NextCursor
+	p.Offset = financialTestPtr(2)
 	second, err := s.balances(ctx, p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(second.Items) != 2 || second.NextCursor != nil || *second.Items[0].Totals.ValuationJpy != "320.2" || *second.Items[0].PeriodStart != "2000-01-03" {
+	if len(second.Items) != 2 || *second.Items[0].Totals.ValuationJpy != "320.2" || *second.Items[0].PeriodStart != "2000-01-03" {
 		t.Fatal("daily continuation")
 	}
-	p.From = financialTestDate("2000-01-02")
-	if _, err := s.balances(ctx, p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
-		t.Fatal("changed range cursor accepted")
+	p.Offset = financialTestPtr(4)
+	end, err := s.balances(ctx, p)
+	if err != nil || end.Items == nil || len(end.Items) != 0 {
+		t.Fatal("offset at end of period must be empty")
 	}
 	month, err := s.balances(ctx, openapi.GetFinancialAssetBalancesParams{From: financialTestDate("2000-01-02"), To: financialTestDate("2000-02-03"), Interval: financialTestPtr(openapi.Month)})
 	if err != nil {
@@ -211,7 +203,9 @@ func TestFinancialBalanceValidation(t *testing.T) {
 	for _, p := range []openapi.GetFinancialAssetBalancesParams{
 		{From: date}, {To: date}, {From: date, To: date},
 		{At: financialTestPtr(time.Now()), From: date, To: financialTestDate("2000-01-02")},
-		{Limit: financialTestPtr(1)}, {Interval: financialTestPtr(openapi.Day)}, {Cursor: financialTestPtr("x")},
+		{Limit: financialTestPtr(1)}, {Interval: financialTestPtr(openapi.Day)}, {Offset: financialTestPtr(0)},
+		{At: financialTestPtr(time.Now()), Offset: financialTestPtr(1)},
+		{From: date, To: financialTestDate("2000-01-02"), Offset: financialTestPtr(-1)},
 		{From: date, To: financialTestDate("2000-01-02"), Interval: financialTestPtr(openapi.GetFinancialAssetBalancesParamsInterval("week"))},
 	} {
 		if _, err := s.balances(context.Background(), p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
@@ -308,42 +302,63 @@ func TestFinancialCalculatedCostConsistentAcrossListAndDetail(t *testing.T) {
 	}
 }
 
-func TestFinancialCursorPositionValidation(t *testing.T) {
+func TestFinancialSnapshotOffsets(t *testing.T) {
 	s := newMockFinancialService()
 	ctx := context.Background()
-	page, err := s.list(ctx, openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1)})
-	if err != nil {
-		t.Fatal(err)
+	for _, sources := range []openapi.Sources{{"sbi", "nrkn"}, {"sbi"}, {"nrkn"}} {
+		p := openapi.ListFinancialAssetSnapshotsParams{Source: &sources}
+		all, err := s.list(ctx, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Random access, changed page sizes, exact end and large offsets.
+		for _, offset := range []int{0, 1, 3, len(all.Items), int(^uint(0) >> 1)} {
+			p.Offset, p.Limit = &offset, financialTestPtr(2)
+			page, err := s.list(ctx, p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			start := min(offset, len(all.Items))
+			end := min(start+2, len(all.Items))
+			if page.Items == nil || !reflect.DeepEqual(page.Items, all.Items[start:end]) {
+				t.Fatal("offset must apply after source filtering and global sorting")
+			}
+		}
 	}
-	filter := financialFilter([]string{"nrkn", "sbi"}, "", "", "snapshots-desc", 1)
-	cursor, err := decodeFinancialCursor(*page.NextCursor, "snapshots", filter)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cursor.FetchedAt = cursor.FetchedAt.Add(time.Hour)
-	_, err = s.list(ctx, openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1), Cursor: financialTestPtr(encodeFinancialCursor(cursor))})
-	if !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
-		t.Fatal("timestamp/ID mismatch accepted")
-	}
-	cursor.ID = snapshotID("nrkn", 999)
-	_, err = s.list(ctx, openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1), Cursor: financialTestPtr(encodeFinancialCursor(cursor))})
-	if !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
-		t.Fatal("nonexistent cursor row accepted")
-	}
-	p := openapi.GetFinancialAssetBalancesParams{From: financialTestDate("2000-01-01"), To: financialTestDate("2000-01-10"), Limit: financialTestPtr(2)}
-	balances, err := s.balances(ctx, p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	filter = financialFilter([]string{"nrkn", "sbi"}, "2000-01-01", "2000-01-10", "day", 2)
-	cursor, err = decodeFinancialCursor(*balances.NextCursor, "balances", filter)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cursor.Period = "2000-01-02"
-	p.Cursor = financialTestPtr(encodeFinancialCursor(cursor))
-	if _, err := s.balances(ctx, p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
-		t.Fatal("non-page boundary accepted")
+}
+
+func TestFinancialBalanceOffsets(t *testing.T) {
+	s := newMockFinancialService()
+	ctx := context.Background()
+	for _, tc := range []struct {
+		from, to string
+		interval openapi.GetFinancialAssetBalancesParamsInterval
+	}{
+		{"1999-12-30", "2000-01-05", openapi.Day},   // Includes empty and partially missing periods.
+		{"2000-01-31", "2000-03-03", openapi.Day},   // Leap day.
+		{"1999-12-30", "2000-03-03", openapi.Month}, // Clipped first and last months.
+		{"2000-01-02", "2000-01-03", openapi.Month},
+		{"2000-01-31", "2000-03-01", openapi.Month},
+	} {
+		t.Run(tc.from+"/"+tc.to+"/"+string(tc.interval), func(t *testing.T) {
+			p := openapi.GetFinancialAssetBalancesParams{From: financialTestDate(tc.from), To: financialTestDate(tc.to), Interval: &tc.interval}
+			all, err := s.balances(ctx, p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, offset := range []int{0, 1, 2, len(all.Items) - 1, len(all.Items), int(^uint(0) >> 1)} {
+				p.Offset, p.Limit = &offset, financialTestPtr(2)
+				page, err := s.balances(ctx, p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				start := min(offset, len(all.Items))
+				end := min(start+2, len(all.Items))
+				if page.Items == nil || !reflect.DeepEqual(page.Items, all.Items[start:end]) {
+					t.Fatal("period offset must preserve boundaries, missing data and carry forward")
+				}
+			}
+		})
 	}
 }
 
