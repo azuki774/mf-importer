@@ -24,7 +24,11 @@ func financialTestDate(s string) *types.Date {
 func TestFinancialSnapshotsPaginationAndDetail(t *testing.T) {
 	s := newMockFinancialService()
 	ctx := context.Background()
-	p := openapi.ListFinancialAssetSnapshotsParams{Limit: financialTestPtr(1)}
+	p := openapi.ListFinancialAssetSnapshotsParams{
+		Limit: financialTestPtr(1),
+		From:  financialTestPtr(time.Date(2000, 1, 1, 0, 0, 0, 0, jst)),
+		To:    financialTestPtr(time.Date(2000, 2, 1, 0, 0, 0, 0, jst)),
+	}
 	seen := map[string]bool{}
 	previous := ""
 	for i := 0; i < 4; i++ {
@@ -111,7 +115,7 @@ func TestFinancialSingleBalanceBoundaryAndNulls(t *testing.T) {
 			t.Fatal("single totals/boundary")
 		}
 	}
-	before := at.Add(-time.Nanosecond)
+	before := time.Date(1999, 12, 31, 12, 0, 0, 0, jst).Add(-time.Nanosecond)
 	page, err := s.balances(context.Background(), openapi.GetFinancialAssetBalancesParams{At: &before})
 	if err != nil {
 		t.Fatal(err)
@@ -233,7 +237,11 @@ func TestFinancialHoldingCostCalculation(t *testing.T) {
 
 func TestFinancialCalculatedCostConsistentAcrossListAndDetail(t *testing.T) {
 	s := newMockFinancialService()
-	p, err := s.list(context.Background(), openapi.ListFinancialAssetSnapshotsParams{Source: financialTestPtr(openapi.Sources{"sbi"})})
+	p, err := s.list(context.Background(), openapi.ListFinancialAssetSnapshotsParams{
+		Source: financialTestPtr(openapi.Sources{"sbi"}),
+		From:   financialTestPtr(time.Date(2000, 1, 1, 0, 0, 0, 0, jst)),
+		To:     financialTestPtr(time.Date(2000, 2, 1, 0, 0, 0, 0, jst)),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,5 +313,52 @@ func TestFinancialCursorPositionValidation(t *testing.T) {
 	p.Cursor = financialTestPtr(encodeFinancialCursor(cursor))
 	if _, err := s.balances(ctx, p); !errors.Is(err, model.ErrInvalidFinancialAssetRequest) {
 		t.Fatal("non-page boundary accepted")
+	}
+}
+
+func TestFinancialMockTotalsDoNotComeFromHoldings(t *testing.T) {
+	s := newMockFinancialService()
+	ctx := context.Background()
+	at := time.Date(2000, 2, 3, 0, 0, 0, 0, jst)
+	page, err := s.balances(ctx, openapi.GetFinancialAssetBalancesParams{At: &at})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range page.Items[0].Sources {
+		if source.SnapshotId == nil {
+			t.Fatal("missing synthetic source")
+		}
+		detail, err := s.detail(ctx, *source.SnapshotId)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var values, costs, pnls []*string
+		for _, h := range detail.Holdings {
+			values = append(values, h.ValuationJpy)
+			costs = append(costs, h.CostJpy)
+			pnls = append(pnls, h.UnrealizedPnlJpy)
+		}
+		value, err := sumFinancialDecimals(values)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cost, err := sumFinancialDecimals(costs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pnl, err := sumFinancialDecimals(pnls)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if source.Source == "sbi" {
+			if value == nil || *value != "220.25" || detail.Totals.ValuationJpy == nil || *detail.Totals.ValuationJpy != "250.25" {
+				t.Fatal("SBI summary must include the synthetic balance absent from holdings")
+			}
+			if cost != nil || pnl != nil || detail.Totals.CostJpy != nil || detail.Totals.UnrealizedPnlJpy != nil {
+				t.Fatal("unknown metrics must not become partial totals")
+			}
+		} else if value == nil || *value != "70" || cost == nil || *cost != "75" || pnl == nil || *pnl != "-5" {
+			t.Fatal("unexpected complete NRKN holding totals")
+		}
 	}
 }

@@ -2,6 +2,7 @@ package mfapi
 
 import (
 	"context"
+	"fmt"
 	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
 	"sort"
@@ -28,12 +29,55 @@ func syntheticFinancialRepository() memoryFinancialRepository {
 	text := func(s string) *string { return &s }
 	t0 := time.Date(2000, 1, 1, 12, 0, 0, 0, jst)
 	t1 := time.Date(2000, 1, 3, 12, 0, 0, 0, jst)
-	return memoryFinancialRepository{rows: []model.FinancialSnapshot{
+	rows := []model.FinancialSnapshot{
 		{ID: 1, Source: "sbi", FetchedAt: t0, ImportedAt: t0.Add(time.Hour), ValuationJpy: text("100.10"), Holdings: []model.FinancialHolding{{ID: 1, SnapshotID: 1, Name: "ダミー商品A", Section: text("nisa_funds"), CompositeFigi: text("TESTFIGI0001"), Quantity: text("2"), ValuationJpy: text("100.10"), UnrealizedPnlJpy: text("-1.00")}}},
 		{ID: 1, Source: "nrkn", FetchedAt: t0, ImportedAt: t0.Add(time.Hour), ValuationJpy: text("200"), CostJpy: text("220"), UnrealizedPnlJpy: text("-20"), Holdings: []model.FinancialHolding{{ID: 1, SnapshotID: 1, Name: "ダミー商品B", ProductCode: text("TEST001"), CompositeFigi: text("TESTFIGI0002"), ReferenceDate: text("2000-01-01"), Quantity: text("3"), ValuationJpy: text("200"), CostJpy: text("220"), UnrealizedPnlJpy: text("-20")}}},
 		{ID: 2, Source: "sbi", FetchedAt: t1, ImportedAt: t1.Add(time.Hour), ValuationJpy: text("110.20"), Holdings: []model.FinancialHolding{{ID: 2, SnapshotID: 2, Name: "ダミー商品A", Section: text("nisa_funds"), CompositeFigi: text("TESTFIGI0001"), Quantity: text("2"), ValuationJpy: text("110.20"), UnrealizedPnlJpy: text("9.10")}}},
 		{ID: 2, Source: "nrkn", FetchedAt: t1, ImportedAt: t1.Add(time.Hour), ValuationJpy: text("210"), CostJpy: text("220"), UnrealizedPnlJpy: text("-10"), Holdings: []model.FinancialHolding{{ID: 2, SnapshotID: 2, Name: "ダミー商品B", ProductCode: text("TEST001"), CompositeFigi: text("TESTFIGI0002"), ReferenceDate: text("2000-01-03"), Quantity: text("3"), ValuationJpy: text("210"), CostJpy: text("220"), UnrealizedPnlJpy: text("-10")}}},
-	}}
+	}
+	// Before the original January examples only SBI is available. Keep the
+	// original examples intact so date filters can select the small dataset.
+	early := time.Date(1999, 12, 31, 12, 0, 0, 0, jst)
+	rows = append(rows, model.FinancialSnapshot{
+		ID: 3, Source: "sbi", FetchedAt: early, ImportedAt: early.Add(time.Hour),
+		ValuationJpy: text("0"), Holdings: []model.FinancialHolding{},
+	})
+
+	// February is the UI dataset: shared FIGI across sources/sections,
+	// same-name different products, absent identifiers, zero and unknown values,
+	// and enough holdings to exercise a 50-row client-side page.
+	sbiAt := time.Date(2000, 2, 1, 12, 0, 0, 0, jst)
+	holdings := []model.FinancialHolding{
+		{ID: 10, SnapshotID: 4, Name: "ダミー共通商品", Section: text("nisa_funds"), CompositeFigi: text("TESTFIGI0100"), Quantity: text("2"), ValuationJpy: text("120.25"), UnrealizedPnlJpy: text("20.10")},
+		{ID: 11, SnapshotID: 4, Name: "ダミー共通商品", Section: text("old_nisa_funds"), CompositeFigi: text("TESTFIGI0100"), Quantity: text("1"), ValuationJpy: text("30"), UnrealizedPnlJpy: text("-2")},
+		{ID: 12, SnapshotID: 4, Name: "ダミー同名商品", Section: text("nisa_funds"), CompositeFigi: text("TESTFIGI0101"), Quantity: text("1"), ValuationJpy: text("10"), UnrealizedPnlJpy: text("0")},
+		{ID: 13, SnapshotID: 4, Name: "ダミー識別子なし商品", Section: text("nisa_funds"), Quantity: text("0"), ValuationJpy: text("0"), UnrealizedPnlJpy: text("0")},
+		{ID: 14, SnapshotID: 4, Name: "ダミー損益未取得商品", Section: text("nisa_us"), CompositeFigi: text("TESTFIGI0102"), Quantity: text("0.000001"), ValuationJpy: text("5")},
+	}
+	for i := 0; i < 55; i++ {
+		holdings = append(holdings, model.FinancialHolding{
+			ID: int64(100 + i), SnapshotID: 4, Name: fmt.Sprintf("ダミー一覧商品%03d", i+1),
+			Section: text("nisa_domestic"), CompositeFigi: text(fmt.Sprintf("TESTPAGE%04d", i+1)),
+			Quantity: text("1"), ValuationJpy: text("1"), UnrealizedPnlJpy: text("0"),
+		})
+	}
+	// The extra synthetic cash balance is intentionally absent from holdings.
+	rows = append(rows, model.FinancialSnapshot{
+		ID: 4, Source: "sbi", FetchedAt: sbiAt, ImportedAt: sbiAt.Add(time.Hour),
+		ValuationJpy: text("250.25"), Holdings: holdings,
+	})
+	nrknAt := sbiAt.AddDate(0, 0, 1)
+	rows = append(rows, model.FinancialSnapshot{
+		ID: 3, Source: "nrkn", FetchedAt: nrknAt, ImportedAt: nrknAt.Add(time.Hour),
+		ValuationJpy: text("70"), CostJpy: text("75"), UnrealizedPnlJpy: text("-5"),
+		Holdings: []model.FinancialHolding{
+			{ID: 10, SnapshotID: 3, Name: "ダミー共通商品", ProductCode: text("TEST101"), CompositeFigi: text("TESTFIGI0100"), ReferenceDate: text("2000-02-01"), Quantity: text("3"), ValuationJpy: text("40"), CostJpy: text("44"), UnrealizedPnlJpy: text("-4")},
+			{ID: 11, SnapshotID: 3, Name: "ダミー同名商品", ProductCode: text("TEST102"), CompositeFigi: text("TESTFIGI0103"), ReferenceDate: text("2000-02-01"), Quantity: text("1"), ValuationJpy: text("20"), CostJpy: text("20"), UnrealizedPnlJpy: text("0")},
+			{ID: 12, SnapshotID: 3, Name: "ダミーFIGIなし商品", ProductCode: text("TEST103"), ReferenceDate: text("2000-02-01"), Quantity: text("0"), ValuationJpy: text("0"), CostJpy: text("0"), UnrealizedPnlJpy: text("0")},
+			{ID: 13, SnapshotID: 3, Name: "ダミーFIGIなし商品", ProductCode: text("TEST104"), ReferenceDate: text("2000-02-01"), Quantity: text("1"), ValuationJpy: text("10"), CostJpy: text("11"), UnrealizedPnlJpy: text("-1")},
+		},
+	})
+	return memoryFinancialRepository{rows: rows}
 }
 
 type memoryFinancialRepository struct{ rows []model.FinancialSnapshot }

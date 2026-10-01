@@ -102,7 +102,7 @@ func TestFinancialAssetHTTPWithMockService(t *testing.T) {
 		}
 	}
 	var page openapi.SnapshotPage
-	get("/v2/financial-assets/snapshots?limit=1", 200, &page)
+	get("/v2/financial-assets/snapshots?limit=1&from=2000-01-01T00:00:00Z", 200, &page)
 	if len(page.Items) != 1 || len(page.Items[0].Holdings) != 1 || page.NextCursor == nil {
 		t.Fatal("missing detailed snapshot page")
 	}
@@ -113,7 +113,7 @@ func TestFinancialAssetHTTPWithMockService(t *testing.T) {
 	if string(a) != string(b) {
 		t.Fatal("list/detail inconsistent")
 	}
-	get("/v2/financial-assets/snapshots?limit=1&cursor="+url.QueryEscape(*page.NextCursor), 200, &page)
+	get("/v2/financial-assets/snapshots?limit=1&from=2000-01-01T00:00:00Z&cursor="+url.QueryEscape(*page.NextCursor), 200, &page)
 	for _, query := range []string{"", "?at=2000-01-01T12:00:00%2B09:00", "?from=2000-01-01&to=2000-01-05", "?from=2000-01-02&to=2000-02-03&interval=month"} {
 		var balances openapi.BalancePage
 		get("/v2/financial-assets/balances"+query, 200, &balances)
