@@ -91,7 +91,7 @@ func (m memoryFinancialRepository) ListFinancialSnapshots(ctx context.Context, q
 		if row.Source != q.Source || q.From != nil && row.FetchedAt.Before(*q.From) || q.To != nil && !row.FetchedAt.Before(*q.To) {
 			continue
 		}
-		if q.AfterFetchedAt != nil && (row.FetchedAt.Before(*q.AfterFetchedAt) || row.FetchedAt.Equal(*q.AfterFetchedAt) && row.ID <= q.AfterID) {
+		if q.AfterFetchedAt != nil && (row.FetchedAt.After(*q.AfterFetchedAt) || row.FetchedAt.Equal(*q.AfterFetchedAt) && q.AfterID != -1 && row.ID >= q.AfterID) {
 			continue
 		}
 		row.Holdings = nil
@@ -99,9 +99,9 @@ func (m memoryFinancialRepository) ListFinancialSnapshots(ctx context.Context, q
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if !rows[i].FetchedAt.Equal(rows[j].FetchedAt) {
-			return rows[i].FetchedAt.Before(rows[j].FetchedAt)
+			return rows[i].FetchedAt.After(rows[j].FetchedAt)
 		}
-		return rows[i].ID < rows[j].ID
+		return rows[i].ID > rows[j].ID
 	})
 	if q.Limit > 0 && len(rows) > q.Limit {
 		rows = rows[:q.Limit]

@@ -21,6 +21,6 @@ type FinancialSnapshotQuery struct {
 	Source         string
 	From, To       *time.Time
 	AfterFetchedAt *time.Time
-	AfterID        int64
+	AfterID        int64 // Descending cursor boundary; -1 includes all IDs at AfterFetchedAt.
 	Limit          int
 }

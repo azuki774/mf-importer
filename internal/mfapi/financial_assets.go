@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"mf-importer/internal/model"
 	"mf-importer/internal/openapi"
@@ -80,7 +79,7 @@ func (s financialService) list(ctx context.Context, p openapi.ListFinancialAsset
 	if p.From != nil && !validFinancialTime(*p.From) || p.To != nil && !validFinancialTime(*p.To) || p.From != nil && p.To != nil && !p.From.Before(*p.To) {
 		return result, model.ErrInvalidFinancialAssetRequest
 	}
-	filter := financialFilter(sources, timeKey(p.From), timeKey(p.To), "", limit)
+	filter := financialFilter(sources, timeKey(p.From), timeKey(p.To), "snapshots-desc", limit)
 	var after financialCursor
 	if p.Cursor != nil {
 		after, err = decodeFinancialCursor(*p.Cursor, "snapshots", filter)
@@ -112,7 +111,8 @@ func (s financialService) list(ctx context.Context, p openapi.ListFinancialAsset
 			case source == lastSource:
 				q.AfterID = lastID
 			case source < lastSource:
-				q.AfterID = math.MaxInt64
+				// Include every ID from lower-sorting sources at the cursor time.
+				q.AfterID = -1
 			}
 		}
 		rows, e := s.repo.ListFinancialSnapshots(ctx, q)
@@ -124,9 +124,9 @@ func (s financialService) list(ctx context.Context, p openapi.ListFinancialAsset
 	sort.Slice(snapshots, func(i, j int) bool {
 		a, b := snapshots[i], snapshots[j]
 		if !a.FetchedAt.Equal(b.FetchedAt) {
-			return a.FetchedAt.Before(b.FetchedAt)
+			return a.FetchedAt.After(b.FetchedAt)
 		}
-		return snapshotID(a.Source, a.ID) < snapshotID(b.Source, b.ID)
+		return snapshotID(a.Source, a.ID) > snapshotID(b.Source, b.ID)
 	})
 	if len(snapshots) > limit {
 		snapshots = snapshots[:limit]
@@ -329,6 +329,10 @@ func (s financialService) balances(ctx context.Context, p openapi.GetFinancialAs
 		rows, e := s.repo.ListFinancialSnapshots(ctx, model.FinancialSnapshotQuery{Source: source, From: &start, To: &pageEnd})
 		if e != nil {
 			return result, e
+		}
+		// Period aggregation consumes events oldest first; list reads are newest first.
+		for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+			rows[i], rows[j] = rows[j], rows[i]
 		}
 		events[source] = rows
 	}

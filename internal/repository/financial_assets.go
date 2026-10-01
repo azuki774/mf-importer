@@ -75,9 +75,9 @@ func (d *DBClient) ListFinancialSnapshots(ctx context.Context, query model.Finan
 	}
 	if query.AfterFetchedAt != nil {
 		bound := jstBound(*query.AfterFetchedAt, false)
-		db = db.Where("(fetched_at > ? OR (fetched_at = ? AND id > ?))", bound, bound, query.AfterID)
+		db = db.Where("(fetched_at < ? OR (fetched_at = ? AND (id < ? OR ? = -1)))", bound, bound, query.AfterID, query.AfterID)
 	}
-	db = db.Order("fetched_at ASC, id ASC")
+	db = db.Order("fetched_at DESC, id DESC")
 	if query.Limit < 0 {
 		return nil, fmt.Errorf("list financial snapshots: invalid limit")
 	}

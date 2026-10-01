@@ -162,7 +162,7 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 						t.Fatal("unexpected snapshot page size")
 					}
 					for _, item := range page.Items {
-						if seen[item.SnapshotId] || previous != nil && (item.FetchedAt.Before(previous.FetchedAt) || item.FetchedAt.Equal(previous.FetchedAt) && item.SnapshotId <= previous.SnapshotId) {
+						if seen[item.SnapshotId] || previous != nil && (item.FetchedAt.After(previous.FetchedAt) || item.FetchedAt.Equal(previous.FetchedAt) && item.SnapshotId >= previous.SnapshotId) {
 							t.Fatal("duplicate or incorrectly ordered snapshot")
 						}
 						seen[item.SnapshotId] = true
@@ -179,7 +179,7 @@ func TestFinancialAssetMockUIScenarios(t *testing.T) {
 					}
 					next = path + "&cursor=" + url.QueryEscape(*page.NextCursor)
 				}
-				if !reflect.DeepEqual(sizes, []int{0, 1, 1, 1, 1, 60, 4}) {
+				if !reflect.DeepEqual(sizes, []int{4, 60, 1, 1, 1, 1, 0}) {
 					t.Fatal("missing snapshots or holdings")
 				}
 				empty := getFinancialMockJSON[openapi.SnapshotPage](t, r, base+"/snapshots?to=1999-12-30T00:00:00Z")
