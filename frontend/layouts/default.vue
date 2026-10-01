@@ -3,6 +3,7 @@ const route = useRoute()
 
 const navItems = [
   { label: '取り込み履歴', to: '/' },
+  { label: '金融資産', to: '/assets' },
   { label: 'ルール設定', to: '/rules' },
 ]
 </script>
@@ -10,7 +11,7 @@ const navItems = [
 <template>
   <div class="min-h-screen flex flex-col bg-gray-50">
     <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-14 flex flex-col sm:flex-row items-center justify-between gap-2">
         <NuxtLink to="/" class="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors">
           mf-importer
         </NuxtLink>

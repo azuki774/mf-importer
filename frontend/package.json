@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
+    "decimal.js": "^10.6.0",
     "nuxt": "^4.5.2",
     "vue": "latest"
   },
