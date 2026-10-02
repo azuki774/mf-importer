@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   routeRules: {
     "/": { ssr: false },
+    "/assets": { ssr: false },
   },
   // 静的生成時に useFetch の結果を payload に埋め込まない
   // (Go サーバへの取り込み結果確認ではクライアント側で /api を叩かせるため)
