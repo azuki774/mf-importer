@@ -18,7 +18,6 @@ jobs:
       importer: ${{ steps.filter.outputs.importer }}
       maw: ${{ steps.filter.outputs.maw }}
       api: ${{ steps.filter.outputs.api }}
-      metrics: ${{ steps.filter.outputs.metrics }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: checkout
@@ -56,14 +55,6 @@ jobs:
               - '.github/workflows/publish.yml'
               - 'build/api/Dockerfile'
               - 'cmd/mf-importer-api/**'
-              - 'go.mod'
-              - 'go.sum'
-              - 'internal/**'
-            metrics:
-              - '.dockerignore'
-              - '.github/workflows/publish.yml'
-              - 'build/metrics/Dockerfile'
-              - 'cmd/mf-importer-metrics/**'
               - 'go.mod'
               - 'go.sum'
               - 'internal/**'
@@ -209,53 +200,6 @@ jobs:
         with:
           context: .
           file: ./build/api/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build_and_push_metrics:
-    needs: changes
-    if: ${{ github.ref_type == 'tag' || needs.changes.outputs.metrics == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set meta
-        id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/azuki774/mf-importer-metrics
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=sha,format=short,prefix=,enable=${{ github.ref_type == 'branch' || github.ref_type == 'tag' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=semver,pattern=latest
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker Build and push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          file: ./build/metrics/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

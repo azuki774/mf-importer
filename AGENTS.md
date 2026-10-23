@@ -15,7 +15,6 @@
 - `cmd/mf-importer/`: MoneyForward ME の CSV インポーターと S3 ダウンロード。
 - `cmd/mf-importer-api/`: DB API と DB 不要のモック API。
 - `cmd/mf-importer-maw/`: `mawinter-server` 連携。
-- `cmd/mf-importer-metrics/`: Prometheus メトリクス。
 - `internal/`: サービス共通のモデル、リポジトリ、サービス、HTTP サーバー、SBI 資産処理など。
 - `internal/openapi/mfimporter-api.yaml`: API の入力仕様。`*.gen.go` は `make generate` の生成物で手編集しない。
 - `migration/db/`: sql-migrate の適用ファイル。現在の資産系スキーマを含む。`docs/schema.md` はこのディレクトリを正本とする手管理文書。
