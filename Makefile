@@ -3,7 +3,6 @@ CONTAINER_NAME=mf-importer
 CONTAINER_NAME_MAW=mf-importer-maw
 CONTAINER_NAME_FRONT=mf-importer-fe
 CONTAINER_NAME_API=mf-importer-api
-CONTAINER_NAME_METRICS=mf-importer-metrics
 OPENAPI_YAML=internal/openapi/mfimporter-api.yaml
 OAPI_CODEGEN=go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
 pwd := $(shell pwd)
@@ -23,7 +22,6 @@ build:
 	docker build -t $(CONTAINER_NAME) -f build/Dockerfile .
 	docker build -t $(CONTAINER_NAME_MAW) -f build/maw/Dockerfile .
 	docker build -t $(CONTAINER_NAME_API) -f build/api/Dockerfile .
-	docker build -t $(CONTAINER_NAME_METRICS) -f build/metrics/Dockerfile .
 	docker build -t $(CONTAINER_NAME_FRONT) -f build/fe/Dockerfile .
 
 start:

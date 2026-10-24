@@ -175,16 +175,6 @@ func (d *DBClient) GetLastDetailHistoryWhereSrcFile(ctx context.Context, srcFile
 	return int(ih.ParsedEntryNum), int(ih.NewEntryNum), nil
 }
 
-func (d *DBClient) GetLastDetailHistoryWhereJobLabel(ctx context.Context, jobLabel string) (model.ImportHistory, error) {
-	var ih model.ImportHistory
-	// job_label が一致する最新のデータ1件
-	err := d.Conn.WithContext(ctx).Table(tableNameImportHistory).Where("job_label = ?", jobLabel).Order("ID desc").First(&ih).Error
-	if err != nil {
-		return model.ImportHistory{}, err
-	}
-	return ih, nil
-}
-
 func (d *DBClient) GetDetails(ctx context.Context, limit int, offset int, sort string, order string) (details []model.Detail, err error) {
 	err = d.Conn.WithContext(ctx).Table(tableNameDetail).
 		Order(buildDetailOrderClause(sort, order)).
