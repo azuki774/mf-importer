@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  // GitHub Actions の参照は不変のコミット SHA (SHA-1、SHA-256 ではない) に固定する。
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "timezone": "Asia/Tokyo",
+  // 金曜 20:00〜20:59 (Asia/Tokyo) の時間枠。20:00 ちょうどの実行を保証するものではなく、Renovate の起動タイミングに依存する。
+  "schedule": ["* 20 * * 5"],
+  // 週 1 時間の枠で PR が滞留しないよう、同時 7 件までに制限し、1 時間あたりの上限は設けない。
+  "prConcurrentLimit": 7,
+  "prHourlyLimit": 0,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    // セキュリティアラートは通常のスケジュールと同時 7 件の上限を迂回し、即時に PR を作成する。
+    "schedule": [],
+    "prCreation": "immediate"
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      // action / workflow の依存だけを automerge 対象とし、ランタイムや runner のバージョン更新は自動マージしない。
+      "matchDepTypes": ["action", "workflow"],
+      "automerge": true
+    }
+  ]
+}
